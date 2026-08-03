@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MDReader theme file",
+  "type": "object",
+  "required": [
+    "name"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Display name shown in the theme picker"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "light",
+        "dark"
+      ],
+      "description": "Badge shown next to the theme name"
+    },
+    "tokens": {
+      "type": "object",
+      "description": "Partial map of token name -> value. Omitted tokens inherit from the base palette.",
+      "properties": {
+        "--bg": {
+          "type": "string",
+          "description": "Reading canvas background",
+          "default": "#ffffff",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--chrome": {
+          "type": "string",
+          "description": "Toolbar, sidebar, and editor-pane background",
+          "default": "#f6f8fa",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--border": {
+          "type": "string",
+          "description": "Hairline borders and dividers",
+          "default": "#d1d9e0",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--code-bg": {
+          "type": "string",
+          "description": "Inline code and code-block background",
+          "default": "#f6f8fa",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--quote-bg": {
+          "type": "string",
+          "description": "Blockquote background wash",
+          "default": "rgba(9,105,218,0.05)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--hl": {
+          "type": "string",
+          "description": "Hover / active row highlight",
+          "default": "rgba(9,105,218,0.08)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--edge-shadow": {
+          "type": "string",
+          "description": "Wide-table horizontal-scroll edge fade",
+          "default": "rgba(31,35,40,0.12)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--fg": {
+          "type": "string",
+          "description": "Primary text color",
+          "default": "#1f2328",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--muted": {
+          "type": "string",
+          "description": "Secondary text, metadata, placeholders",
+          "default": "#59636e",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--link": {
+          "type": "string",
+          "description": "Links, active states, primary accent",
+          "default": "#0969da",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--danger": {
+          "type": "string",
+          "description": "Errors and destructive hover states",
+          "default": "#cf222e",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--danger-bg": {
+          "type": "string",
+          "description": "Error banner / badge background wash",
+          "default": "rgba(207,34,46,0.06)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--syn-kw": {
+          "type": "string",
+          "description": "Syntax: keywords",
+          "default": "#cf222e",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--syn-str": {
+          "type": "string",
+          "description": "Syntax: strings",
+          "default": "#0a3069",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--syn-fn": {
+          "type": "string",
+          "description": "Syntax: function names",
+          "default": "#8250df",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--syn-cm": {
+          "type": "string",
+          "description": "Syntax: comments",
+          "default": "#6e7781",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--syn-num": {
+          "type": "string",
+          "description": "Syntax: numbers",
+          "default": "#0550ae",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--syn-type": {
+          "type": "string",
+          "description": "Syntax: types",
+          "default": "#953800",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--font-ui": {
+          "type": "string",
+          "description": "Toolbar, sidebar, and other chrome UI text",
+          "default": "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif"
+        },
+        "--font-body": {
+          "type": "string",
+          "description": "Article body text — the only token that varies per theme beyond color",
+          "default": "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif"
+        },
+        "--font-mono": {
+          "type": "string",
+          "description": "Code, source editor, and monospace UI labels",
+          "default": "ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,25 @@
+import type { ThemeTokens } from '../../contract';
+
+export const tokens: ThemeTokens = {
+  '--bg': '#011627',
+  '--chrome': '#01111e',
+  '--fg': '#d6deeb',
+  '--muted': '#5f7e97',
+  '--link': '#82aaff',
+  '--border': '#1d3b53',
+  '--code-bg': '#0b2942',
+  '--quote-bg': 'rgba(130,170,255,0.07)',
+  '--hl': 'rgba(130,170,255,0.10)',
+  '--danger': '#ef5350',
+  '--danger-bg': 'rgba(239,83,80,0.12)',
+  '--edge-shadow': 'rgba(0,0,0,0.5)',
+  '--syn-kw': '#c792ea',
+  '--syn-str': '#ecc48d',
+  '--syn-fn': '#82aaff',
+  '--syn-cm': '#637777',
+  '--syn-num': '#f78c6c',
+  '--syn-type': '#ffcb8b',
+  '--font-ui': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
+  '--font-body': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
+  '--font-mono': "ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace",
+};
