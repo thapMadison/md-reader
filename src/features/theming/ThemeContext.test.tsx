@@ -33,7 +33,7 @@ describe('metric CSS variables', () => {
     await waitFor(() => expect(cssVar('--fs')).not.toBe(''));
 
     expect(cssVar('--fs')).toBe('17px');
-    expect(cssVar('--cw')).toBe('960px');
+    expect(cssVar('--cw')).toBe('1280px');
   });
 
   it('writes --lh unitless, not "1.7px"', async () => {
