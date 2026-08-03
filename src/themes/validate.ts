@@ -1,4 +1,4 @@
-import { THEME_TOKEN_NAMES } from './contract';
+import { THEME_TOKEN_NAMES, FONT_STACK_TOKEN_NAMES } from './contract';
 import { isColorValue } from './schema';
 
 function levenshtein(a: string, b: string): number {
@@ -69,7 +69,7 @@ export function validateThemeFile(raw: unknown): ThemeValidationResult {
       errors.push(`unknown token "${key}"${near ? ` (did you mean ${near}?)` : ''}`);
       continue;
     }
-    if (key !== '--font-body' && !isColorValue(v)) {
+    if (!FONT_STACK_TOKEN_NAMES.includes(key) && !isColorValue(v)) {
       errors.push(`${key}: expected a color, got ${typeof v === 'string' ? `"${v}"` : String(v)}`);
       continue;
     }

@@ -1,32 +1,62 @@
-# React + TypeScript + Vite
+# MDReader
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A client-side markdown reader with Typora-quality rendering and a pluggable theme system.
+Everything runs in the browser — files are read from disk (or dropped/picked as one-off
+snapshots), rendered, and optionally edited in-memory; nothing is ever uploaded, and edits
+are never written back to disk.
 
-Currently, two official plugins are available:
+Live at **https://thapmadison.github.io/md-reader/**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- GitHub-flavored markdown rendering (tables, task lists, strikethrough, footnotes) with
+  syntax-highlighted code blocks, lazy-loaded Mermaid diagrams, wide-table scroll fade, and
+  broken-image fallbacks.
+- Three built-in themes (GitHub Light, Night Owl, Sepia Book) plus a JSON import/export
+  pipeline for custom themes — see [authoring-themes.md](authoring-themes.md).
+- Open files live via the File System Access API (re-readable, permission-gated) or as
+  one-off snapshots via `<input type=file>` / drag-drop, with a full
+  live/snapshot/prompt/denied state matrix.
+- In-memory editor pane with revert-to-disk and dirty tracking; edits never touch the
+  original file.
+- Scrollspy table of contents, reading-progress bar, and per-file scroll-position
+  restoration.
+- Responsive layout across desktop, tablet, and mobile breakpoints; print stylesheet; full
+  keyboard focus rings.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+See [architecture.md](architecture.md) for how these pieces fit together.
 
-## Expanding the Oxlint configuration
+## Development
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev        # start the dev server
+npm run test        # run the vitest suite
+npm run typecheck    # tsc --noEmit
+npm run lint         # eslint
+npm run build        # production build to dist/, under base path /md-reader/
+npm run preview      # serve the production build locally
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+`npm run build` also type-checks (`tsc -b`) before invoking Vite, so a broken build always
+fails fast on type errors rather than shipping them.
+
+### Theme contract
+
+`src/themes/contract.ts` is the single source of truth for every themeable token. Running
+
+```bash
+npm run generate:contract
+```
+
+regenerates [`contract.md`](contract.md) (human-readable token reference) and
+`public/theme-schema.json` (JSON Schema used to validate imported theme files) from that
+one array — add a token in `contract.ts` and both artifacts stay in sync.
+
+## Deployment
+
+Pushing to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): lint,
+typecheck, test, build, then publish `dist/` to GitHub Pages. `vite.config.ts` sets
+`base: '/md-reader/'` so every asset resolves correctly under the repo-scoped Pages URL —
+never hardcode absolute asset paths; use imports or `import.meta.env.BASE_URL` instead
+(see how `public/sample.md` is fetched in `LibraryContext`).

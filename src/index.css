@@ -1,0 +1,138 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+#root {
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border, #d1d9e0);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+@keyframes indet {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(500%);
+  }
+}
+
+/* Focus ring — shared spec: 2px var(--link), offset 2px (inset -2px in textarea).
+   :focus-visible alone (rather than an element allowlist) also covers elements
+   Chromium makes implicitly focusable without a tabindex attribute, such as
+   scrollable overflow containers (e.g. the wide-table wrapper). */
+:focus-visible {
+  outline: 2px solid var(--link, #0969da);
+  outline-offset: 2px;
+}
+textarea:focus-visible {
+  outline: 2px solid var(--link, #0969da);
+  outline-offset: -2px;
+}
+[data-copy]:focus-visible {
+  opacity: 1 !important;
+}
+
+@media print {
+  /* Force the light palette regardless of the active theme — printed pages
+     shouldn't burn ink on a dark background or use low-contrast dark-mode text. */
+  :root {
+    --bg: #ffffff !important;
+    --chrome: #f6f8fa !important;
+    --fg: #1f2328 !important;
+    --muted: #59636e !important;
+    --link: #0969da !important;
+    --border: #d1d9e0 !important;
+    --code-bg: #f6f8fa !important;
+    --quote-bg: rgba(9, 105, 218, 0.05) !important;
+  }
+  header,
+  nav,
+  aside,
+  [data-progress],
+  [data-subbar],
+  [data-editor],
+  input {
+    display: none !important;
+  }
+  #root,
+  #root > div {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  main {
+    display: flex !important;
+    overflow: visible !important;
+  }
+  article {
+    max-width: 100% !important;
+    padding: 0 !important;
+    font-size: 11pt !important;
+  }
+  article h1,
+  article h2,
+  article h3,
+  article h4 {
+    break-after: avoid-page;
+  }
+  article pre,
+  article blockquote,
+  article table,
+  article img {
+    break-inside: avoid;
+  }
+  [data-copy] {
+    display: none !important;
+  }
+  article a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.82em;
+    color: var(--muted);
+  }
+}

@@ -60,6 +60,8 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
 
 export const THEME_TOKEN_NAMES = TOKEN_CONTRACT.map((t) => t.name);
 
+export const FONT_STACK_TOKEN_NAMES = TOKEN_CONTRACT.filter((t) => t.type === 'font-stack').map((t) => t.name);
+
 // App-level metrics: user reading preferences, not part of a theme's palette.
 export interface MetricSpec {
   name: '--fs' | '--cw';

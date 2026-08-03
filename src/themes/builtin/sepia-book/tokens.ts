@@ -20,6 +20,6 @@ export const tokens: ThemeTokens = {
   '--syn-num': '#b25e0f',
   '--syn-type': '#7a5230',
   '--font-ui': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
-  '--font-body': "Charter,Georgia,'Iowan Old Style',serif",
+  '--font-body': "Charter,'Iowan Old Style','Noto Serif',Georgia,serif",
   '--font-mono': "ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace",
 };
