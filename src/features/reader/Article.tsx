@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { Children, cloneElement, isValidElement, useMemo, type ReactNode } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CodeBlock } from './CodeBlock';
@@ -21,7 +21,7 @@ const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
         letterSpacing: '-0.015em',
         margin: '1.8em 0 0.7em',
         paddingBottom: '0.35em',
-        borderBottom: '1px solid var(--border)',
+        borderBottom: '1px solid var(--heading-rule)',
       };
     case 3:
       return { fontSize: '1.18em', fontWeight: 650, margin: '1.5em 0 0.6em' };
@@ -41,6 +41,40 @@ const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
   }
 };
 
+// Two-tone angled chevron rendered before h2/h3. Inline SVG rather than a
+// ::before pseudo-element because markdown styling here is entirely inline
+// style objects — a pseudo-element would have to live in index.css, splitting
+// article styling across two mechanisms — and two tones need two fills.
+function HeadingChevron() {
+  return (
+    <svg
+      width="10"
+      height="14"
+      viewBox="0 0 10 14"
+      aria-hidden="true"
+      focusable="false"
+      // marginTop optically centers the glyph against the first line's cap height.
+      style={{ flex: 'none', marginRight: 10, marginTop: '0.28em' }}
+    >
+      <path d="M0 0 L5 7 L0 14 Z" fill="var(--heading-accent)" />
+      <path d="M5 0 L10 7 L5 14 Z" fill="var(--heading-accent-soft)" />
+    </svg>
+  );
+}
+
+// GitHub-style alerts: `> [!NOTE]` and friends. remark-gfm leaves them as a
+// plain blockquote whose first paragraph opens with the literal marker, so the
+// blockquote component detects and strips it.
+const CALLOUTS = {
+  NOTE: { accent: 'var(--link)', bg: 'var(--quote-bg)', label: 'Note', icon: 'ℹ' },
+  TIP: { accent: 'var(--ok)', bg: 'var(--ok-bg)', label: 'Tip', icon: '✓' },
+  IMPORTANT: { accent: 'var(--link)', bg: 'var(--quote-bg)', label: 'Important', icon: '★' },
+  WARNING: { accent: 'var(--warn)', bg: 'var(--warn-bg)', label: 'Warning', icon: '!' },
+  CAUTION: { accent: 'var(--danger)', bg: 'var(--danger-bg)', label: 'Caution', icon: '⚠' },
+} as const;
+
+const CALLOUT_RE = /^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*\r?\n?/i;
+
 function textOf(node: ReactNode): string {
   if (typeof node === 'string') return node;
   if (typeof node === 'number') return String(node);
@@ -49,6 +83,36 @@ function textOf(node: ReactNode): string {
     return textOf((node as { props: { children?: ReactNode } }).props.children);
   }
   return '';
+}
+
+// Removes the leading `[!NOTE]` marker from a callout's rendered children.
+// Returns null when the marker is not a plain leading string on the first
+// paragraph — the caller then falls back to a normal blockquote instead of
+// rewriting an element tree it doesn't understand.
+function stripCalloutMarker(children: ReactNode): ReactNode | null {
+  const nodes = Children.toArray(children);
+  // react-markdown pads block children with literal "\n" strings, so the first
+  // paragraph is not necessarily at index 0.
+  const firstIdx = nodes.findIndex((n) => typeof n !== 'string' || n.trim() !== '');
+  const first = nodes[firstIdx];
+  if (!isValidElement<{ children?: ReactNode }>(first)) return null;
+
+  const inner = Children.toArray(first.props.children);
+  const lead = inner[0];
+  if (typeof lead !== 'string' || !CALLOUT_RE.test(lead)) return null;
+
+  const rest = lead.replace(CALLOUT_RE, '');
+  const newInner = rest ? [rest, ...inner.slice(1)] : inner.slice(1);
+
+  // Marker was the whole paragraph (`> [!NOTE]` on its own line) — drop the
+  // now-empty <p> so the callout body starts at the real content.
+  const replacement =
+    newInner.length === 0 ? null : cloneElement(first, undefined, ...newInner);
+
+  const out = [...nodes];
+  if (replacement === null) out.splice(firstIdx, 1);
+  else out[firstIdx] = replacement;
+  return out;
 }
 
 function makeHeadingFactory() {
@@ -74,8 +138,16 @@ function makeHeadingFactory() {
         used[id] = 0;
       }
       const Tag = `h${level}` as const;
+      const showChevron = level === 2 || level === 3;
       return (
-        <Tag id={id} data-toc={id} style={headingStyle(level)}>
+        <Tag
+          id={id}
+          data-toc={id}
+          // flex-start (not center) so the chevron stays on the first line of a
+          // heading that wraps to two lines instead of floating mid-block.
+          style={{ ...headingStyle(level), ...(showChevron ? { display: 'flex', alignItems: 'flex-start' } : {}) }}
+        >
+          {showChevron && <HeadingChevron />}
           {children}
         </Tag>
       );
@@ -97,19 +169,63 @@ function buildComponents(): { components: Components; resetHeadingIds: () => voi
     strong: ({ children }) => <strong style={{ fontWeight: 650 }}>{children}</strong>,
     del: ({ children }) => <del style={{ opacity: 0.65 }}>{children}</del>,
     hr: () => <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '2.2em 0' }} />,
-    blockquote: ({ children }) => (
-      <blockquote
-        style={{
-          margin: '1.4em 0',
-          padding: '0.8em 1.2em',
-          borderLeft: '3px solid var(--link)',
-          background: 'var(--quote-bg)',
-          borderRadius: '0 8px 8px 0',
-        }}
-      >
-        {children}
-      </blockquote>
-    ),
+    blockquote: ({ children }) => {
+      const match = CALLOUT_RE.exec(textOf(children));
+      const callout = match && CALLOUTS[match[1].toUpperCase() as keyof typeof CALLOUTS];
+      const body = callout ? stripCalloutMarker(children) : children;
+
+      // stripCalloutMarker returns null when the marker isn't a plain leading
+      // string it can safely remove — fall back to a normal blockquote rather
+      // than rendering the raw "[!NOTE]" text or mangling the element tree.
+      if (!callout || body === null) {
+        return (
+          <blockquote
+            style={{
+              margin: '1.4em 0',
+              padding: '0.9em 1.3em',
+              borderLeft: '4px solid var(--quote-accent)',
+              background: 'var(--quote-bg)',
+              borderRadius: '0 8px 8px 0',
+              color: 'var(--quote-fg)',
+            }}
+          >
+            {children}
+          </blockquote>
+        );
+      }
+
+      return (
+        <blockquote
+          data-callout={match[1].toUpperCase()}
+          style={{
+            margin: '1.4em 0',
+            padding: '0.9em 1.3em',
+            borderLeft: `4px solid ${callout.accent}`,
+            background: callout.bg,
+            borderRadius: '0 8px 8px 0',
+            color: 'var(--quote-fg)',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+              marginBottom: '0.5em',
+              color: callout.accent,
+              fontSize: '0.78em',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '.07em',
+            }}
+          >
+            <span aria-hidden="true">{callout.icon}</span>
+            {callout.label}
+          </div>
+          {body}
+        </blockquote>
+      );
+    },
     ul: ({ children, className }) => {
       const isTask = className?.includes('contains-task-list');
       return (
@@ -161,7 +277,7 @@ function buildComponents(): { components: Components; resetHeadingIds: () => voi
           style={{
             fontFamily: 'var(--font-mono)',
             fontSize: '0.85em',
-            background: 'var(--code-bg)',
+            background: 'var(--badge-bg)',
             border: '1px solid var(--border)',
             borderRadius: 5,
             padding: '0.15em 0.4em',

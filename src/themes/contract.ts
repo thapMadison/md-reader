@@ -29,9 +29,23 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   { name: '--muted', type: 'color', description: 'Secondary text, metadata, placeholders', default: '#59636e' },
   { name: '--link', type: 'color', description: 'Links, active states, primary accent', default: '#0969da' },
 
+  // Block accents — blockquote, code block chrome, heading accents
+  { name: '--quote-accent', type: 'color', description: 'Blockquote left accent bar', default: '#0969da' },
+  { name: '--quote-fg', type: 'color', description: 'Blockquote body text', default: '#1f2328' },
+  { name: '--code-header-bg', type: 'color', description: 'Code block header strip background', default: '#f6f8fa' },
+  { name: '--code-header-fg', type: 'color', description: 'Code block language label and header text', default: '#59636e' },
+  { name: '--heading-accent', type: 'color', description: 'Heading chevron accent, leading tone', default: '#0969da' },
+  { name: '--heading-accent-soft', type: 'color', description: 'Heading chevron accent, trailing tone', default: 'rgba(9,105,218,0.35)' },
+  { name: '--heading-rule', type: 'color', description: 'Underline rule beneath level-2 headings', default: '#d1d9e0' },
+  { name: '--badge-bg', type: 'color', description: 'Inline code and chip background', default: '#f6f8fa' },
+
   // Feedback
   { name: '--danger', type: 'color', description: 'Errors and destructive hover states', default: '#cf222e' },
   { name: '--danger-bg', type: 'color', description: 'Error banner / badge background wash', default: 'rgba(207,34,46,0.06)' },
+  { name: '--warn', type: 'color', description: 'Warnings and caution callout accent', default: '#9a6700' },
+  { name: '--warn-bg', type: 'color', description: 'Warning callout background wash', default: 'rgba(154,103,0,0.06)' },
+  { name: '--ok', type: 'color', description: 'Success and tip callout accent', default: '#1a7f37' },
+  { name: '--ok-bg', type: 'color', description: 'Success callout background wash', default: 'rgba(26,127,55,0.06)' },
 
   // Syntax highlighting
   { name: '--syn-kw', type: 'color', description: 'Syntax: keywords', default: '#cf222e' },

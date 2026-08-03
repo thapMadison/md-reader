@@ -16,6 +16,13 @@ describe('mergeThemeTokens', () => {
     expect(merged['--bg']).toBe('#011627');
   });
 
+  it('resolves the block-accent tokens from the dark base', () => {
+    const merged = mergeThemeTokens('dark', {});
+    expect(merged['--quote-accent']).toBe('#82aaff');
+    expect(merged['--code-header-bg']).toBe('#0b2942');
+    expect(merged['--heading-rule']).toBe('#1d3b53');
+  });
+
   it('applies user overrides on top of the theme', () => {
     const merged = mergeThemeTokens('light', { '--link': '#ff0000' }, { '--link': '#00ff00' });
     expect(merged['--link']).toBe('#00ff00');

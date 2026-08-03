@@ -23,8 +23,20 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | `--fg` | Primary text color | `#1f2328` |
 | `--muted` | Secondary text, metadata, placeholders | `#59636e` |
 | `--link` | Links, active states, primary accent | `#0969da` |
+| `--quote-accent` | Blockquote left accent bar | `#0969da` |
+| `--quote-fg` | Blockquote body text | `#1f2328` |
+| `--code-header-bg` | Code block header strip background | `#f6f8fa` |
+| `--code-header-fg` | Code block language label and header text | `#59636e` |
+| `--heading-accent` | Heading chevron accent, leading tone | `#0969da` |
+| `--heading-accent-soft` | Heading chevron accent, trailing tone | `rgba(9,105,218,0.35)` |
+| `--heading-rule` | Underline rule beneath level-2 headings | `#d1d9e0` |
+| `--badge-bg` | Inline code and chip background | `#f6f8fa` |
 | `--danger` | Errors and destructive hover states | `#cf222e` |
 | `--danger-bg` | Error banner / badge background wash | `rgba(207,34,46,0.06)` |
+| `--warn` | Warnings and caution callout accent | `#9a6700` |
+| `--warn-bg` | Warning callout background wash | `rgba(154,103,0,0.06)` |
+| `--ok` | Success and tip callout accent | `#1a7f37` |
+| `--ok-bg` | Success callout background wash | `rgba(26,127,55,0.06)` |
 | `--syn-kw` | Syntax: keywords | `#cf222e` |
 | `--syn-str` | Syntax: strings | `#0a3069` |
 | `--syn-fn` | Syntax: function names | `#8250df` |

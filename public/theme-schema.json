@@ -106,6 +106,54 @@
           "default": "#0969da",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
+        "--quote-accent": {
+          "type": "string",
+          "description": "Blockquote left accent bar",
+          "default": "#0969da",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--quote-fg": {
+          "type": "string",
+          "description": "Blockquote body text",
+          "default": "#1f2328",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--code-header-bg": {
+          "type": "string",
+          "description": "Code block header strip background",
+          "default": "#f6f8fa",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--code-header-fg": {
+          "type": "string",
+          "description": "Code block language label and header text",
+          "default": "#59636e",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--heading-accent": {
+          "type": "string",
+          "description": "Heading chevron accent, leading tone",
+          "default": "#0969da",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--heading-accent-soft": {
+          "type": "string",
+          "description": "Heading chevron accent, trailing tone",
+          "default": "rgba(9,105,218,0.35)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--heading-rule": {
+          "type": "string",
+          "description": "Underline rule beneath level-2 headings",
+          "default": "#d1d9e0",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--badge-bg": {
+          "type": "string",
+          "description": "Inline code and chip background",
+          "default": "#f6f8fa",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
         "--danger": {
           "type": "string",
           "description": "Errors and destructive hover states",
@@ -116,6 +164,30 @@
           "type": "string",
           "description": "Error banner / badge background wash",
           "default": "rgba(207,34,46,0.06)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--warn": {
+          "type": "string",
+          "description": "Warnings and caution callout accent",
+          "default": "#9a6700",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--warn-bg": {
+          "type": "string",
+          "description": "Warning callout background wash",
+          "default": "rgba(154,103,0,0.06)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--ok": {
+          "type": "string",
+          "description": "Success and tip callout accent",
+          "default": "#1a7f37",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--ok-bg": {
+          "type": "string",
+          "description": "Success callout background wash",
+          "default": "rgba(26,127,55,0.06)",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
         "--syn-kw": {

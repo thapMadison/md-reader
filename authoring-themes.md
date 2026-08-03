@@ -43,6 +43,16 @@ A theme can pair a dark `--chrome` with light `--chrome-*` values (or vice versa
 reading canvas). Omitting the `--chrome-*` set falls back to the base palette, which by
 default matches the canvas tokens.
 
+Blockquotes, code blocks, headings, and callouts have their own accent tokens, so a theme can
+restyle them without dragging `--link` along. `--quote-accent` draws the blockquote's left bar
+and `--quote-fg` its body text; `--code-header-bg` and `--code-header-fg` style the strip above
+a code block that carries the language label and copy button; `--heading-accent` and
+`--heading-accent-soft` are the two tones of the chevron before level-2 and level-3 headings,
+and `--heading-rule` is the hairline under a level-2 heading. GitHub-style callouts
+(`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`) render as accented
+cards drawing on `--link`, `--ok`/`--ok-bg`, `--warn`/`--warn-bg`, and `--danger`/`--danger-bg`.
+`src/themes/builtin/azure-corporate/tokens.ts` is again the worked example.
+
 ## Validation rules
 
 An imported file is rejected (with inline error messages in the popover, not a silent

@@ -49,6 +49,31 @@ describe('validateThemeFile', () => {
     expect(result.tokens['--bg']).toBeUndefined();
   });
 
+  it('accepts the block-accent and status tokens', () => {
+    const result = validateThemeFile({
+      name: 'Accents',
+      tokens: {
+        '--quote-accent': '#29a3e0',
+        '--heading-accent-soft': 'rgba(41,163,224,0.32)',
+        '--code-header-bg': '#e4ecf4',
+        '--warn': '#c9860d',
+        '--ok': '#2f8f63',
+      },
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.tokens['--quote-accent']).toBe('#29a3e0');
+    expect(result.tokens['--heading-accent-soft']).toBe('rgba(41,163,224,0.32)');
+  });
+
+  it('rejects a hostile CSS-injection value on a block-accent token', () => {
+    const result = validateThemeFile({
+      name: 'Hostile',
+      tokens: { '--quote-accent': 'red;} body{display:none}' },
+    });
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.tokens['--quote-accent']).toBeUndefined();
+  });
+
   it('reports missing name', () => {
     const result = validateThemeFile({ tokens: { '--bg': '#fff' } });
     expect(result.errors).toContain('name: required, got nothing');

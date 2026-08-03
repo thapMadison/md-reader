@@ -101,6 +101,18 @@ nav :focus-visible,
     --border: #d1d9e0 !important;
     --code-bg: #f6f8fa !important;
     --quote-bg: rgba(9, 105, 218, 0.05) !important;
+    --quote-accent: #0969da !important;
+    --quote-fg: #1f2328 !important;
+    --code-header-bg: #f6f8fa !important;
+    --code-header-fg: #59636e !important;
+    --heading-accent: #0969da !important;
+    --heading-accent-soft: rgba(9, 105, 218, 0.35) !important;
+    --heading-rule: #d1d9e0 !important;
+    --badge-bg: #f6f8fa !important;
+    --warn: #9a6700 !important;
+    --warn-bg: rgba(154, 103, 0, 0.06) !important;
+    --ok: #1a7f37 !important;
+    --ok-bg: rgba(26, 127, 55, 0.06) !important;
     --chrome-fg: #1f2328 !important;
     --chrome-muted: #59636e !important;
     --chrome-border: #d1d9e0 !important;
