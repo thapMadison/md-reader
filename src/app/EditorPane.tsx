@@ -39,15 +39,16 @@ export function EditorPane({ mode, source, editorWidth, resizing, onChange, onRe
           display: 'flex',
           flexDirection: 'column',
           background: 'var(--chrome)',
+          color: 'var(--chrome-fg)',
           transition: 'background .25s',
         }}
       >
-        <div style={{ flex: '0 0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.07em' }}>
+        <div style={{ flex: '0 0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px', borderBottom: '1px solid var(--chrome-border)' }}>
+          <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--chrome-muted)', textTransform: 'uppercase', letterSpacing: '.07em' }}>
             Markdown source
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 10.5, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{source.length.toLocaleString()} chars</span>
+            <span style={{ fontSize: 10.5, color: 'var(--chrome-muted)', fontFamily: 'var(--font-mono)' }}>{source.length.toLocaleString()} chars</span>
             <button
               onClick={onRevert}
               style={{
@@ -55,10 +56,10 @@ export function EditorPane({ mode, source, editorWidth, resizing, onChange, onRe
                 padding: '0 8px',
                 fontSize: 10.5,
                 fontFamily: 'var(--font-ui)',
-                border: '1px solid var(--border)',
+                border: '1px solid var(--chrome-border)',
                 borderRadius: 5,
-                background: 'var(--bg)',
-                color: 'var(--muted)',
+                background: 'transparent',
+                color: 'var(--chrome-muted)',
                 cursor: 'pointer',
               }}
             >
@@ -81,7 +82,7 @@ export function EditorPane({ mode, source, editorWidth, resizing, onChange, onRe
             border: 'none',
             outline: 'none',
             background: 'transparent',
-            color: 'var(--fg)',
+            color: 'var(--chrome-fg)',
             fontFamily: 'var(--font-mono)',
             fontSize: 13,
             lineHeight: 1.75,
@@ -96,7 +97,7 @@ export function EditorPane({ mode, source, editorWidth, resizing, onChange, onRe
             e.preventDefault();
             onStartResize(e.clientX, editorWidth);
           }}
-          style={{ flex: '0 0 5px', width: 5, cursor: 'col-resize', background: resizing ? 'var(--link)' : 'var(--border)' }}
+          style={{ flex: '0 0 5px', width: 5, cursor: 'col-resize', background: resizing ? 'var(--link)' : 'var(--chrome-border)' }}
         />
       )}
     </>

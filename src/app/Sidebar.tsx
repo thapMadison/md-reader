@@ -68,7 +68,8 @@ export function Sidebar({
           boxShadow: isMobile && drawerOpen ? '0 0 32px rgba(31,35,40,0.20)' : 'none',
           transition: 'margin-left .22s ease, transform .22s ease, background .25s',
           background: 'var(--chrome)',
-          borderRight: '1px solid var(--border)',
+          color: 'var(--chrome-fg)',
+          borderRight: '1px solid var(--chrome-border)',
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
@@ -80,10 +81,10 @@ export function Sidebar({
             style={{
               width: '100%',
               height: 32,
-              border: '1px solid var(--border)',
+              border: '1px solid var(--chrome-border)',
               borderRadius: 7,
-              background: 'var(--bg)',
-              color: 'var(--fg)',
+              background: 'transparent',
+              color: 'var(--chrome-fg)',
               fontSize: 12.5,
               fontWeight: 600,
               fontFamily: 'var(--font-ui)',
@@ -98,7 +99,7 @@ export function Sidebar({
             Open file
           </button>
         </div>
-        <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.07em', padding: '8px 16px 4px' }}>
+        <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--chrome-muted)', textTransform: 'uppercase', letterSpacing: '.07em', padding: '8px 16px 4px' }}>
           Files
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
@@ -120,12 +121,12 @@ export function Sidebar({
                   padding: '6px 8px',
                   borderRadius: 6,
                   cursor: 'pointer',
-                  background: active ? 'var(--hl)' : 'transparent',
+                  background: active ? 'var(--chrome-hl)' : 'transparent',
                   marginBottom: 1,
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: dashed ? 'var(--muted)' : 'var(--link)', display: 'flex' }} title={
+                  <span style={{ color: dashed ? 'var(--chrome-muted)' : 'var(--link)', display: 'flex' }} title={
                     snapshot ? 'Snapshot — not tracked on disk' : denied ? 'Access denied — cached copy' : 'Live — re-read from disk'
                   }>
                     <FileIcon dashed={dashed} />
@@ -140,7 +141,7 @@ export function Sidebar({
                       whiteSpace: 'nowrap',
                       fontSize: 12.5,
                       fontWeight: active ? 600 : 400,
-                      color: active ? 'var(--fg)' : 'var(--muted)',
+                      color: active ? 'var(--chrome-fg)' : 'var(--chrome-muted)',
                     }}
                   >
                     {f.name}
@@ -160,7 +161,7 @@ export function Sidebar({
                       alignItems: 'center',
                       justifyContent: 'center',
                       borderRadius: 4,
-                      color: 'var(--muted)',
+                      color: 'var(--chrome-muted)',
                       opacity: 0.4,
                       fontSize: 13,
                       lineHeight: 1,
@@ -176,8 +177,8 @@ export function Sidebar({
                         style={{
                           fontSize: 10,
                           fontWeight: 600,
-                          color: denied ? 'var(--danger)' : 'var(--muted)',
-                          border: `1px solid ${denied ? 'var(--danger)' : 'var(--border)'}`,
+                          color: denied ? 'var(--danger)' : 'var(--chrome-muted)',
+                          border: `1px solid ${denied ? 'var(--danger)' : 'var(--chrome-border)'}`,
                           background: denied ? 'var(--danger-bg)' : 'transparent',
                           borderRadius: 99,
                           padding: '1px 6px',
@@ -192,7 +193,7 @@ export function Sidebar({
                           e.stopPropagation();
                           onGrantAccess(f.name);
                         }}
-                        style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--link)', cursor: 'pointer' }}
+                        style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--chrome-fg)', cursor: 'pointer' }}
                       >
                         Grant access
                       </span>
@@ -203,20 +204,20 @@ export function Sidebar({
             );
           })}
         </div>
-        <div style={{ borderTop: '1px solid var(--border)', padding: '10px 16px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ borderTop: '1px solid var(--chrome-border)', padding: '10px 16px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <span style={{ fontSize: 11, color: over || warn ? 'var(--danger)' : 'var(--muted)', fontWeight: over || warn ? 600 : 400 }}>
+              <span style={{ fontSize: 11, color: over || warn ? 'var(--danger)' : 'var(--chrome-muted)', fontWeight: over || warn ? 600 : 400 }}>
                 {over ? `${usedMb} MB of ${quotaMb} MB — over quota` : `${usedMb} MB of ${quotaMb} MB used`}
               </span>
               <span
                 onClick={onClearAll}
-                style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--muted)', cursor: 'pointer', borderRadius: 5, padding: '1px 5px' }}
+                style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--chrome-muted)', cursor: 'pointer', borderRadius: 5, padding: '1px 5px' }}
               >
                 Clear all
               </span>
             </div>
-            <div style={{ height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
+            <div style={{ height: 3, borderRadius: 2, background: 'var(--chrome-border)', overflow: 'hidden' }}>
               <div
                 style={{
                   height: 3,
@@ -245,7 +246,7 @@ export function Sidebar({
               </div>
             )}
           </div>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 7 }}>
+          <div style={{ fontSize: 11.5, color: 'var(--chrome-muted)', display: 'flex', alignItems: 'center', gap: 7 }}>
             <DropHintIcon />
             Drop .md files anywhere
           </div>

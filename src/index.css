@@ -79,6 +79,16 @@ textarea:focus-visible {
   opacity: 1 !important;
 }
 
+/* Chrome surfaces may use a dark bar on a light canvas (or vice versa), so the
+   canvas-tuned --link focus ring can lose contrast there — re-root it to the
+   chrome's own foreground token. */
+header :focus-visible,
+nav :focus-visible,
+[data-subbar] :focus-visible,
+[data-editor] :focus-visible {
+  outline-color: var(--chrome-fg, var(--link, #0969da));
+}
+
 @media print {
   /* Force the light palette regardless of the active theme — printed pages
      shouldn't burn ink on a dark background or use low-contrast dark-mode text. */
@@ -91,6 +101,10 @@ textarea:focus-visible {
     --border: #d1d9e0 !important;
     --code-bg: #f6f8fa !important;
     --quote-bg: rgba(9, 105, 218, 0.05) !important;
+    --chrome-fg: #1f2328 !important;
+    --chrome-muted: #59636e !important;
+    --chrome-border: #d1d9e0 !important;
+    --chrome-hl: rgba(9, 105, 218, 0.08) !important;
   }
   header,
   nav,

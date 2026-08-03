@@ -12,8 +12,8 @@ Live at **https://thapmadison.github.io/md-reader/**.
 - GitHub-flavored markdown rendering (tables, task lists, strikethrough, footnotes) with
   syntax-highlighted code blocks, lazy-loaded Mermaid diagrams, wide-table scroll fade, and
   broken-image fallbacks.
-- Three built-in themes (GitHub Light, Night Owl, Sepia Book) plus a JSON import/export
-  pipeline for custom themes — see [authoring-themes.md](authoring-themes.md).
+- Four built-in themes (GitHub Light, Night Owl, Sepia Book, Azure Corporate) plus a JSON
+  import/export pipeline for custom themes — see [authoring-themes.md](authoring-themes.md).
 - Open files live via the File System Access API (re-readable, permission-gated) or as
   one-off snapshots via `<input type=file>` / drag-drop, with a full
   live/snapshot/prompt/denied state matrix.

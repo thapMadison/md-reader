@@ -19,6 +19,10 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   { name: '--quote-bg', type: 'color', description: 'Blockquote background wash', default: 'rgba(9,105,218,0.05)' },
   { name: '--hl', type: 'color', description: 'Hover / active row highlight', default: 'rgba(9,105,218,0.08)' },
   { name: '--edge-shadow', type: 'color', description: 'Wide-table horizontal-scroll edge fade', default: 'rgba(31,35,40,0.12)' },
+  { name: '--chrome-fg', type: 'color', description: 'Primary text and icons on chrome surfaces', default: '#1f2328' },
+  { name: '--chrome-muted', type: 'color', description: 'Secondary text and metadata on chrome surfaces', default: '#59636e' },
+  { name: '--chrome-border', type: 'color', description: 'Hairlines and control outlines on chrome surfaces', default: '#d1d9e0' },
+  { name: '--chrome-hl', type: 'color', description: 'Hover / active row highlight on chrome surfaces', default: 'rgba(9,105,218,0.08)' },
 
   // Text
   { name: '--fg', type: 'color', description: 'Primary text color', default: '#1f2328' },

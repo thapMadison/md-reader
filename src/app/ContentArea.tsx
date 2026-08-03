@@ -154,7 +154,7 @@ export function ContentArea({
                 height: 96,
                 border: '1.5px solid var(--border)',
                 borderRadius: 8,
-                background: 'var(--chrome)',
+                background: 'var(--hl)',
                 transform: 'rotate(6deg)',
               }}
             />
@@ -192,7 +192,7 @@ export function ContentArea({
               padding: '0 18px',
               border: '1px solid var(--border)',
               borderRadius: 8,
-              background: 'var(--chrome)',
+              background: 'transparent',
               color: 'var(--fg)',
               fontSize: 13,
               fontWeight: 600,

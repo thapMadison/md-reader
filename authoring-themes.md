@@ -35,6 +35,14 @@ npm run generate:contract
 That command also regenerates `public/theme-schema.json`, the JSON Schema used to validate
 imports, so the two artifacts can never drift apart.
 
+Chrome (toolbar, sidebar, sub-bar, editor pane) and the reading canvas are independent
+surfaces: `--chrome` sets the chrome background, while `--chrome-fg`, `--chrome-muted`,
+`--chrome-border`, and `--chrome-hl` color the text, borders, and hover states on top of it.
+A theme can pair a dark `--chrome` with light `--chrome-*` values (or vice versa) — see
+`src/themes/builtin/azure-corporate/tokens.ts` for a worked example (dark navy chrome, light
+reading canvas). Omitting the `--chrome-*` set falls back to the base palette, which by
+default matches the canvas tokens.
+
 ## Validation rules
 
 An imported file is rejected (with inline error messages in the popover, not a silent

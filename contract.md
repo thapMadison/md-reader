@@ -16,6 +16,10 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | `--quote-bg` | Blockquote background wash | `rgba(9,105,218,0.05)` |
 | `--hl` | Hover / active row highlight | `rgba(9,105,218,0.08)` |
 | `--edge-shadow` | Wide-table horizontal-scroll edge fade | `rgba(31,35,40,0.12)` |
+| `--chrome-fg` | Primary text and icons on chrome surfaces | `#1f2328` |
+| `--chrome-muted` | Secondary text and metadata on chrome surfaces | `#59636e` |
+| `--chrome-border` | Hairlines and control outlines on chrome surfaces | `#d1d9e0` |
+| `--chrome-hl` | Hover / active row highlight on chrome surfaces | `rgba(9,105,218,0.08)` |
 | `--fg` | Primary text color | `#1f2328` |
 | `--muted` | Secondary text, metadata, placeholders | `#59636e` |
 | `--link` | Links, active states, primary accent | `#0969da` |
