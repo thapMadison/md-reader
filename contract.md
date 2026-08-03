@@ -31,6 +31,10 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | `--heading-accent-soft` | Heading chevron accent, trailing tone | `rgba(9,105,218,0.35)` |
 | `--heading-rule` | Underline rule beneath level-2 headings | `#d1d9e0` |
 | `--badge-bg` | Inline code and chip background | `#f6f8fa` |
+| `--table-header-bg` | Table header row background | `#f6f8fa` |
+| `--table-row-alt` | Alternating (even) table row background | `rgba(9,105,218,0.03)` |
+| `--math-fg` | Math formula text | `#1f2328` |
+| `--math-bg` | Display-math ($$…$$) block background | `rgba(9,105,218,0.04)` |
 | `--danger` | Errors and destructive hover states | `#cf222e` |
 | `--danger-bg` | Error banner / badge background wash | `rgba(207,34,46,0.06)` |
 | `--warn` | Warnings and caution callout accent | `#9a6700` |
@@ -42,7 +46,13 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | `--syn-fn` | Syntax: function names | `#8250df` |
 | `--syn-cm` | Syntax: comments | `#6e7781` |
 | `--syn-num` | Syntax: numbers | `#0550ae` |
-| `--syn-type` | Syntax: types | `#953800` |
+| `--syn-type` | Syntax: types and class names | `#953800` |
+| `--syn-op` | Syntax: operators and punctuation | `#0550ae` |
+| `--syn-var` | Syntax: variables and template substitutions | `#953800` |
+| `--syn-attr` | Syntax: attributes, object keys, CSS selectors | `#0550ae` |
+| `--syn-tag` | Syntax: HTML/XML tags and CSS element selectors | `#116329` |
+| `--syn-meta` | Syntax: decorators, preprocessor, shebang | `#6e7781` |
+| `--syn-lit` | Syntax: literals (true/false/null) and symbols | `#0550ae` |
 
 ## Fonts
 
@@ -57,4 +67,5 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | Token | Description | Default | Range |
 | --- | --- | --- | --- |
 | `--fs` | Article base font size | `17px` | 15–21px |
-| `--cw` | Article max content width | `960px` | 620–960px |
+| `--cw` | Article max content width | `960px` | 620–1280px |
+| `--lh` | Article line height | `1.7` | 1.4–2.1 |

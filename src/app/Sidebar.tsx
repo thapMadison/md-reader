@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { DropHintIcon, FileIcon, PlusIcon } from '@/components/ui/icons';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { LayoutMode } from '@/hooks/useBreakpoint';
 import type { LibraryFile } from '@/features/library/types';
 
@@ -23,6 +25,29 @@ function formatMb(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1);
 }
 
+// Names the specific stakes rather than a generic "are you sure". The two that
+// matter are unsaved edits (gone for good — edits live only in memory and are
+// never written back to disk) and snapshots (no handle to reopen from, unlike
+// live files, which can be reopened from disk afterwards).
+function buildClearAllMessage(files: LibraryFile[], isDirty: (name: string) => boolean): string {
+  const count = files.length;
+  const plural = count === 1 ? 'file' : 'files';
+  const snapshots = files.filter((f) => f.kind === 'snapshot').length;
+  const dirty = files.filter((f) => isDirty(f.name)).length;
+
+  const parts = [`Removes all ${count} ${plural} from the library and frees the stored space.`];
+  if (dirty > 0) {
+    parts.push(`${dirty} ${dirty === 1 ? 'file has' : 'files have'} unsaved edits that will be lost.`);
+  }
+  if (snapshots > 0) {
+    parts.push(
+      `${snapshots} ${snapshots === 1 ? 'is a snapshot' : 'are snapshots'} that cannot be reopened from disk.`,
+    );
+  }
+  parts.push('This cannot be undone.');
+  return parts.join(' ');
+}
+
 export function Sidebar({
   mode,
   sidebarOpen,
@@ -39,6 +64,7 @@ export function Sidebar({
   storageQuotaBytes,
   onClearAll,
 }: SidebarProps) {
+  const [confirmClear, setConfirmClear] = useState(false);
   const isMobile = mode === 'mobile';
   const pct = storageQuotaBytes > 0 ? Math.min(100, Math.round((storageUsedBytes / storageQuotaBytes) * 100)) : 0;
   const over = storageUsedBytes > storageQuotaBytes;
@@ -210,12 +236,25 @@ export function Sidebar({
               <span style={{ fontSize: 11, color: over || warn ? 'var(--danger)' : 'var(--chrome-muted)', fontWeight: over || warn ? 600 : 400 }}>
                 {over ? `${usedMb} MB of ${quotaMb} MB — over quota` : `${usedMb} MB of ${quotaMb} MB used`}
               </span>
-              <span
-                onClick={onClearAll}
-                style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--chrome-muted)', cursor: 'pointer', borderRadius: 5, padding: '1px 5px' }}
+              <button
+                type="button"
+                onClick={() => setConfirmClear(true)}
+                disabled={files.length === 0}
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  fontFamily: 'inherit',
+                  color: 'var(--chrome-muted)',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: files.length === 0 ? 'default' : 'pointer',
+                  opacity: files.length === 0 ? 0.45 : 1,
+                  borderRadius: 5,
+                  padding: '1px 5px',
+                }}
               >
                 Clear all
-              </span>
+              </button>
             </div>
             <div style={{ height: 3, borderRadius: 2, background: 'var(--chrome-border)', overflow: 'hidden' }}>
               <div
@@ -252,6 +291,19 @@ export function Sidebar({
           </div>
         </div>
       </nav>
+      {confirmClear && (
+        <ConfirmDialog
+          title="Clear all files?"
+          message={buildClearAllMessage(files, isDirty)}
+          confirmLabel="Clear all"
+          danger
+          onConfirm={() => {
+            setConfirmClear(false);
+            onClearAll();
+          }}
+          onCancel={() => setConfirmClear(false)}
+        />
+      )}
     </>
   );
 }

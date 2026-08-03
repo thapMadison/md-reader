@@ -26,9 +26,11 @@ interface ThemeContextValue {
   activeTheme: Theme;
   fontSize: number;
   contentWidth: number;
+  lineHeight: number;
   setThemeId: (id: string) => void;
   setFontSize: (px: number) => void;
   setContentWidth: (px: number) => void;
+  setLineHeight: (ratio: number) => void;
   importErrors: string[];
   importTheme: (raw: unknown) => void;
   reportImportError: (message: string) => void;
@@ -41,6 +43,9 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const FONT_SPEC = METRIC_CONTRACT.find((m) => m.name === '--fs')!;
 const WIDTH_SPEC = METRIC_CONTRACT.find((m) => m.name === '--cw')!;
+const LINE_HEIGHT_SPEC = METRIC_CONTRACT.find((m) => m.name === '--lh')!;
+
+const clampTo = (spec: typeof FONT_SPEC, value: number) => Math.min(spec.max, Math.max(spec.min, value));
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const storage = useStorage();
@@ -48,6 +53,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [activeThemeId, setActiveThemeId] = useState<string>(DEFAULT_THEME_ID);
   const [fontSize, setFontSizeState] = useState<number>(FONT_SPEC.default);
   const [contentWidth, setContentWidthState] = useState<number>(WIDTH_SPEC.default);
+  const [lineHeight, setLineHeightState] = useState<number>(LINE_HEIGHT_SPEC.default);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const hydrated = useRef(false);
 
@@ -61,6 +67,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       if (prefs.themeId) setActiveThemeId(prefs.themeId);
       if (prefs.fontSize) setFontSizeState(prefs.fontSize);
       if (prefs.contentWidth) setContentWidthState(prefs.contentWidth);
+      if (prefs.lineHeight) setLineHeightState(prefs.lineHeight);
       hydrated.current = true;
     });
     return () => {
@@ -85,9 +92,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     for (const name of THEME_TOKEN_NAMES) {
       root.style.setProperty(name, resolvedTokens[name]);
     }
-    root.style.setProperty('--fs', `${fontSize}px`);
-    root.style.setProperty('--cw', `${contentWidth}px`);
-  }, [resolvedTokens, fontSize, contentWidth]);
+    // Suffix comes from each metric's own spec rather than a hardcoded 'px' —
+    // --lh is unitless, and emitting "1.7px" would be an invalid line-height
+    // that silently falls back to the browser default.
+    root.style.setProperty('--fs', `${fontSize}${FONT_SPEC.unit}`);
+    root.style.setProperty('--cw', `${contentWidth}${WIDTH_SPEC.unit}`);
+    root.style.setProperty('--lh', `${lineHeight}${LINE_HEIGHT_SPEC.unit}`);
+  }, [resolvedTokens, fontSize, contentWidth, lineHeight]);
 
   useEffect(() => {
     if (!hydrated.current) return;
@@ -96,8 +107,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated.current) return;
-    storage.setPreferences({ fontSize, contentWidth }).catch(() => {});
-  }, [fontSize, contentWidth, storage]);
+    storage.setPreferences({ fontSize, contentWidth, lineHeight }).catch(() => {});
+  }, [fontSize, contentWidth, lineHeight, storage]);
 
   const persistCustomThemes = useCallback(
     (next: CustomTheme[]) => {
@@ -116,11 +127,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setFontSize = useCallback((px: number) => {
-    setFontSizeState(Math.min(FONT_SPEC.max, Math.max(FONT_SPEC.min, px)));
+    setFontSizeState(clampTo(FONT_SPEC, px));
   }, []);
 
   const setContentWidth = useCallback((px: number) => {
-    setContentWidthState(Math.min(WIDTH_SPEC.max, Math.max(WIDTH_SPEC.min, px)));
+    setContentWidthState(clampTo(WIDTH_SPEC, px));
+  }, []);
+
+  const setLineHeight = useCallback((ratio: number) => {
+    setLineHeightState(clampTo(LINE_HEIGHT_SPEC, ratio));
   }, []);
 
   const clearImportErrors = useCallback(() => setImportErrors([]), []);
@@ -182,9 +197,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     activeTheme,
     fontSize,
     contentWidth,
+    lineHeight,
     setThemeId,
     setFontSize,
     setContentWidth,
+    setLineHeight,
     importErrors,
     importTheme,
     reportImportError,

@@ -89,6 +89,125 @@ nav :focus-visible,
   outline-color: var(--chrome-fg, var(--link, #0969da));
 }
 
+/* remark-gfm labels its generated footnotes section with a visually-hidden
+   <h2 class="sr-only">Footnotes</h2>. Without this rule that label renders as a
+   visible second "Footnotes" heading directly under the author's own. Kept
+   readable by screen readers rather than display:none. */
+article .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* KaTeX. Class-based like the highlight rules above, so it cannot be expressed
+   as an inline style object. KaTeX ships its own stylesheet for glyph metrics —
+   these rules only re-root its colors onto theme tokens and stop wide formulas
+   from breaking the layout. */
+article .katex {
+  color: var(--math-fg);
+  /* KaTeX sets its own font-size; keep it from drifting relative to body text. */
+  font-size: 1.05em;
+}
+article .katex-display {
+  margin: 1.5em 0;
+  padding: 0.9em 1.1em;
+  background: var(--math-bg);
+  border-radius: 8px;
+  /* A long derivation must scroll inside its own block rather than widen the
+     article — the same containment rule the table wrapper follows. */
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Zebra striping for markdown tables. Lives here rather than as an inline style
+   on <tr> because the row component has no index to test — :nth-child reads the
+   row's position straight from the DOM. Scoped under `article` so it can never
+   reach a table in the app chrome. */
+article tbody tr:nth-child(even) {
+  background: var(--table-row-alt);
+}
+
+/* Syntax highlighting: maps highlight.js output classes onto the theme's
+   --syn-* tokens. This is one of the few things that cannot be an inline style
+   object like the rest of Article's markdown styling — rehype-highlight injects
+   these classes into the hast tree itself, so there is no element for a style
+   prop to attach to.
+
+   Grouped rather than one-rule-per-class so a theme author tunes 12 colors, not
+   ~40 hljs class names. Anything highlight.js emits outside these groups simply
+   inherits --fg, which is the correct neutral fallback.
+
+   Note `.hljs-title.function_` / `.hljs-title.class_`: highlight.js emits the
+   modifier as a bare `function_`/`class_` class with NO `hljs-` prefix, so the
+   compound selector is required — `.hljs-function_` matches nothing. */
+.hljs-keyword,
+.hljs-selector-keyword {
+  color: var(--syn-kw);
+}
+.hljs-string,
+.hljs-regexp {
+  color: var(--syn-str);
+}
+.hljs-title.function_,
+.hljs-built_in {
+  color: var(--syn-fn);
+}
+.hljs-comment,
+.hljs-quote {
+  color: var(--syn-cm);
+  font-style: italic;
+}
+.hljs-number {
+  color: var(--syn-num);
+}
+.hljs-type,
+.hljs-title.class_,
+.hljs-title {
+  color: var(--syn-type);
+}
+.hljs-operator,
+.hljs-punctuation {
+  color: var(--syn-op);
+}
+.hljs-variable,
+.hljs-template-variable,
+.hljs-subst,
+.hljs-params {
+  color: var(--syn-var);
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-pseudo {
+  color: var(--syn-attr);
+}
+.hljs-tag,
+.hljs-name,
+.hljs-selector-tag {
+  color: var(--syn-tag);
+}
+.hljs-meta {
+  color: var(--syn-meta);
+}
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet {
+  color: var(--syn-lit);
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 650;
+}
+
 @media print {
   /* Force the light palette regardless of the active theme — printed pages
      shouldn't burn ink on a dark background or use low-contrast dark-mode text. */
@@ -109,6 +228,22 @@ nav :focus-visible,
     --heading-accent-soft: rgba(9, 105, 218, 0.35) !important;
     --heading-rule: #d1d9e0 !important;
     --badge-bg: #f6f8fa !important;
+    --table-header-bg: #f6f8fa !important;
+    --table-row-alt: rgba(9, 105, 218, 0.03) !important;
+    --math-fg: #1f2328 !important;
+    --math-bg: rgba(9, 105, 218, 0.04) !important;
+    --syn-kw: #cf222e !important;
+    --syn-str: #0a3069 !important;
+    --syn-fn: #8250df !important;
+    --syn-cm: #6e7781 !important;
+    --syn-num: #0550ae !important;
+    --syn-type: #953800 !important;
+    --syn-op: #0550ae !important;
+    --syn-var: #953800 !important;
+    --syn-attr: #0550ae !important;
+    --syn-tag: #116329 !important;
+    --syn-meta: #6e7781 !important;
+    --syn-lit: #0550ae !important;
     --warn: #9a6700 !important;
     --warn-bg: rgba(154, 103, 0, 0.06) !important;
     --ok: #1a7f37 !important;

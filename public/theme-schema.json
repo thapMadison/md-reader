@@ -154,6 +154,30 @@
           "default": "#f6f8fa",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
+        "--table-header-bg": {
+          "type": "string",
+          "description": "Table header row background",
+          "default": "#f6f8fa",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--table-row-alt": {
+          "type": "string",
+          "description": "Alternating (even) table row background",
+          "default": "rgba(9,105,218,0.03)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--math-fg": {
+          "type": "string",
+          "description": "Math formula text",
+          "default": "#1f2328",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--math-bg": {
+          "type": "string",
+          "description": "Display-math ($$…$$) block background",
+          "default": "rgba(9,105,218,0.04)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
         "--danger": {
           "type": "string",
           "description": "Errors and destructive hover states",
@@ -222,8 +246,44 @@
         },
         "--syn-type": {
           "type": "string",
-          "description": "Syntax: types",
+          "description": "Syntax: types and class names",
           "default": "#953800",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--syn-op": {
+          "type": "string",
+          "description": "Syntax: operators and punctuation",
+          "default": "#0550ae",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--syn-var": {
+          "type": "string",
+          "description": "Syntax: variables and template substitutions",
+          "default": "#953800",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--syn-attr": {
+          "type": "string",
+          "description": "Syntax: attributes, object keys, CSS selectors",
+          "default": "#0550ae",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--syn-tag": {
+          "type": "string",
+          "description": "Syntax: HTML/XML tags and CSS element selectors",
+          "default": "#116329",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--syn-meta": {
+          "type": "string",
+          "description": "Syntax: decorators, preprocessor, shebang",
+          "default": "#6e7781",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--syn-lit": {
+          "type": "string",
+          "description": "Syntax: literals (true/false/null) and symbols",
+          "default": "#0550ae",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
         "--font-ui": {

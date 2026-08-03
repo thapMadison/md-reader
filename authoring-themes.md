@@ -51,7 +51,39 @@ a code block that carries the language label and copy button; `--heading-accent`
 and `--heading-rule` is the hairline under a level-2 heading. GitHub-style callouts
 (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`) render as accented
 cards drawing on `--link`, `--ok`/`--ok-bg`, `--warn`/`--warn-bg`, and `--danger`/`--danger-bg`.
+The same cards are produced by `<blockquote alt="info|success|warn|danger">`, so both callout
+syntaxes are styled by one set of tokens.
 `src/themes/builtin/azure-corporate/tokens.ts` is again the worked example.
+
+### Syntax highlighting
+
+Twelve `--syn-*` tokens color fenced code. They are grouped by *role* rather than by
+language, so a theme sets twelve colors instead of tracking the ~40 class names highlight.js
+can emit; anything outside these groups falls back to `--fg`.
+
+| Token | Colors |
+| --- | --- |
+| `--syn-kw` | keywords (`const`, `def`, `return`) |
+| `--syn-str` | strings and regular expressions |
+| `--syn-fn` | function names and built-ins |
+| `--syn-cm` | comments (also rendered italic) |
+| `--syn-num` | numbers |
+| `--syn-type` | types and class names |
+| `--syn-op` | operators and punctuation |
+| `--syn-var` | variables, template substitutions, parameters |
+| `--syn-attr` | attributes, object keys, CSS class/id selectors |
+| `--syn-tag` | HTML/XML tags and CSS element selectors |
+| `--syn-meta` | decorators, preprocessor directives, shebangs |
+| `--syn-lit` | literals (`true`/`false`/`null`) and symbols |
+
+Because these are colors on a code background, check them against `--code-bg` rather than
+`--bg`. The mapping from highlight.js classes to these tokens lives in `src/index.css`.
+
+### Tables and math
+
+`--table-header-bg` fills the header row and `--table-row-alt` the even body rows (zebra
+striping); keep the latter subtle, since it sits under body text. `--math-fg` colors KaTeX
+formulas and `--math-bg` fills the block behind a `$$…$$` display formula.
 
 ## Validation rules
 

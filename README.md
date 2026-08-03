@@ -12,6 +12,14 @@ Live at **https://thapmadison.github.io/md-reader/**.
 - GitHub-flavored markdown rendering (tables, task lists, strikethrough, footnotes) with
   syntax-highlighted code blocks, lazy-loaded Mermaid diagrams, wide-table scroll fade, and
   broken-image fallbacks.
+- Math formulas via `$$…$$`, typeset with KaTeX and loaded on demand so documents without
+  math never download the font set. (Single-`$` math is off by design, so prices like "$5
+  and $10" in ordinary prose stay literal.)
+- Sanitized raw HTML: `<kbd>`, `<mark>`, `<details>`/`<summary>` and friends render, while
+  scripts, event handlers and inline `style` are stripped — themes remain the only route
+  for CSS into the page.
+- Callouts in two syntaxes: GitHub's `> [!NOTE]` markers and `<blockquote alt="info">`
+  (`info` / `success` / `warn` / `danger`), which render identically.
 - Four built-in themes (GitHub Light, Night Owl, Sepia Book, Azure Corporate) plus a JSON
   import/export pipeline for custom themes — see [authoring-themes.md](authoring-themes.md).
 - Open files live via the File System Access API (re-readable, permission-gated) or as

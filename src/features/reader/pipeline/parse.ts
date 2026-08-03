@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { toString as mdastToString } from 'mdast-util-to-string';
 import { visit } from 'unist-util-visit';
 import type { Root, Heading as MdastHeading } from 'mdast';
-import { extractHeadings, type Heading } from './headings';
+import { buildHeadingIdMap, extractHeadings, type Heading } from './headings';
 
 export interface ParsedDocument {
   /** The mdast root — react-markdown re-parses the source itself for rendering;
@@ -32,4 +32,20 @@ export function parseMarkdown(source: string): ParsedDocument {
     headings: extractHeadings(rawHeadings),
     isEmpty: source.trim().length === 0,
   };
+}
+
+// Heading source-offset -> id, for the renderer. Built from its own parse of the
+// same source so it stays a pure function of the document: <Article> renders
+// standalone in tests and does not receive a ParsedDocument.
+export function buildHeadingIds(source: string): Map<number, string> {
+  const ast = analysisProcessor.parse(source) as Root;
+  const nodes: { level: number; text: string; offset: number }[] = [];
+  visit(ast, 'heading', (node: MdastHeading) => {
+    nodes.push({
+      level: node.depth,
+      text: mdastToString(node),
+      offset: node.position?.start.offset ?? -1,
+    });
+  });
+  return buildHeadingIdMap(nodes);
 }

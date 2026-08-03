@@ -39,6 +39,14 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   { name: '--heading-rule', type: 'color', description: 'Underline rule beneath level-2 headings', default: '#d1d9e0' },
   { name: '--badge-bg', type: 'color', description: 'Inline code and chip background', default: '#f6f8fa' },
 
+  // Tables
+  { name: '--table-header-bg', type: 'color', description: 'Table header row background', default: '#f6f8fa' },
+  { name: '--table-row-alt', type: 'color', description: 'Alternating (even) table row background', default: 'rgba(9,105,218,0.03)' },
+
+  // Math (KaTeX)
+  { name: '--math-fg', type: 'color', description: 'Math formula text', default: '#1f2328' },
+  { name: '--math-bg', type: 'color', description: 'Display-math ($$…$$) block background', default: 'rgba(9,105,218,0.04)' },
+
   // Feedback
   { name: '--danger', type: 'color', description: 'Errors and destructive hover states', default: '#cf222e' },
   { name: '--danger-bg', type: 'color', description: 'Error banner / badge background wash', default: 'rgba(207,34,46,0.06)' },
@@ -47,13 +55,20 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   { name: '--ok', type: 'color', description: 'Success and tip callout accent', default: '#1a7f37' },
   { name: '--ok-bg', type: 'color', description: 'Success callout background wash', default: 'rgba(26,127,55,0.06)' },
 
-  // Syntax highlighting
+  // Syntax highlighting. Each token maps to a group of highlight.js classes in
+  // index.css — see the `.hljs-*` block there for the exact mapping.
   { name: '--syn-kw', type: 'color', description: 'Syntax: keywords', default: '#cf222e' },
   { name: '--syn-str', type: 'color', description: 'Syntax: strings', default: '#0a3069' },
   { name: '--syn-fn', type: 'color', description: 'Syntax: function names', default: '#8250df' },
   { name: '--syn-cm', type: 'color', description: 'Syntax: comments', default: '#6e7781' },
   { name: '--syn-num', type: 'color', description: 'Syntax: numbers', default: '#0550ae' },
-  { name: '--syn-type', type: 'color', description: 'Syntax: types', default: '#953800' },
+  { name: '--syn-type', type: 'color', description: 'Syntax: types and class names', default: '#953800' },
+  { name: '--syn-op', type: 'color', description: 'Syntax: operators and punctuation', default: '#0550ae' },
+  { name: '--syn-var', type: 'color', description: 'Syntax: variables and template substitutions', default: '#953800' },
+  { name: '--syn-attr', type: 'color', description: 'Syntax: attributes, object keys, CSS selectors', default: '#0550ae' },
+  { name: '--syn-tag', type: 'color', description: 'Syntax: HTML/XML tags and CSS element selectors', default: '#116329' },
+  { name: '--syn-meta', type: 'color', description: 'Syntax: decorators, preprocessor, shebang', default: '#6e7781' },
+  { name: '--syn-lit', type: 'color', description: 'Syntax: literals (true/false/null) and symbols', default: '#0550ae' },
 
   // Fonts
   {
@@ -82,17 +97,21 @@ export const FONT_STACK_TOKEN_NAMES = TOKEN_CONTRACT.filter((t) => t.type === 'f
 
 // App-level metrics: user reading preferences, not part of a theme's palette.
 export interface MetricSpec {
-  name: '--fs' | '--cw';
+  name: '--fs' | '--cw' | '--lh';
   description: string;
   default: number;
   min: number;
   max: number;
-  unit: 'px';
+  // Empty string for unitless values. line-height is deliberately unitless so
+  // it scales with each element's own font-size rather than being frozen to the
+  // article's — a `px` line-height would crush headings and code blocks.
+  unit: 'px' | '';
 }
 
 export const METRIC_CONTRACT: readonly MetricSpec[] = [
   { name: '--fs', description: 'Article base font size', default: 17, min: 15, max: 21, unit: 'px' },
-  { name: '--cw', description: 'Article max content width', default: 960, min: 620, max: 960, unit: 'px' },
+  { name: '--cw', description: 'Article max content width', default: 1280, min: 620, max: 1280, unit: 'px' },
+  { name: '--lh', description: 'Article line height', default: 1.7, min: 1.4, max: 2.1, unit: '' },
 ] as const;
 
 export type ThemeTokens = {

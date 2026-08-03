@@ -79,9 +79,76 @@ Two concerns are deliberately kept separate:
    language label/copy button, Mermaid diagrams, broken-image fallback, wide-table edge
    fade, footnotes).
 
+### Heading ids are derived, never counted
+
+The TOC and the rendered headings must agree on every id or anchors break. Both sides get
+them from one pure function, `assignHeadingIds` in `headings.ts`: the TOC via
+`extractHeadings`, and the renderer via `buildHeadingIds`, which returns a map keyed by each
+heading's start offset in the source. `Article.tsx` looks the id up by the `position`
+`react-markdown` passes its heading components.
+
+The lookup is the point. An earlier version assigned ids from a counter mutated as headings
+rendered, rewound once per `Article` render. That is not sound: React may invoke a component
+more than once per commit — StrictMode does so in development — so every heading was counted
+twice and came out with a spurious `-1` suffix, breaking every anchor in the document. A
+render pass is not an observable boundary, so no amount of extra rewinding fixes it; deriving
+the id from the document instead makes repeat renders idempotent by construction.
+
+Two consequences worth keeping:
+
+- Headings excluded from the TOC (H4–H6) still **consume** their slug, so an `h4 "Overview"`
+  followed by an `h2 "Overview"` yields `overview` and `overview-1` rather than a collision.
+- Headings a plugin synthesized have no source position and so are absent from the map —
+  `remark-gfm`'s visually-hidden "Footnotes" label is the live example. They keep the
+  plugin's own id and classes and get no `data-toc`, so they never enter the TOC and never
+  collide with an authored heading of the same text.
+
+### Plugin chain and why its order is fixed
+
+`Article.tsx` runs this rehype chain, and the order is load-bearing rather than incidental:
+
+```
+rehypeRaw → rehypeSanitize(schema) → rehypeHighlight → [rehypeKatex]
+```
+
+- **`rehypeRaw`** parses author-written raw HTML into real hast nodes. It must run first;
+  nothing downstream can act on HTML that is still an opaque string.
+- **`rehypeSanitize`** must run *immediately after* raw and *before* everything below it.
+  After, because its whole job is to filter what `rehypeRaw` just admitted. Before, because
+  the plugins below emit markup we generate and trust — sanitizing last would strip the
+  `hljs-*` classes and KaTeX spans that had just been added.
+- **`rehypeHighlight`** adds `hljs-*` classes to fenced code. `detect: false` keeps
+  highlighting opt-in per fence, since a wrong language guess colors prose at random.
+- **`rehypeKatex`** is appended only for documents that contain math (see below).
+
+**Why sanitize is not optional.** Enabling `rehypeRaw` means arbitrary HTML from a `.md`
+file reaches the DOM, so `pipeline/sanitize.ts` is what keeps that safe. Beyond ordinary XSS
+(`script`, `iframe`, `on*` handlers), it also blocks the `style` attribute and `<style>`
+elements specifically to preserve the theming boundary described above: theme values reach
+the page only through `style.setProperty` against a fixed token allowlist, and a document
+carrying its own CSS would route around that allowlist entirely.
+
+The schema is a plain data object with no DOM access, which is why it lives in `pipeline/`
+and is unit-tested directly (`sanitize.test.ts` asserts both halves — that dangerous input is
+dropped *and* that `hljs-*`/`katex` classes survive; the default schema strips both, so the
+allowlist widening is required for highlighting to work at all).
+
+### Lazy-loaded renderers
+
 Mermaid is dynamically `import()`-ed only inside `MermaidBlock.tsx`, so it never lands in
 the main bundle chunk — confirmed via `npm run build`, where each Mermaid diagram type gets
 its own lazy chunk.
+
+KaTeX follows the same pattern for the same reason, but gated on content rather than on a
+component: `pipeline/math.ts#hasMath` checks the source for `$$…$$`, and only then does
+`Article.tsx` import `remark-math`, `rehype-katex` and `katex/dist/katex.min.css`. KaTeX's
+stylesheet pulls ~1.2MB of web fonts, so math-free documents must not pay for it. `npm run
+build` confirms `katex.css`, `katex.js` and `rehype-katex.js` land in separate chunks and
+that all font files are referenced only from the lazy `katex-*.css`.
+
+Single-`$` inline math is deliberately disabled (`singleDollarTextMath: false`). With it on,
+ordinary prose like "costs $5 and $10" is parsed as a formula and rendered as garbled math —
+verified against `remark-math` directly. `$$…$$` covers both inline and display formulas.
 
 Files above 1MB are deferred off the synchronous render path (`useDeferredRender.ts`, via
 `requestIdleCallback`) so the loading skeleton reflects real parsing work rather than a

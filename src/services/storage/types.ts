@@ -13,6 +13,7 @@ export interface StoredPreferences {
   sidebarOpen?: boolean;
   fontSize?: number;
   contentWidth?: number;
+  lineHeight?: number;
   activeFile?: string | null;
   scrollPositions?: Record<string, number>;
 }
