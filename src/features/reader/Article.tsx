@@ -41,6 +41,11 @@ const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
   }
 };
 
+// Headings carrying a chevron pin their own line-height rather than inheriting
+// the article's 1.7, both to tighten multi-line headings and to give the glyph
+// a known line box to center against.
+const CHEVRON_LINE_HEIGHT = 1.35;
+
 // Two-tone angled chevron rendered before h2/h3. Inline SVG rather than a
 // ::before pseudo-element because markdown styling here is entirely inline
 // style objects — a pseudo-element would have to live in index.css, splitting
@@ -48,13 +53,20 @@ const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
 function HeadingChevron() {
   return (
     <svg
-      width="10"
-      height="14"
       viewBox="0 0 10 14"
       aria-hidden="true"
       focusable="false"
-      // marginTop optically centers the glyph against the first line's cap height.
-      style={{ flex: 'none', marginRight: 10, marginTop: '0.28em' }}
+      // Sized in em so the glyph tracks the heading's font-size. Centering it on
+      // the first line box is what keeps it aligned when the heading wraps: the
+      // line box is CHEVRON_LINE_HEIGHT em tall, the glyph 0.72em, so half the
+      // difference centers it — independent of heading level or letter case.
+      style={{
+        flex: 'none',
+        width: '0.52em',
+        height: '0.72em',
+        marginRight: '0.42em',
+        marginTop: `calc((${CHEVRON_LINE_HEIGHT}em - 0.72em) / 2)`,
+      }}
     >
       <path d="M0 0 L5 7 L0 14 Z" fill="var(--heading-accent)" />
       <path d="M5 0 L10 7 L5 14 Z" fill="var(--heading-accent-soft)" />
@@ -145,7 +157,12 @@ function makeHeadingFactory() {
           data-toc={id}
           // flex-start (not center) so the chevron stays on the first line of a
           // heading that wraps to two lines instead of floating mid-block.
-          style={{ ...headingStyle(level), ...(showChevron ? { display: 'flex', alignItems: 'flex-start' } : {}) }}
+          style={{
+            ...headingStyle(level),
+            ...(showChevron
+              ? { display: 'flex', alignItems: 'flex-start', lineHeight: CHEVRON_LINE_HEIGHT }
+              : {}),
+          }}
         >
           {showChevron && <HeadingChevron />}
           {children}
