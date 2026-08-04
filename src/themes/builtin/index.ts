@@ -7,6 +7,8 @@ import { manifest as sepiaBookManifest } from './sepia-book/manifest';
 import { tokens as sepiaBookTokens } from './sepia-book/tokens';
 import { manifest as azureCorporateManifest } from './azure-corporate/manifest';
 import { tokens as azureCorporateTokens } from './azure-corporate/tokens';
+import { manifest as midnightCobaltManifest } from './midnight-cobalt/manifest';
+import { tokens as midnightCobaltTokens } from './midnight-cobalt/tokens';
 
 // Registry of built-in themes. To add one: create a folder with tokens.ts +
 // manifest.ts, then add one line here.
@@ -15,6 +17,7 @@ export const BUILTIN_THEMES: readonly Theme[] = [
   { ...nightOwlManifest, tokens: nightOwlTokens },
   { ...sepiaBookManifest, tokens: sepiaBookTokens },
   { ...azureCorporateManifest, tokens: azureCorporateTokens },
+  { ...midnightCobaltManifest, tokens: midnightCobaltTokens },
 ];
 
 export const DEFAULT_THEME_ID = githubLightManifest.id;
