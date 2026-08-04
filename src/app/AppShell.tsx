@@ -28,9 +28,9 @@ export function AppShell() {
   const { active, activeName } = library;
   const source = active?.editedContent ?? '';
 
-  const scrollSpy = useScrollSpy(contentRef, source);
-  const { recordScroll } = useScrollRestoration(contentRef, activeName);
   const contentReady = useDeferredRender(activeName, source);
+  const scrollSpy = useScrollSpy(contentRef, source, contentReady);
+  const { recordScroll } = useScrollRestoration(contentRef, activeName);
 
   const onScroll: React.UIEventHandler<HTMLElement> = useCallback(
     (e) => {
@@ -42,7 +42,9 @@ export function AppShell() {
 
   useEffect(() => {
     return layout.bindDragAndDrop((dt) => {
-      library.openViaDrop(dt);
+      library.openViaDrop(dt).catch((err: unknown) => {
+        console.error('Failed to open dropped files', err);
+      });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout.bindDragAndDrop]);
@@ -76,9 +78,14 @@ export function AppShell() {
     [],
   );
 
+  // These three entry points are fire-and-forget from an event handler, so each
+  // needs its own terminal catch — an un-awaited rejection here surfaces only as
+  // an "unhandled promise rejection" in the console.
   const openFileInput = useCallback(() => {
     if (library.fsAccessSupported) {
-      library.openViaPicker();
+      library.openViaPicker().catch((err: unknown) => {
+        console.error('Failed to open file', err);
+      });
     } else {
       fileInputRef.current?.click();
     }
@@ -86,7 +93,9 @@ export function AppShell() {
 
   const handleFileInputChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      library.openViaInput(e.target.files);
+      library.openViaInput(e.target.files).catch((err: unknown) => {
+        console.error('Failed to open file', err);
+      });
     }
     e.target.value = '';
   };
@@ -171,16 +180,25 @@ export function AppShell() {
           files={library.files}
           activeName={library.activeName}
           isDirty={library.isDirty}
+          isUnpersisted={library.isUnpersisted}
           onPickFile={(name) => {
             library.setActiveName(name);
             layout.setDrawerOpen(false);
           }}
           onCloseFile={library.closeFile}
-          onGrantAccess={library.grantAccess}
+          onGrantAccess={(name) => {
+            library.grantAccess(name).catch((err: unknown) => {
+              console.error('Failed to grant access', err);
+            });
+          }}
           onOpenFileClick={openFileInput}
           storageUsedBytes={library.storageUsedBytes}
           storageQuotaBytes={library.storageQuotaBytes}
-          onClearAll={library.clearAll}
+          onClearAll={() => {
+            library.clearAll().catch((err: unknown) => {
+              console.error('Failed to clear library', err);
+            });
+          }}
         />
         {layout.editing && !editorHiddenOnMobile && (
           <EditorPane
@@ -204,7 +222,12 @@ export function AppShell() {
           bannerText={bannerText}
           bannerDenied={!!bannerDenied}
           bannerShowGrantButton={!!bannerShowGrantButton}
-          onGrantActive={() => active && library.grantAccess(active.name)}
+          onGrantActive={() => {
+            if (!active) return;
+            library.grantAccess(active.name).catch((err: unknown) => {
+              console.error('Failed to grant access', err);
+            });
+          }}
           onDismissBanner={() => active && library.dismissBanner(active.name)}
           onOpenFileClick={openFileInput}
         />

@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { BUILTIN_THEMES, DEFAULT_THEME_ID } from '@/themes/builtin';
+import { BUILTIN_THEMES, DEFAULT_THEME_ID, DEFAULT_DARK_THEME_ID } from '@/themes/builtin';
 import { THEME_TOKEN_NAMES, METRIC_CONTRACT, type ThemeTokens } from '@/themes/contract';
 import type { Theme } from '@/themes/types';
 import { mergeThemeTokens } from '@/themes/merge';
@@ -59,17 +59,27 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    storage.getPreferences().then((prefs) => {
-      if (cancelled) return;
-      if (prefs.customThemes) {
-        setCustomThemes(prefs.customThemes.map((t) => ({ ...t, custom: true, badge: t.mode === 'dark' ? 'Dark' : 'Light' })));
-      }
-      if (prefs.themeId) setActiveThemeId(prefs.themeId);
-      if (prefs.fontSize) setFontSizeState(prefs.fontSize);
-      if (prefs.contentWidth) setContentWidthState(prefs.contentWidth);
-      if (prefs.lineHeight) setLineHeightState(prefs.lineHeight);
-      hydrated.current = true;
-    });
+    storage
+      .getPreferences()
+      .then((prefs) => {
+        if (cancelled) return;
+        if (prefs.customThemes) {
+          setCustomThemes(prefs.customThemes.map((t) => ({ ...t, custom: true, badge: t.mode === 'dark' ? 'Dark' : 'Light' })));
+        }
+        if (prefs.themeId) setActiveThemeId(prefs.themeId);
+        // Clamped on the way in, not just on the way out. Stored preferences
+        // are as untrusted as any other persisted input: a value written by an
+        // older build with different contract bounds, or edited by hand in
+        // devtools, otherwise bypasses the range the setters enforce.
+        if (prefs.fontSize) setFontSizeState(clampTo(FONT_SPEC, prefs.fontSize));
+        if (prefs.contentWidth) setContentWidthState(clampTo(WIDTH_SPEC, prefs.contentWidth));
+        if (prefs.lineHeight) setLineHeightState(clampTo(LINE_HEIGHT_SPEC, prefs.lineHeight));
+        hydrated.current = true;
+      })
+      .catch((err: unknown) => {
+        console.error('Failed to restore theme preferences', err);
+        hydrated.current = true;
+      });
     return () => {
       cancelled = true;
     };
@@ -152,7 +162,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         return;
       }
       const mode = result.mode ?? 'light';
-      const base = mode === 'dark' ? themes.find((t) => t.mode === 'dark')! : themes[0];
+      const baseId = mode === 'dark' ? DEFAULT_DARK_THEME_ID : DEFAULT_THEME_ID;
+      const base = themes.find((t) => t.id === baseId)!;
       const tokens = mergeThemeTokens(mode, base.tokens, result.tokens);
       const theme: CustomTheme = {
         id: `imported-${Date.now()}`,

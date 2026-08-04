@@ -279,13 +279,37 @@ describe('Article headings', () => {
     const authored = container.querySelector('h2[data-toc]');
     expect(authored?.id).toBe('footnotes');
 
-    // react-markdown namespaces plugin-generated ids with a `user-content-` prefix.
+    // The generated label keeps its own distinct id and stays out of the TOC.
+    // (It reads `footnote-label`, not `user-content-footnote-label`: the
+    // sanitize schema no longer adds a second `user-content-` prefix — see the
+    // clobberPrefix note in pipeline/sanitize.ts.)
     const generated = container.querySelector('h2.sr-only');
-    expect(generated?.id).toBe('user-content-footnote-label');
+    expect(generated?.id).toBe('footnote-label');
+    expect(generated?.id).not.toBe(authored?.id);
     expect(generated?.hasAttribute('data-toc')).toBe(false);
 
     const ids = [...container.querySelectorAll('h1,h2')].map((h) => h.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  // The custom `a` and `li` renderers used to accept only href/className/style
+  // and drop everything else, `id` included. Both footnote jumps then landed
+  // nowhere, because the anchors they target are exactly those ids.
+  it('keeps both ends of the footnote round trip anchored', () => {
+    const { container } = renderMd('Ref[^1].\n\n[^1]: note text.');
+
+    const ref = container.querySelector<HTMLAnchorElement>('a[href^="#user-content-fn-"]');
+    const definition = container.querySelector('li[id^="user-content-fn-"]');
+    expect(ref).not.toBeNull();
+    expect(definition).not.toBeNull();
+    // The reference's href must name the definition's id, not merely look like it.
+    expect(ref!.getAttribute('href')).toBe(`#${definition!.id}`);
+
+    // …and the ↩ button must point back at the reference element itself.
+    const backref = container.querySelector<HTMLAnchorElement>('a[href^="#user-content-fnref-"]');
+    expect(backref).not.toBeNull();
+    expect(ref!.id).not.toBe('');
+    expect(backref!.getAttribute('href')).toBe(`#${ref!.id}`);
   });
 
   it('keeps ids stable when the article re-renders', () => {

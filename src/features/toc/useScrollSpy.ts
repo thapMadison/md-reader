@@ -6,7 +6,6 @@ interface ScrollSpyResult {
   progress: number;
   onScroll: React.UIEventHandler<HTMLElement>;
   goTo: (id: string) => void;
-  refreshToc: () => void;
 }
 
 // Reads headings straight from the rendered DOM (elements carry data-toc,
@@ -15,6 +14,7 @@ interface ScrollSpyResult {
 export function useScrollSpy(
   containerRef: React.RefObject<HTMLElement | null>,
   source: string,
+  contentReady = true,
 ): ScrollSpyResult & { toc: TocEntry[] } {
   const [toc, setToc] = useState<TocEntry[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -43,12 +43,16 @@ export function useScrollSpy(
     }
   }, [containerRef]);
 
+  // `contentReady` is load-bearing, not cosmetic: large documents render behind
+  // useDeferredRender, so when `source` alone changes the container still holds
+  // the loading skeleton and querySelectorAll finds zero headings. Re-running
+  // once the real article commits is what makes the TOC appear for those files.
   useEffect(() => {
     refreshToc();
     lastProgress.current = 0;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting progress when the document (source) changes
     setProgress(0);
-  }, [source, refreshToc]);
+  }, [source, contentReady, refreshToc]);
 
   const onScroll: React.UIEventHandler<HTMLElement> = useCallback((e) => {
     const el = e.currentTarget;
@@ -90,5 +94,5 @@ export function useScrollSpy(
     [containerRef],
   );
 
-  return { toc, activeId, progress, onScroll, goTo, refreshToc };
+  return { toc, activeId, progress, onScroll, goTo };
 }

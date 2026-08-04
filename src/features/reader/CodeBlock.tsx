@@ -1,34 +1,43 @@
 import { useState, type ReactNode } from 'react';
 import { MermaidBlock } from './MermaidBlock';
+import { reactNodeToText } from './reactText';
 
 interface CodeBlockProps {
   className?: string;
   children: ReactNode;
 }
 
-function extractText(node: ReactNode): string {
-  if (typeof node === 'string') return node;
-  if (Array.isArray(node)) return node.map(extractText).join('');
-  if (node && typeof node === 'object' && 'props' in node) {
-    return extractText((node as { props: { children?: ReactNode } }).props.children);
-  }
-  return '';
-}
-
 export function CodeBlock({ className, children }: CodeBlockProps) {
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
   const [hovered, setHovered] = useState(false);
+  const copied = copyState !== 'idle';
   const lang = /language-(\w+)/.exec(className ?? '')?.[1] ?? 'text';
-  const code = extractText(children);
+  const code = reactNodeToText(children);
 
   if (lang === 'mermaid') {
     return <MermaidBlock source={code} />;
   }
 
+  // "Copied!" is shown only once the write actually resolves. Setting it
+  // eagerly claimed success even when the clipboard write was rejected — which
+  // it is on any non-secure origin, and whenever the document lacks focus.
   const handleCopy = () => {
-    navigator.clipboard?.writeText(code).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    const write = navigator.clipboard?.writeText(code);
+    if (!write) {
+      setCopyState('error');
+      setTimeout(() => setCopyState('idle'), 1500);
+      return;
+    }
+    write.then(
+      () => {
+        setCopyState('copied');
+        setTimeout(() => setCopyState('idle'), 1500);
+      },
+      () => {
+        setCopyState('error');
+        setTimeout(() => setCopyState('idle'), 1500);
+      },
+    );
   };
 
   return (
@@ -37,7 +46,7 @@ export function CodeBlock({ className, children }: CodeBlockProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => {
         setHovered(false);
-        setCopied(false);
+        setCopyState('idle');
       }}
       style={{ margin: '1.4em 0', background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 9, overflow: 'hidden' }}
     >
@@ -75,14 +84,14 @@ export function CodeBlock({ className, children }: CodeBlockProps) {
             padding: '0 8px',
             fontSize: 10.5,
             fontFamily: 'var(--font-ui)',
-            border: '1px solid var(--border)',
+            border: `1px solid ${copyState === 'error' ? 'var(--danger)' : 'var(--border)'}`,
             borderRadius: 5,
             background: 'var(--bg)',
-            color: 'var(--fg)',
+            color: copyState === 'error' ? 'var(--danger)' : 'var(--fg)',
             cursor: 'pointer',
           }}
         >
-          {copied ? 'Copied!' : 'Copy'}
+          {copyState === 'copied' ? 'Copied!' : copyState === 'error' ? 'Copy failed' : 'Copy'}
         </button>
       </div>
       <pre style={{ margin: 0, padding: '16px 18px', overflowX: 'auto', fontFamily: 'var(--font-mono)', fontSize: '0.78em', lineHeight: 1.65 }}>

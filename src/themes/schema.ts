@@ -1,31 +1,37 @@
-import { z } from 'zod';
-import { THEME_TOKEN_NAMES } from './contract';
+// Value-level validation for theme token values.
+//
+// This is the security boundary for imported themes: every value that reaches
+// `style.setProperty` in ThemeContext passes through one of the predicates
+// below. `merge.ts` allowlists the token *name*; this file constrains the
+// token *value*. Both are needed — a permitted name carrying arbitrary CSS is
+// still arbitrary CSS.
+//
+// Deliberately hand-written rather than schema-library-driven: the checks are
+// regex predicates over strings, which a schema library would only wrap.
 
-const COLOR_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
-const FUNC_COLOR_RE = /^(rgb|rgba|hsl|hsla|oklch)\(/i;
+const COLOR_RE = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+
+// Anchored at BOTH ends, and the argument list may only contain the characters
+// a color function actually takes. An unanchored prefix test accepted
+// `rgb(0,0,0) url(https://tracker.example/pixel)` — a value that satisfies
+// "starts with rgb(" but ends up as a background that phones home when the
+// theme is applied. The interior class excludes '(' so no second function can
+// be smuggled in.
+const FUNC_COLOR_RE = /^(rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch|color)\([0-9a-z%.,\-+/\s]*\)$/i;
 
 export const isColorValue = (v: unknown): v is string =>
   typeof v === 'string' && (COLOR_RE.test(v) || FUNC_COLOR_RE.test(v));
 
-// Tokens shape validated at the JSON boundary. Values are checked structurally
-// (color-shaped strings only) — this is also the security boundary: a value
-// that isn't a bare color/font-stack string can never reach `setProperty`.
-export const themeTokensSchema = z
-  .object(
-    Object.fromEntries(
-      THEME_TOKEN_NAMES.map((name) => [
-        name,
-        name === '--font-body' ? z.string().min(1).optional() : z.string().min(1).optional(),
-      ]),
-    ),
-  )
-  .partial();
+// A font stack is a comma-separated list of family names, optionally quoted.
+// Font tokens previously bypassed validation entirely — they are strings, so
+// `v as string` accepted numbers and objects, and any CSS fragment rode through
+// to setProperty. Characters that would let a value escape its declaration or
+// start a nested function are refused outright.
+const FONT_STACK_RE = /^[\w\s,'"-]+$/;
 
-export const themeFileSchema = z.object({
-  name: z.string().min(1),
-  mode: z.enum(['light', 'dark']).optional(),
-  tokens: z.record(z.string(), z.unknown()).optional(),
-  vars: z.record(z.string(), z.unknown()).optional(),
-});
-
-export type ThemeFile = z.infer<typeof themeFileSchema>;
+export const isFontStackValue = (v: unknown): v is string =>
+  typeof v === 'string' &&
+  v.trim().length > 0 &&
+  v.length <= 300 &&
+  FONT_STACK_RE.test(v) &&
+  !v.includes(';');

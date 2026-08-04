@@ -106,4 +106,33 @@ describe('sanitizeSchema — preserves what the reader needs', () => {
     expect(out).toContain('https://example.com');
     expect(out).toContain('title="t"');
   });
+
+  // `clobberPrefix: ''` was set so footnote ids stop being prefixed twice (the
+  // markdown pipeline already prefixes them, and sanitize rewrites the id
+  // without rewriting the href that targets it). These guard that the change
+  // affected only the prefix and none of the actual XSS protections.
+  describe('after disabling the second clobber prefix', () => {
+    it('leaves an id untouched rather than prefixing it again', () => {
+      const out = clean('<p id="user-content-fn-1">note</p>');
+      expect(out).toContain('id="user-content-fn-1"');
+      expect(out).not.toContain('user-content-user-content-');
+    });
+
+    it('still strips javascript: URLs', () => {
+      const out = clean('<a href="javascript:alert(1)" id="x">click</a>');
+      expect(out).not.toContain('javascript:');
+    });
+
+    it('still strips event handlers from an element carrying an id', () => {
+      const out = clean('<div id="x" onclick="alert(1)">hi</div>');
+      expect(out).not.toContain('onclick');
+      expect(out).not.toContain('alert');
+    });
+
+    it('still refuses a style attribute on an element carrying an id', () => {
+      const out = clean('<p id="x" style="background:url(https://evil.example/p)">hi</p>');
+      expect(out).not.toContain('style');
+      expect(out).not.toContain('evil.example');
+    });
+  });
 });

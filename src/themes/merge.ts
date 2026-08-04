@@ -1,8 +1,8 @@
 import { THEME_TOKEN_NAMES, type ThemeTokens } from './contract';
-import { BUILTIN_THEMES, DEFAULT_THEME_ID } from './builtin';
+import { BUILTIN_THEMES, DEFAULT_THEME_ID, DEFAULT_DARK_THEME_ID } from './builtin';
 
 const BASE_LIGHT = BUILTIN_THEMES.find((t) => t.id === DEFAULT_THEME_ID)!.tokens;
-const BASE_DARK = BUILTIN_THEMES.find((t) => t.mode === 'dark')!.tokens;
+const BASE_DARK = BUILTIN_THEMES.find((t) => t.id === DEFAULT_DARK_THEME_ID)!.tokens;
 
 // Resolution order: base-mode defaults -> active theme's own tokens -> user overrides.
 // Unknown keys in `overrides` are silently dropped — the allowlist boundary that

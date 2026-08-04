@@ -23,6 +23,7 @@ const setup = (files: LibraryFile[], isDirty: (name: string) => boolean = () => 
       files={files}
       activeName={files[0]?.name ?? null}
       isDirty={isDirty}
+      isUnpersisted={() => false}
       onPickFile={() => {}}
       onCloseFile={() => {}}
       onGrantAccess={() => {}}

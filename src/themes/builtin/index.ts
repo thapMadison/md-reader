@@ -18,3 +18,9 @@ export const BUILTIN_THEMES: readonly Theme[] = [
 ];
 
 export const DEFAULT_THEME_ID = githubLightManifest.id;
+
+// The dark counterpart to DEFAULT_THEME_ID, used as the fallback base whenever
+// a dark theme needs one. Named explicitly rather than found by scanning for
+// the first `mode === 'dark'` entry, which silently changed meaning as soon as
+// a second dark theme was added above night-owl in this array.
+export const DEFAULT_DARK_THEME_ID = nightOwlManifest.id;

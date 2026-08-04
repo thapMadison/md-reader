@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useStorage } from '@/services/storage/StorageContext';
+import { StorageQuotaExceededError } from '@/services/storage/types';
 import {
   pickFilesLive,
   readFileListAsSnapshots,
@@ -35,6 +36,8 @@ interface LibraryContextValue {
   editContent: (name: string, content: string) => void;
   revertContent: (name: string) => void;
   isDirty: (name: string) => boolean;
+  /** True when the file is open in memory but could not be written to storage. */
+  isUnpersisted: (name: string) => boolean;
   dismissedBanners: Record<string, boolean>;
   dismissBanner: (name: string) => void;
   storageUsedBytes: number;
@@ -52,7 +55,17 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const [dismissedBanners, setDismissedBanners] = useState<Record<string, boolean>>({});
   const [storageUsedBytes, setStorageUsedBytes] = useState(0);
   const [storageQuotaBytes, setStorageQuotaBytes] = useState(FALLBACK_QUOTA_BYTES);
+  const [unpersisted, setUnpersisted] = useState<Record<string, boolean>>({});
   const hydrated = useRef(false);
+  // Mirrors `files` so callbacks can read the current list without either
+  // depending on it (which would re-create every consumer's handler on each
+  // keystroke) or reaching for it inside a setState updater. Synced in an
+  // effect, not during render — a ref write during render is not safe under
+  // concurrent rendering.
+  const filesRef = useRef<LibraryFile[]>(files);
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
 
   const refreshStorageEstimate = useCallback(async () => {
     const est = await storage.estimate();
@@ -117,7 +130,13 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       }
       await refreshStorageEstimate();
       hydrated.current = true;
-    })();
+    })().catch((err: unknown) => {
+      // IndexedDB is unavailable in Firefox private windows and can fail on a
+      // corrupt store. Without this the whole hydration chain rejected
+      // unhandled and the app sat empty with no explanation anywhere.
+      console.error('Failed to restore library from storage', err);
+      hydrated.current = true;
+    });
     return () => {
       cancelled = true;
     };
@@ -129,15 +148,28 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     storage.setPreferences({ activeFile: activeName }).catch(() => {});
   }, [activeName, storage]);
 
+  // A file that cannot be persisted is still usable in this session — it just
+  // will not survive a reload. That distinction is worth surfacing: previously
+  // the quota rejection propagated out of an un-awaited caller and the file
+  // silently vanished on the next visit with no warning at any point.
   const persistFile = useCallback(
     async (f: LibraryFile) => {
-      await storage.saveFile({
-        name: f.name,
-        content: f.originalContent,
-        kind: f.kind,
-        handle: f.handle,
-        savedAt: Date.now(),
-      });
+      try {
+        await storage.saveFile({
+          name: f.name,
+          content: f.originalContent,
+          kind: f.kind,
+          handle: f.handle,
+          savedAt: Date.now(),
+        });
+        setUnpersisted((prev) => (prev[f.name] ? { ...prev, [f.name]: false } : prev));
+      } catch (err) {
+        if (err instanceof StorageQuotaExceededError) {
+          setUnpersisted((prev) => ({ ...prev, [f.name]: true }));
+        } else {
+          throw err;
+        }
+      }
       await refreshStorageEstimate();
     },
     [storage, refreshStorageEstimate],
@@ -180,10 +212,15 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     await addOpenedFiles(opened);
   }, [addOpenedFiles]);
 
+  // <input type=file> yields a File with no FileSystemFileHandle, so these are
+  // snapshots and must stay labelled as such. Relabelling them 'live' made the
+  // sidebar offer a "Grant access" action that could never work (grantAccess
+  // needs a handle) and hid the honest "offline copy" badge — on browsers
+  // without the FS Access API that was every file the user opened.
   const openViaInput = useCallback(
     async (fileList: FileList) => {
       const opened = await readFileListAsSnapshots(fileList);
-      await addOpenedFiles(opened.map((o) => ({ ...o, kind: 'live' as const, perm: 'granted' as const })));
+      await addOpenedFiles(opened);
     },
     [addOpenedFiles],
   );
@@ -198,42 +235,61 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
   const closeFile = useCallback(
     (name: string) => {
-      setFiles((prev) => {
-        const next = prev.filter((f) => f.name !== name);
-        setActiveName((prevActive) => (prevActive === name ? (next[0]?.name ?? null) : prevActive));
-        return next;
+      // Both updaters stay pure — setActiveName is no longer nested inside the
+      // setFiles updater (React may call updaters twice), and each derives its
+      // own next value from its own previous state.
+      setFiles((prev) => prev.filter((f) => f.name !== name));
+      setActiveName((prevActive) => {
+        if (prevActive !== name) return prevActive;
+        return filesRef.current.find((f) => f.name !== name)?.name ?? null;
       });
-      storage.removeFile(name).then(refreshStorageEstimate).catch(() => {});
+      // Drop the saved scroll offset too; otherwise scrollPositions accumulated
+      // an entry per file ever opened and was never pruned.
+      storage
+        .getPreferences()
+        .then(({ scrollPositions }) => {
+          if (!scrollPositions || !(name in scrollPositions)) return;
+          const rest = { ...scrollPositions };
+          delete rest[name];
+          return storage.setPreferences({ scrollPositions: rest });
+        })
+        .catch(() => {});
+      storage
+        .removeFile(name)
+        .then(refreshStorageEstimate)
+        .catch((err: unknown) => {
+          console.error('Failed to remove file from storage', err);
+        });
     },
     [storage, refreshStorageEstimate],
   );
 
   const clearAll = useCallback(async () => {
     await storage.clearAll();
+    await storage.setPreferences({ scrollPositions: {} }).catch(() => {});
     setFiles([]);
     setActiveName(null);
     await refreshStorageEstimate();
   }, [storage, refreshStorageEstimate]);
 
+  // The handle is read from a ref rather than inside a setFiles updater. React
+  // treats updaters as pure and calls them twice under StrictMode, so the old
+  // shape fired requestPermission — a user-facing browser prompt — twice per
+  // click.
   const grantAccess = useCallback(async (name: string) => {
-    setFiles((prev) => {
-      const f = prev.find((x) => x.name === name);
-      if (f?.handle) {
-        requestHandlePermission(f.handle).then(async (state) => {
-          if (state === 'granted') {
-            const content = await rereadHandle(f.handle!);
-            setFiles((cur) =>
-              cur.map((x) =>
-                x.name === name ? { ...x, perm: 'granted', originalContent: content, editedContent: content } : x,
-              ),
-            );
-          } else {
-            setFiles((cur) => (cur.some((x) => x.name === name) ? cur.map((x) => (x.name === name ? { ...x, perm: state } : x)) : cur));
-          }
-        });
-      }
-      return prev;
-    });
+    const f = filesRef.current.find((x) => x.name === name);
+    if (!f?.handle) return;
+    const state = await requestHandlePermission(f.handle);
+    if (state === 'granted') {
+      const content = await rereadHandle(f.handle);
+      setFiles((cur) =>
+        cur.map((x) =>
+          x.name === name ? { ...x, perm: 'granted', originalContent: content, editedContent: content } : x,
+        ),
+      );
+    } else {
+      setFiles((cur) => cur.map((x) => (x.name === name ? { ...x, perm: state } : x)));
+    }
   }, []);
 
   const editContent = useCallback((name: string, content: string) => {
@@ -253,6 +309,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     },
     [files],
   );
+
+  const isUnpersisted = useCallback((name: string) => !!unpersisted[name], [unpersisted]);
 
   const dismissBanner = useCallback((name: string) => {
     setDismissedBanners((prev) => ({ ...prev, [name]: true }));
@@ -274,6 +332,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     editContent,
     revertContent,
     isDirty,
+    isUnpersisted,
     dismissedBanners,
     dismissBanner,
     storageUsedBytes,

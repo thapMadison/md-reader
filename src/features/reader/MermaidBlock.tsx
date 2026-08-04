@@ -4,45 +4,46 @@ interface MermaidBlockProps {
   source: string;
 }
 
-const DIAGRAM_TYPE_RE = /^(graph|flowchart|sequenceDiagram|stateDiagram|erDiagram|gantt|pie)\b/;
-
 export function MermaidBlock({ source }: MermaidBlockProps) {
   const id = useId().replace(/:/g, '-');
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [svg, setSvg] = useState<string | null>(null);
 
-  const head = (source.trim().split('\n')[0] ?? '').trim();
-  const looksValid = DIAGRAM_TYPE_RE.test(head);
-  const invalidTypeError = looksValid
-    ? null
-    : `line 1: unknown diagram type "${head.split(/\s/)[0] || '(empty)'}"`;
+  const isEmpty = source.trim() === '';
 
+  // Diagram types are NOT pre-screened against a local list. Mermaid ships new
+  // ones every few releases (mindmap, timeline, gitGraph, classDiagram…), so any
+  // list kept here drifts into rejecting valid input — mermaid's own parser is
+  // the only authority that stays current, and its error message is better than
+  // one we could synthesize anyway.
   useEffect(() => {
-    if (!looksValid) {
-      return;
-    }
+    if (isEmpty) return;
     let cancelled = false;
-    import('mermaid').then(async ({ default: mermaid }) => {
-      try {
+    import('mermaid')
+      .then(async ({ default: mermaid }) => {
         mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
         const { svg: rendered } = await mermaid.render(`mermaid-${id}`, source);
         if (!cancelled) {
           setSvg(rendered);
           setError(null);
         }
-      } catch (err) {
+      })
+      // Covers both a failed chunk fetch (offline) and a parse error. Without a
+      // rejection handler the former left an empty bordered box on screen for
+      // good, with the reason only visible in the console.
+      .catch((err: unknown) => {
         if (!cancelled) {
-          setError(`line 1: ${err instanceof Error ? err.message : String(err)}`);
+          setSvg(null);
+          setError(err instanceof Error ? err.message : String(err));
         }
-      }
-    });
+      });
     return () => {
       cancelled = true;
     };
-  }, [source, looksValid, id]);
+  }, [source, isEmpty, id]);
 
-  const displayError = invalidTypeError ?? error;
+  const displayError = isEmpty ? 'empty diagram' : error;
 
   if (displayError) {
     return (

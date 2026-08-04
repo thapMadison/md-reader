@@ -10,6 +10,7 @@ import { sanitizeSchema } from './pipeline/sanitize';
 import { hasMath, MATH_OPTIONS } from './pipeline/math';
 import { CodeBlock } from './CodeBlock';
 import { MarkdownImage } from './MarkdownImage';
+import { reactNodeToText } from './reactText';
 import { buildHeadingIds } from './pipeline/parse';
 
 interface ArticleProps {
@@ -111,15 +112,6 @@ const ALT_CALLOUTS: Record<string, keyof typeof CALLOUTS> = {
   caution: 'CAUTION',
 };
 
-function textOf(node: ReactNode): string {
-  if (typeof node === 'string') return node;
-  if (typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(textOf).join('');
-  if (node && typeof node === 'object' && 'props' in node) {
-    return textOf((node as { props: { children?: ReactNode } }).props.children);
-  }
-  return '';
-}
 
 // Removes the leading `[!NOTE]` marker from a callout's rendered children.
 // Returns null when the marker is not a plain leading string on the first
@@ -272,7 +264,7 @@ function buildComponents(headingIds: Map<number, string>): Components {
       <summary style={{ cursor: 'pointer', fontWeight: 650, color: 'var(--fg)' }}>{children}</summary>
     ),
     blockquote: ({ children, ...props }) => {
-      const match = CALLOUT_RE.exec(textOf(children));
+      const match = CALLOUT_RE.exec(reactNodeToText(children));
 
       // Two sources, marker first: an explicit `[!NOTE]` inside the quote wins
       // over the alt attribute when a document somehow carries both, so the
@@ -353,12 +345,18 @@ function buildComponents(headingIds: Map<number, string>): Components {
       );
     },
     ol: ({ children }) => <ol style={{ listStyle: 'decimal', margin: '0 0 1.15em', paddingLeft: '1.4em' }}>{children}</ol>,
-    li: ({ children, className }) => {
+    // Same reason as the `a` renderer: footnote definitions are <li
+    // id="user-content-fn-1">, the target of every [^1] reference.
+    li: ({ children, className, id }) => {
       const isTask = className?.includes('task-list-item');
       if (isTask) {
-        return <li>{children}</li>;
+        return <li id={id}>{children}</li>;
       }
-      return <li style={{ margin: '0 0 0.4em' }}>{children}</li>;
+      return (
+        <li id={id} style={{ margin: '0 0 0.4em' }}>
+          {children}
+        </li>
+      );
     },
     input: ({ checked }) => (
       <span
@@ -484,16 +482,19 @@ function buildComponents(headingIds: Map<number, string>): Components {
         </div>
       );
     },
-    a: ({ href, children, className }) => {
+    // `id` must be forwarded, not dropped: remark-gfm emits the footnote
+    // reference as <a id="user-content-fnref-1">, and that id is the anchor the
+    // backref link jumps back to. Without it the ↩ button scrolls nowhere.
+    a: ({ href, children, className, id }) => {
       if (className === 'data-footnote-backref') {
         return (
-          <a href={href} style={{ fontSize: '0.9em' }}>
+          <a href={href} id={id} style={{ fontSize: '0.9em' }}>
             ↩
           </a>
         );
       }
       return (
-        <a href={href} style={{ color: 'var(--link)' }}>
+        <a href={href} id={id} style={{ color: 'var(--link)' }}>
           {children}
         </a>
       );
@@ -518,12 +519,13 @@ function buildComponents(headingIds: Map<number, string>): Components {
 //
 // `detect: false` keeps highlighting opt-in per fence: without a language tag
 // highlight.js guesses, and a wrong guess paints prose-like blocks in scattered
-// keyword colors. `ignoreMissing` stops an unknown tag (```vue) from throwing
-// mid-render.
+// keyword colors. An unregistered language (```vue) is not a hazard here —
+// rehype-highlight v7 records it as a vfile message and leaves the block
+// unstyled rather than throwing.
 const REHYPE_PLUGINS: PluggableList = [
   rehypeRaw,
   [rehypeSanitize, sanitizeSchema],
-  [rehypeHighlight, { detect: false, ignoreMissing: true }],
+  [rehypeHighlight, { detect: false }],
 ];
 
 const REMARK_PLUGINS: PluggableList = [remarkGfm];

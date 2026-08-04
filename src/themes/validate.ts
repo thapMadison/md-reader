@@ -1,5 +1,5 @@
 import { THEME_TOKEN_NAMES, FONT_STACK_TOKEN_NAMES } from './contract';
-import { isColorValue } from './schema';
+import { isColorValue, isFontStackValue } from './schema';
 
 function levenshtein(a: string, b: string): number {
   const dp: number[][] = Array.from({ length: a.length + 1 }, (_, i) => [
@@ -69,11 +69,25 @@ export function validateThemeFile(raw: unknown): ThemeValidationResult {
       errors.push(`unknown token "${key}"${near ? ` (did you mean ${near}?)` : ''}`);
       continue;
     }
-    if (!FONT_STACK_TOKEN_NAMES.includes(key) && !isColorValue(v)) {
-      errors.push(`${key}: expected a color, got ${typeof v === 'string' ? `"${v}"` : String(v)}`);
-      continue;
+    // Font tokens used to skip validation entirely and be cast with `v as
+    // string`, so a number, an object, or a CSS fragment all reached
+    // setProperty untouched. Written as two branches rather than a ternary so
+    // each type guard actually narrows `v` for the assignment below.
+    const isFontToken = FONT_STACK_TOKEN_NAMES.includes(key);
+    const describe = () => (typeof v === 'string' ? `"${v}"` : String(v));
+    if (isFontToken) {
+      if (!isFontStackValue(v)) {
+        errors.push(`${key}: expected a font stack, got ${describe()}`);
+        continue;
+      }
+      tokens[key] = v;
+    } else {
+      if (!isColorValue(v)) {
+        errors.push(`${key}: expected a color, got ${describe()}`);
+        continue;
+      }
+      tokens[key] = v;
     }
-    tokens[key] = v as string;
   }
 
   if (Object.keys(rawTokens).length === 0) {

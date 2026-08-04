@@ -44,6 +44,21 @@ const MATH_CLASSES = [/^katex/, /^mord/, /^mrel/, /^mbin/, /^mopen/, /^mclose/, 
 
 export const sanitizeSchema: SanitizeSchema = {
   ...defaultSchema,
+  // No second `user-content-` prefix here.
+  //
+  // defaultSchema prefixes `id`/`name` so authored ids cannot clobber the host
+  // page's DOM, but it rewrites only the id — never the `href` pointing at it.
+  // mdast-util-to-hast already applies the very same prefix to footnote ids AND
+  // their hrefs together, so letting sanitize prefix again produced
+  // `id="user-content-user-content-fn-1"` against an unchanged
+  // `href="#user-content-fn-1"`: every footnote link aimed at an element that
+  // did not exist.
+  //
+  // Dropping the second pass is safe because the first one still happens
+  // upstream: ids reaching the DOM are namespaced exactly once. The reader also
+  // renders into its own page rather than embedding untrusted markdown beside a
+  // host app's DOM, which is the scenario the clobber guard exists for.
+  clobberPrefix: '',
   // Remove these subtrees wholesale. Disallowed elements are otherwise merely
   // unwrapped, which leaks their text: `<style>body{...}</style>` would drop the
   // tag but leave `body{...}` as visible literal text in the article. Inert,

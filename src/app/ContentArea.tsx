@@ -207,5 +207,3 @@ export function ContentArea({
     </main>
   );
 }
-
-export { articlePadding };

@@ -13,30 +13,50 @@ export function useScrollRestoration(containerRef: React.RefObject<HTMLElement |
     if (!activeName) return;
     let cancelled = false;
     restoredFor.current = null;
-    storage.getPreferences().then((prefs) => {
-      if (cancelled) return;
-      const offset = prefs.scrollPositions?.[activeName];
-      const el = containerRef.current;
-      if (el && offset) {
-        el.scrollTop = offset;
-      }
-      restoredFor.current = activeName;
-    });
+    storage
+      .getPreferences()
+      .then((prefs) => {
+        if (cancelled) return;
+        const offset = prefs.scrollPositions?.[activeName];
+        const el = containerRef.current;
+        if (el && offset) {
+          el.scrollTop = offset;
+        }
+        restoredFor.current = activeName;
+      })
+      .catch(() => {
+        // Start at the top rather than blocking recordScroll forever.
+        if (!cancelled) restoredFor.current = activeName;
+      });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeName]);
 
+  // A pending debounce would otherwise fire after unmount and write a scroll
+  // offset for a file the user has already closed.
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, []);
+
   const recordScroll: React.UIEventHandler<HTMLElement> = (e) => {
     if (!activeName || restoredFor.current !== activeName) return;
     const top = e.currentTarget.scrollTop;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      storage.getPreferences().then((prefs) => {
-        const scrollPositions = { ...prefs.scrollPositions, [activeName]: top };
-        storage.setPreferences({ scrollPositions }).catch(() => {});
-      });
+      storage
+        .getPreferences()
+        .then((prefs) => {
+          const scrollPositions = { ...prefs.scrollPositions, [activeName]: top };
+          return storage.setPreferences({ scrollPositions });
+        })
+        // Losing a scroll offset is not worth surfacing to the reader, but the
+        // read half of this read-modify-write could reject too and previously
+        // had no handler at all.
+        .catch(() => {});
     }, 200);
   };
 

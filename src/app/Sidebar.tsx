@@ -12,6 +12,7 @@ interface SidebarProps {
   files: LibraryFile[];
   activeName: string | null;
   isDirty: (name: string) => boolean;
+  isUnpersisted: (name: string) => boolean;
   onPickFile: (name: string) => void;
   onCloseFile: (name: string) => void;
   onGrantAccess: (name: string) => void;
@@ -56,6 +57,7 @@ export function Sidebar({
   files,
   activeName,
   isDirty,
+  isUnpersisted,
   onPickFile,
   onCloseFile,
   onGrantAccess,
@@ -134,6 +136,7 @@ export function Sidebar({
             const denied = f.perm === 'denied';
             const prompt = f.perm === 'prompt';
             const snapshot = f.kind === 'snapshot';
+            const unsaved = isUnpersisted(f.name);
             const showBadge = snapshot || denied;
             const dashed = snapshot || denied;
             return (
@@ -196,8 +199,24 @@ export function Sidebar({
                     ×
                   </span>
                 </div>
-                {(showBadge || prompt) && (
+                {(showBadge || prompt || unsaved) && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingLeft: 20 }}>
+                    {unsaved && (
+                      <span
+                        title="Storage is full — this file is open now but will not be here after a reload."
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          color: 'var(--danger)',
+                          border: '1px solid var(--danger)',
+                          background: 'var(--danger-bg)',
+                          borderRadius: 99,
+                          padding: '1px 6px',
+                        }}
+                      >
+                        not saved
+                      </span>
+                    )}
                     {showBadge && (
                       <span
                         style={{
@@ -280,7 +299,7 @@ export function Sidebar({
                 }}
               >
                 {over
-                  ? 'Quota exceeded — new files open read-only until you clear space.'
+                  ? 'Quota exceeded — new files still open, but cannot be saved for next time until you clear space.'
                   : 'Storage almost full — close a few snapshots.'}
               </div>
             )}
