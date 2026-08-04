@@ -259,3 +259,18 @@ export function useTableStyle(): string {
   const ctx = useContext(ThemeContext);
   return ctx?.resolvedTokens['--table-style'] ?? TABLE_STYLE_DEFAULT;
 }
+
+export const CHROME_ACCENT_SHAPE_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--chrome-accent-shape')!.default;
+
+// Read in JS for the same reason as useTableStyle: the two shapes differ in
+// their per-corner radii, not only in one property, so the choice cannot be
+// expressed by handing a single `var()` to the style object. The Sidebar picks
+// a whole declaration block on this value.
+//
+// Non-throwing like its neighbours above — the Sidebar renders in tests without
+// a ThemeProvider, and a missing provider should yield the contract default
+// rather than an error.
+export function useChromeAccentShape(): string {
+  const ctx = useContext(ThemeContext);
+  return ctx?.resolvedTokens['--chrome-accent-shape'] ?? CHROME_ACCENT_SHAPE_DEFAULT;
+}

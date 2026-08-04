@@ -78,6 +78,7 @@ tokens below — anything omitted falls back to the base light or dark palette.
 
 | Token | Description | Default |
 | --- | --- | --- |
+| `--surface-radius` | Corner radius for article surfaces (code, quotes, images); 0 for square corners | `8px` |
 | `--heading-marker` | Heading marker width when shown | `0.52em` |
 | `--table-radius` | Table outer corner radius; 0 for square corners | `8px` |
 | `--table-border-width` | Table cell grid line thickness; 0 removes the grid | `1px` |
@@ -91,7 +92,9 @@ Tokens with a closed set of accepted values. Anything outside the listed values 
 
 | Token | Description | Values | Default |
 | --- | --- | --- | --- |
-| `--heading-marker-style` | Heading marker glyphs: shown or hidden | `chevron` · `off` | `chevron` |
+| `--surface-corner` | Shape of article surface corners: rounded, or beveled (cut at 45°) | `round` · `bevel` | `round` |
+| `--chrome-accent-shape` | Active sidebar row highlight: rounded rectangle, or diagonal wedge | `flat` · `wedge` | `flat` |
+| `--heading-marker-style` | Heading marker glyphs: chevron family, diagonal wedge family, or hidden | `chevron` · `wedge` · `off` | `chevron` |
 | `--table-style` | Table rule style: full grid, row rules only, or header rule only | `grid` · `horizontal` · `minimal` | `grid` |
 
 ## Fonts

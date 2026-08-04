@@ -13,6 +13,7 @@ import { MarkdownImage } from './MarkdownImage';
 import { reactNodeToText } from './reactText';
 import { isNumericColumn } from './tableAlign';
 import { buildHeadingIds } from './pipeline/parse';
+import { CHIP_RADIUS, CORNER_SHAPE, MARK_RADIUS, SURFACE_RADIUS } from './radius';
 import { useHeadingMarkerStyle, useTableStyle } from '@/features/theming/ThemeContext';
 
 interface ArticleProps {
@@ -186,6 +187,82 @@ const MARKER_SHAPES: Record<MarkerLevel, (lead: string, trail: string) => ReactN
   ),
 };
 
+// The second glyph family, selected by --heading-marker-style: wedge. Same
+// 10x14 viewBox, same lead/trail contract, same depth ladder as the chevrons
+// above (two-tone -> two-tone inset -> one-tone -> rotated -> hollow) so the
+// levels stay rankable — only the geometry changes, from a pointed arrow to a
+// sheared parallelogram.
+//
+// The shear is a constant 3 units of run over the full 14 of rise across every
+// level, which is what makes the family read as one system: the diagonal never
+// changes angle, only what it encloses. A per-level angle was tried first and
+// the levels stopped looking related — the eye reads differing slopes as
+// different marks rather than as depth.
+//
+// Kept as full-bleed slabs rather than the chevrons' inset silhouettes because
+// a parallelogram loses its diagonal the moment it gets small: the slope is
+// carried by the long edge, so shortening it is what a size step already does
+// to h5 and h6. Depth here comes from fill count and from hollowing out, both
+// of which survive at 0.8em.
+const WEDGE_SHAPES: Record<MarkerLevel, (lead: string, trail: string) => ReactNode> = {
+  // Full-height slab split down the shear, both halves filled — the heaviest
+  // mark in the family, matching the two-tone chevron's rank at h2.
+  2: (lead, trail) => (
+    <>
+      <path d="M3 0 L6.5 0 L3.5 14 L0 14 Z" fill={lead} />
+      <path d="M7 0 L10.5 0 L7.5 14 L4 14 Z" fill={trail} />
+    </>
+  ),
+  // Same two-tone split, inset top and bottom by the same 1.5 units the h3
+  // chevron uses, so the two families step down at identical rates.
+  3: (lead, trail) => (
+    <>
+      <path d="M3.32 1.5 L6.82 1.5 L4.18 12.5 L0.68 12.5 Z" fill={lead} />
+      <path d="M7.32 1.5 L10.82 1.5 L8.18 12.5 L4.68 12.5 Z" fill={trail} />
+    </>
+  ),
+  // One tone: at h4's size the second fill muddies, exactly as it does on the
+  // chevron. Widened to span the box so the single slab keeps the weight the
+  // two halves had.
+  4: (lead) => <path d="M3.2 1 L8.6 1 L5.8 13 L0.4 13 Z" fill={lead} />,
+  // The h5 step is a shortened slab, not a rotation. The chevron family rotates
+  // here because its arrow has a point to turn; a parallelogram rotated is just
+  // another parallelogram, so this level instead halves the rise and keeps the
+  // slope, which reads as the same mark one rank down.
+  5: (lead) => <path d="M3.9 4 L8.5 4 L6.6 10.6 L2 10.6 Z" fill={lead} />,
+  // Hollow, closing the ladder the same way the chevron's h6 does — but the
+  // stroke is 1.5, not that glyph's 2.25, and the slab is wider than the h5
+  // above it rather than narrower.
+  //
+  // Both differences come from the same measurement. The chevron's h6 is an
+  // *open* path: its stroke has no interior to fill, so a heavy 2.25 still
+  // reads as a line. This one is a closed quadrilateral, and at h6's floored
+  // 7.7px box a 2.25 stroke leaves under a pixel of hole in the middle — the
+  // glyph renders as a solid smudge, collapsing into the filled h5 above it and
+  // inverting the ladder. Widening the slab buys interior for the hole and
+  // thinning the stroke keeps that hole open at the smallest size the box
+  // reaches. Re-measure both together if either changes: they trade against
+  // each other, and the constraint is that the hole must survive at 7.7px while
+  // the mark stays no lighter than a body-list bullet.
+  6: (lead) => (
+    <path
+      d="M3.5 3.6 L8.8 3.6 L7.3 10.4 L2 10.4 Z"
+      fill="none"
+      stroke={lead}
+      strokeWidth="1.5"
+      strokeLinejoin="miter"
+    />
+  ),
+};
+
+// Glyph families, keyed by the --heading-marker-style value that selects them.
+// `off` never reaches here — it is answered earlier, by markerIsHidden, since
+// it decides whether the element renders at all rather than what it draws.
+const MARKER_FAMILIES: Record<string, Record<MarkerLevel, (lead: string, trail: string) => ReactNode>> = {
+  chevron: MARKER_SHAPES,
+  wedge: WEDGE_SHAPES,
+};
+
 // Smallest the marker box is allowed to get. --heading-marker is in em, so it
 // scales with each *heading's* font-size and compounds with the smaller glyphs:
 // at h6 (0.8em) a 0.52em box is ~7px wide, and a shape inside it cannot reach a
@@ -199,17 +276,24 @@ const MARKER_SHAPES: Record<MarkerLevel, (lead: string, trail: string) => ReactN
 // bullet shrank and the floor didn't. Tying it to --fs holds the ratio steady
 // across the whole 15-21px range.
 //
-// 0.48 is measured, not chosen: it puts h6 at 1.04x a bullet, the closest the
+// 0.60 is measured, not chosen: it puts h6 at 1.04x a bullet, the closest the
 // sweep got without dropping under it (0.45 lands at 0.93x). Re-measure if the
 // h6 stroke or the bullet's own size changes. h4 leaves the floor behind at this
 // value — its own 0.52em is already wider — so it only binds h5 and h6.
-const MARKER_MIN_WIDTH = 'calc(var(--fs, 16px) * 0.48)';
+const MARKER_MIN_WIDTH = 'calc(var(--fs, 16px) * 0.60)';
 
 // `width` is the theme's --heading-marker rather than a constant, so a theme
 // can resize the glyph. Whether the glyph is drawn at all is a separate
 // question, answered by --heading-marker-style and handled by the heading
 // rather than here.
-function HeadingMarker({ level, width }: { level: MarkerLevel; width: string }) {
+//
+// `family` is that same token's other job: which glyph set to draw from. An
+// unrecognized value falls back to the chevrons rather than rendering nothing —
+// validation already rejects values outside the enum, so this only catches a
+// contract that gains a family name the renderer hasn't implemented yet, where
+// a missing glyph is a worse failure than the wrong one.
+function HeadingMarker({ level, width, family }: { level: MarkerLevel; width: string; family: string }) {
+  const shapes = MARKER_FAMILIES[family] ?? MARKER_SHAPES;
   // Per-level token. The shared accent is a fallback for contexts that bypass
   // mergeThemeTokens and set only the older pair; for themes, that inheritance
   // is resolved in merge.ts instead, since the per-level token is always set by
@@ -243,7 +327,7 @@ function HeadingMarker({ level, width }: { level: MarkerLevel; width: string }) 
         marginTop: `calc((${CHEVRON_LINE_HEIGHT}em - ${boxWidth} * 1.4) / 2)`,
       }}
     >
-      {MARKER_SHAPES[level](lead, trail)}
+      {shapes[level](lead, trail)}
     </svg>
   );
 }
@@ -426,7 +510,7 @@ function makeHeadingFactory(headingIds: Map<number, string>, markerStyle: string
               : {}),
           }}
         >
-          {markerLevel && <HeadingMarker level={markerLevel} width="var(--heading-marker)" />}
+          {markerLevel && <HeadingMarker level={markerLevel} width="var(--heading-marker)" family={markerStyle} />}
           {children}
         </Tag>
       );
@@ -461,7 +545,8 @@ function buildComponents(headingIds: Map<number, string>, markerStyle: string): 
           border: '1px solid var(--border)',
           // Bottom edge slightly heavier — the usual "physical keycap" cue.
           borderBottomWidth: 2,
-          borderRadius: 5,
+          borderRadius: CHIP_RADIUS,
+          ...CORNER_SHAPE,
           color: 'var(--fg)',
           whiteSpace: 'nowrap',
         }}
@@ -470,7 +555,7 @@ function buildComponents(headingIds: Map<number, string>, markerStyle: string): 
       </kbd>
     ),
     mark: ({ children }) => (
-      <mark style={{ background: 'var(--hl)', color: 'inherit', padding: '0.08em 0.22em', borderRadius: 3 }}>{children}</mark>
+      <mark style={{ background: 'var(--hl)', color: 'inherit', padding: '0.08em 0.22em', borderRadius: MARK_RADIUS, ...CORNER_SHAPE }}>{children}</mark>
     ),
     details: ({ children, ...props }) => (
       <details
@@ -480,7 +565,8 @@ function buildComponents(headingIds: Map<number, string>, markerStyle: string): 
           padding: '0.7em 1.1em',
           background: 'var(--quote-bg)',
           border: '1px solid var(--border)',
-          borderRadius: 8,
+          borderRadius: SURFACE_RADIUS,
+          ...CORNER_SHAPE,
         }}
       >
         {children}
@@ -515,7 +601,14 @@ function buildComponents(headingIds: Map<number, string>, markerStyle: string): 
               padding: '0.9em 1.3em',
               borderLeft: '4px solid var(--quote-accent)',
               background: 'var(--quote-bg)',
-              borderRadius: '0 8px 8px 0',
+              // Left corners stay square regardless of the theme: the accent bar
+              // is a flat 4px edge, and shaping the side it sits on — rounding
+              // or beveling — would pull the fill away from it and leave a notch.
+              // Zeroing the radius on that side also neutralizes --surface-corner
+              // there, since a corner shape needs a radius to have anything to
+              // reshape.
+              borderRadius: `0 ${SURFACE_RADIUS} ${SURFACE_RADIUS} 0`,
+              ...CORNER_SHAPE,
               color: 'var(--quote-fg)',
             }}
           >
@@ -532,7 +625,10 @@ function buildComponents(headingIds: Map<number, string>, markerStyle: string): 
             padding: '0.9em 1.3em',
             borderLeft: `4px solid ${callout.accent}`,
             background: callout.bg,
-            borderRadius: '0 8px 8px 0',
+            // Left corners stay square regardless of the theme, as above: the
+            // accent bar is a flat 4px edge that no corner shape should cut into.
+            borderRadius: `0 ${SURFACE_RADIUS} ${SURFACE_RADIUS} 0`,
+            ...CORNER_SHAPE,
             color: 'var(--quote-fg)',
           }}
         >
@@ -594,7 +690,8 @@ function buildComponents(headingIds: Map<number, string>, markerStyle: string): 
           height: 17,
           marginTop: 3,
           marginRight: 10,
-          borderRadius: 4,
+          borderRadius: CHIP_RADIUS,
+          ...CORNER_SHAPE,
           boxSizing: 'border-box',
           ...(checked
             ? { background: 'var(--link)', color: '#fff', alignItems: 'center', justifyContent: 'center', fontSize: 11 }
@@ -618,7 +715,8 @@ function buildComponents(headingIds: Map<number, string>, markerStyle: string): 
             fontSize: '0.85em',
             background: 'var(--badge-bg)',
             border: '1px solid var(--border)',
-            borderRadius: 5,
+            borderRadius: CHIP_RADIUS,
+            ...CORNER_SHAPE,
             padding: '0.15em 0.4em',
           }}
         >
@@ -686,7 +784,13 @@ function buildComponents(headingIds: Map<number, string>, markerStyle: string): 
           style={{
             margin: '1.4em 0',
             border: 'var(--table-border-width) solid var(--table-border)',
+            // Size from --table-radius, which stays independent (a theme can want
+            // a square data grid inside a rounded article), but shape from the
+            // shared --surface-corner: whether corners are cut or curved is one
+            // statement about the design, and a rounded table in a beveled
+            // article would read as two languages on one page.
             borderRadius: 'var(--table-radius)',
+            ...CORNER_SHAPE,
             overflow: 'hidden',
           }}
         >

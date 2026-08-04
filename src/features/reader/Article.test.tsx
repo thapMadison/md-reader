@@ -187,6 +187,51 @@ describe('Article tables', () => {
     expect(wrap?.style.overflowY).toBe('auto');
   });
 
+  // --surface-radius replaced a spread of hardcoded 3-10px constants. The point
+  // of the token is that every boxed surface rounds *in step*, so these assert
+  // the token reaches each one rather than checking a resolved pixel value —
+  // the value is the theme's business, the wiring is the contract's.
+  it('roots every article surface radius on --surface-radius', () => {
+    const { container } = renderMd(
+      '> Quoted text\n\n`inline code`\n\n<details><summary>S</summary>Body</details>',
+    );
+
+    const quote = container.querySelector<HTMLElement>('blockquote');
+    // Three corners only: the left pair stays square because the accent bar
+    // sits on that edge, so rounding it would leave a notch.
+    expect(quote?.style.borderRadius).toContain('var(--surface-radius)');
+    expect(quote?.style.borderRadius?.startsWith('0')).toBe(true);
+
+    expect(container.querySelector<HTMLElement>('details')?.style.borderRadius).toContain(
+      'var(--surface-radius)',
+    );
+
+    // Inline code takes a fraction of the token rather than the token itself:
+    // a card radius on a 0.15em chip swallows the glyph. calc() keeps that
+    // arithmetic in CSS so a theme can use any unit the validator allows.
+    const code = container.querySelector<HTMLElement>('code');
+    expect(code?.style.borderRadius).toContain('var(--surface-radius)');
+    expect(code?.style.borderRadius).toContain('calc');
+  });
+
+  // --surface-corner is the companion to the radius above: the length says how
+  // deep the corner treatment is, this says whether it is a curve or a 45° cut.
+  // Asserted through getPropertyValue rather than the camelCase style property
+  // because `corner-shape` is new enough that jsdom has no typed accessor for
+  // it — the declaration is still in the block, which is all that matters, since
+  // the browser is what interprets it.
+  it('shapes every article surface corner with --surface-corner', () => {
+    const { container } = renderMd(
+      '> Quoted text\n\n`inline code`\n\n<details><summary>S</summary>Body</details>\n\n| a |\n| - |\n| 1 |',
+    );
+
+    for (const sel of ['blockquote', 'details', 'code', '[data-table-frame]']) {
+      const el = container.querySelector<HTMLElement>(sel);
+      expect(el, sel).not.toBeNull();
+      expect(el?.style.getPropertyValue('corner-shape'), sel).toBe('var(--surface-corner)');
+    }
+  });
+
   it('exposes the theme table style as an attribute CSS can select on', () => {
     const { container } = renderMd(table);
     // Default when no ThemeProvider is mounted, per the contract default.
@@ -459,6 +504,42 @@ describe('Article headings', () => {
     // And with no glyph the heading is a plain block again, so it carries none
     // of the flex layout that exists only to seat the marker.
     expect(container.querySelector('h2')?.style.display).toBe('');
+  });
+
+  // The wedge family is selected by the same token that hides the marker, so
+  // the three values it accepts are genuinely three outcomes: chevron glyphs,
+  // wedge glyphs, no glyph. This covers the middle one — that a theme asking
+  // for wedges gets a different shape rather than the chevron fallback.
+  it('draws the wedge glyph family when the theme asks for it', async () => {
+    const storage = createFakeStorageService();
+    await storage.setPreferences({ themeId: 'azure-corporate' });
+
+    const { container } = render(
+      <StorageProvider service={storage}>
+        <ThemeProvider>
+          <Article source={'## Two\n\n### Three\n\n#### Four'} padding="0" />
+        </ThemeProvider>
+      </StorageProvider>,
+    );
+
+    // The glyph still renders — switching families must not cost the marker.
+    await waitFor(() => {
+      expect(container.querySelector('h2 svg')).not.toBeNull();
+    });
+
+    // Wedge paths are sheared slabs: four points, and the two-tone levels split
+    // into two filled halves exactly as the chevrons do. Asserting on the path
+    // data rather than a class because the shape *is* the difference between
+    // the families — a snapshot of the fill count alone would pass on chevrons.
+    const h2Paths = [...container.querySelectorAll('h2 svg path')];
+    expect(h2Paths).toHaveLength(2);
+    // The chevron's h2 lead path is the pointed "M0 0 L5 7 L0 14 Z"; the wedge's
+    // is a four-point slab. If the family switch silently fell back, this fails.
+    expect(h2Paths[0].getAttribute('d')).toBe('M3 0 L6.5 0 L3.5 14 L0 14 Z');
+
+    // h4 collapses to one tone in both families — the ladder is preserved
+    // across the switch, which is the property that makes wedge a drop-in.
+    expect(container.querySelectorAll('h4 svg path')).toHaveLength(1);
   });
 
   it('still assigns TOC ids after the marker refactor', () => {

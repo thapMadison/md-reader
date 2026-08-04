@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
+import { useChromeAccentShape } from '@/features/theming/ThemeContext';
 import { DropHintIcon, FileIcon, PlusIcon } from '@/components/ui/icons';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { LayoutMode } from '@/hooks/useBreakpoint';
@@ -21,6 +22,29 @@ interface SidebarProps {
   storageQuotaBytes: number;
   onClearAll: () => void;
 }
+
+// Shape of the active-row highlight, driven by --chrome-accent-shape.
+//
+// A wedge is a bevel applied asymmetrically: the two right-hand corners take a
+// deep 45-degree cut while the left stays square, which shears the trailing edge
+// into a diagonal. Expressed as corner-shape + a matching per-corner radius,
+// because corner-shape reshapes whatever radius each corner already has — the
+// radius supplies the depth of the cut, the shape supplies the angle.
+//
+// 8px, kept deliberately shallow. A row is 48px tall once it carries its
+// size/mtime line, so a deep cut on each of the two right corners does not meet
+// in the middle — it leaves a flat stretch between two long diagonals, and the
+// pair reads as a blunt arrowhead pointing out of the sidebar rather than as a
+// sheared edge. Shallow cuts keep most of the trailing edge vertical, which is
+// what makes the diagonal read as a shear at all.
+//
+// The flat variant keeps the original 6px round on all four corners. Both are
+// spelled out here rather than toggling a single property, so the fallback is
+// honest: a browser without corner-shape renders the wedge theme as a row with
+// an 8px round on its right side — a mild asymmetry rather than a broken
+// diagonal.
+const WEDGE_ROW = { borderRadius: '0 8px 8px 0', cornerShape: 'bevel' } as CSSProperties;
+const FLAT_ROW = { borderRadius: 6 } as CSSProperties;
 
 function formatMb(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1);
@@ -89,6 +113,7 @@ export function Sidebar({
   onClearAll,
 }: SidebarProps) {
   const [confirmClear, setConfirmClear] = useState(false);
+  const rowShape = useChromeAccentShape() === 'wedge' ? WEDGE_ROW : FLAT_ROW;
   const isMobile = mode === 'mobile';
   const pct = storageQuotaBytes > 0 ? Math.min(100, Math.round((storageUsedBytes / storageQuotaBytes) * 100)) : 0;
   const over = storageUsedBytes > storageQuotaBytes;
@@ -170,10 +195,15 @@ export function Sidebar({
                   flexDirection: 'column',
                   gap: 3,
                   padding: '6px 8px',
-                  borderRadius: 6,
                   cursor: 'pointer',
                   background: active ? 'var(--chrome-hl)' : 'transparent',
                   marginBottom: 1,
+                  // Only the active row takes the theme's accent shape. An
+                  // inactive row is transparent, so a cut corner there would be
+                  // invisible geometry that still has to be maintained — and the
+                  // wedge means "this is the one you are reading", which is
+                  // exactly what the active state already says.
+                  ...(active ? rowShape : FLAT_ROW),
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

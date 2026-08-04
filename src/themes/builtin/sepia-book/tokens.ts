@@ -64,10 +64,19 @@ export const tokens: ThemeTokens = {
   '--ok': '#5e6e34',
   '--ok-bg': 'rgba(94,110,52,0.08)',
   '--edge-shadow': 'rgba(61,50,38,0.15)',
+  // Square, for the reason the table corners already are: rounding is a screen
+  // idiom, and a typeset page has no rounded rectangles anywhere on it. The
+  // table was only the one surface that could say so before this token existed.
+  '--surface-radius': '0',
+  // Moot at radius 0 — a corner shape needs a radius to reshape — but stated
+  // rather than left to the base theme, so raising the radius later gives this
+  // theme the round it would want and not whatever the fallback happened to be.
+  '--surface-corner': 'round',
   '--chrome-fg': '#3d3226',
   '--chrome-muted': '#8a7a63',
   '--chrome-border': '#ddd0b6',
   '--chrome-hl': 'rgba(156,90,26,0.09)',
+  '--chrome-accent-shape': 'flat',
   '--syn-kw': '#a03d2e',
   '--syn-str': '#5e6e34',
   '--syn-fn': '#2d6a7a',

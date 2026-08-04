@@ -51,7 +51,13 @@ export const tokens: ThemeTokens = {
   '--h6-accent-soft': 'rgba(11,106,138,0.34)',
   // The marker is this theme's signature, and with every level carrying a
   // different hue it is also what ties each heading to its section accent.
-  '--heading-marker-style': 'chevron',
+  //
+  // Wedge rather than chevron: this theme's geometry is diagonal — sheared
+  // planes and beveled corners rather than curves and points — and the wedge
+  // family shears a constant slope where the chevron family draws arrowheads.
+  // The depth ladder is identical between the two, so switching families costs
+  // nothing in how readably the levels rank.
+  '--heading-marker-style': 'wedge',
   '--heading-marker': '0.52em',
   '--heading-rule': '#c9d9e8',
   '--badge-bg': '#e8eef5',
@@ -59,7 +65,16 @@ export const tokens: ThemeTokens = {
   // discrete value and the vertical rules are what stop the eye drifting across
   // columns. Softer corners match the rest of its UI surfaces.
   '--table-style': 'grid',
-  '--table-radius': '8px',
+  // Beveled like every other surface (--surface-corner shapes both), but deeper
+  // than --surface-radius rather than equal to it. The frame is ~650px wide
+  // where a fence is the same width but far shorter, so the same 7px cut that
+  // reads clearly on a code block is proportionally lost on the table — the
+  // corner treatment has to grow with the surface to stay legible as a facet.
+  //
+  // 12px is the top of that range, not the middle. Past it the cut starts eating
+  // into the header band, and a notched header on a data grid reads as damage
+  // rather than as geometry.
+  '--table-radius': '12px',
   '--table-header-bg': '#e4ecf4',
   '--table-header-fg': '#0f1b2d',
   '--table-row-alt': 'rgba(41,163,224,0.05)',
@@ -80,10 +95,32 @@ export const tokens: ThemeTokens = {
   '--ok': '#2f8f63',
   '--ok-bg': 'rgba(47,143,99,0.10)',
   '--edge-shadow': 'rgba(17,28,46,0.14)',
+  // Beveled, not rounded and not square. This theme's geometry is diagonal: the
+  // wedge markers shear rather than curve, and a rounded card under a sheared
+  // glyph reads as two design languages sharing a page. Square was the closest
+  // this theme could get before --surface-corner existed; a 45-degree cut is
+  // what it was actually reaching for, and it states the diagonal on the corner
+  // itself rather than merely declining to curve it.
+  //
+  // 7px because the cut has to survive being scaled down. The chip step is
+  // 0.625 of this, so 7px leaves inline code a 4.4px notch — visible as a cut
+  // rather than as a rounding error — while a card at 1.125 lands on 7.9px,
+  // deep enough to read across a full-width fence without eating its corner.
+  //
+  // On a browser without corner-shape this falls back to a 7px round, which is
+  // a milder version of the same intent rather than a broken one.
+  '--surface-radius': '7px',
+  '--surface-corner': 'bevel',
   '--chrome-fg': '#e8eef6',
   '--chrome-muted': '#93a6bd',
   '--chrome-border': '#2a3b55',
   '--chrome-hl': 'rgba(41,163,224,0.16)',
+  // The diagonal, carried into the chrome. The reference this theme is drawn
+  // from cuts angled planes across its canvas; the active file row is where
+  // that gesture can land without costing anything, since it is already the one
+  // element in the sidebar meant to pull the eye, and its label sits on
+  // --chrome-fg rather than the dimmer --chrome-muted the inactive rows use.
+  '--chrome-accent-shape': 'wedge',
   '--syn-kw': '#b3245f',
   '--syn-str': '#0a5c3e',
   '--syn-fn': '#7038b8',

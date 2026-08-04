@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { CARD_RADIUS, CHIP_RADIUS, CORNER_SHAPE } from './radius';
 
 interface MermaidBlockProps {
   source: string;
@@ -47,7 +48,7 @@ export function MermaidBlock({ source }: MermaidBlockProps) {
 
   if (displayError) {
     return (
-      <div style={{ position: 'relative', margin: '1.4em 0', border: '1px solid var(--danger)', background: 'var(--danger-bg)', borderRadius: 9, padding: '14px 16px' }}>
+      <div style={{ position: 'relative', margin: '1.4em 0', border: '1px solid var(--danger)', background: 'var(--danger-bg)', borderRadius: CARD_RADIUS, ...CORNER_SHAPE, padding: '14px 16px' }}>
         <span style={{ position: 'absolute', top: 8, right: 10, fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--muted)', letterSpacing: '.03em' }}>
           mermaid
         </span>
@@ -59,7 +60,8 @@ export function MermaidBlock({ source }: MermaidBlockProps) {
             padding: '10px 12px',
             background: 'var(--code-bg)',
             border: '1px solid var(--border)',
-            borderRadius: 7,
+            borderRadius: CHIP_RADIUS,
+            ...CORNER_SHAPE,
             fontFamily: 'var(--font-mono)',
             fontSize: 11,
             lineHeight: 1.6,
@@ -74,7 +76,7 @@ export function MermaidBlock({ source }: MermaidBlockProps) {
   }
 
   return (
-    <div style={{ position: 'relative', margin: '1.4em 0', border: '1px solid var(--border)', background: 'var(--bg)', borderRadius: 9, padding: '24px 20px' }}>
+    <div style={{ position: 'relative', margin: '1.4em 0', border: '1px solid var(--border)', background: 'var(--bg)', borderRadius: CARD_RADIUS, ...CORNER_SHAPE, padding: '24px 20px' }}>
       <span style={{ position: 'absolute', top: 8, right: 10, fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--muted)', letterSpacing: '.03em' }}>
         mermaid
       </span>

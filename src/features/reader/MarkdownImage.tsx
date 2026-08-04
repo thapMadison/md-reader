@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BrokenImageIcon } from '@/components/ui/icons';
+import { CARD_RADIUS, CORNER_SHAPE } from './radius';
 
 interface MarkdownImageProps {
   src?: string;
@@ -28,7 +29,8 @@ export function MarkdownImage({ src, alt }: MarkdownImageProps) {
           gap: 6,
           height: 140,
           border: '1.5px dashed var(--border)',
-          borderRadius: 10,
+          borderRadius: CARD_RADIUS,
+          ...CORNER_SHAPE,
           background: 'var(--code-bg)',
           color: 'var(--muted)',
         }}
@@ -44,7 +46,7 @@ export function MarkdownImage({ src, alt }: MarkdownImageProps) {
     <img
       src={src}
       alt={alt}
-      style={{ width: '100%', borderRadius: 10, display: 'block' }}
+      style={{ width: '100%', borderRadius: CARD_RADIUS, ...CORNER_SHAPE, display: 'block' }}
       onError={() => setFailedSrc(src)}
     />
   );

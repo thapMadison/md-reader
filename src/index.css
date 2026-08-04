@@ -118,7 +118,8 @@ article .katex-display {
   margin: 1.5em 0;
   padding: 0.9em 1.1em;
   background: var(--math-bg);
-  border-radius: 8px;
+  border-radius: var(--surface-radius);
+  corner-shape: var(--surface-corner);
   /* A long derivation must scroll inside its own block rather than widen the
      article — the same containment rule the table wrapper follows. */
   overflow-x: auto;
@@ -376,8 +377,11 @@ article[data-table-style] tbody tr:last-child > * {
     --table-font-size: 0.88em !important;
     /* Square on paper: the radius exists to soften a UI surface, and a rounded
        frame reads as a screenshot pasted into a document rather than as a
-       printed table. */
+       printed table. The same argument applies to every other boxed surface —
+       code fences, quotes, images — so --surface-radius is flattened with it
+       rather than leaving a printed page with square tables and round fences. */
     --table-radius: 0 !important;
+    --surface-radius: 0 !important;
     --math-fg: #1f2328 !important;
     --math-bg: rgba(9, 105, 218, 0.04) !important;
     --syn-kw: #cf222e !important;

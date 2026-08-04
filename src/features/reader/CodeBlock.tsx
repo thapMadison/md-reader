@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { MermaidBlock } from './MermaidBlock';
 import { reactNodeToText } from './reactText';
+import { CARD_RADIUS, CHIP_RADIUS, CORNER_SHAPE } from './radius';
 
 interface CodeBlockProps {
   className?: string;
@@ -48,7 +49,7 @@ export function CodeBlock({ className, children }: CodeBlockProps) {
         setHovered(false);
         setCopyState('idle');
       }}
-      style={{ margin: '1.4em 0', background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 9, overflow: 'hidden' }}
+      style={{ margin: '1.4em 0', background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: CARD_RADIUS, ...CORNER_SHAPE, overflow: 'hidden' }}
     >
       {/* Header strip is a sibling of <pre>, so it stays put when code scrolls horizontally. */}
       <div
@@ -85,7 +86,8 @@ export function CodeBlock({ className, children }: CodeBlockProps) {
             fontSize: 10.5,
             fontFamily: 'var(--font-ui)',
             border: `1px solid ${copyState === 'error' ? 'var(--danger)' : 'var(--border)'}`,
-            borderRadius: 5,
+            borderRadius: CHIP_RADIUS,
+            ...CORNER_SHAPE,
             background: 'var(--bg)',
             color: copyState === 'error' ? 'var(--danger)' : 'var(--fg)',
             cursor: 'pointer',

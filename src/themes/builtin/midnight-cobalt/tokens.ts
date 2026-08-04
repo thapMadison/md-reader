@@ -84,10 +84,16 @@ export const tokens: ThemeTokens = {
   '--ok': '#9bd22d',
   '--ok-bg': 'rgba(155,210,45,0.12)',
   '--edge-shadow': 'rgba(0,0,0,0.55)',
+  // 4px, matching the source theme's own uniform 4px on fences, quotes, inline
+  // code and images — the same value its --table-radius already carries.
+  '--surface-radius': '4px',
+  // Rounded, matching the source theme's own soft 4px corners.
+  '--surface-corner': 'round',
   '--chrome-fg': '#e9eef5',
   '--chrome-muted': '#b9c6d6',
   '--chrome-border': '#1c89cd',
   '--chrome-hl': 'rgba(34,169,255,0.12)',
+  '--chrome-accent-shape': 'flat',
   // Mapped from the source's CodeMirror token colors; these are checked against
   // --code-bg (#000000) rather than --bg.
   '--syn-kw': '#22a9ff',

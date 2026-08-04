@@ -36,10 +36,67 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   { name: '--quote-bg', type: 'color', description: 'Blockquote background wash', default: 'rgba(9,105,218,0.05)' },
   { name: '--hl', type: 'color', description: 'Hover / active row highlight', default: 'rgba(9,105,218,0.08)' },
   { name: '--edge-shadow', type: 'color', description: 'Wide-table horizontal-scroll edge fade', default: 'rgba(31,35,40,0.12)' },
+  // Corner rounding for every boxed surface in the article — code blocks,
+  // blockquotes and callouts, <details>, inline code and kbd, images, display
+  // math. One token rather than one per element: these radii were a spread of
+  // hardcoded 3-10px constants that no theme could reach, and the thing a theme
+  // actually wants to say is "this design is rounded" or "this design is
+  // square", which is a single decision. Tables keep their own --table-radius,
+  // which predates this and is genuinely independent: a theme can want a
+  // square-cornered data grid inside an otherwise rounded article.
+  //
+  // Elements scale off this rather than all taking it raw — an 8px card radius
+  // on a 0.15em inline-code chip would swallow the glyph — so the smaller
+  // surfaces use a fraction of it via calc(). At `0` every one of them lands
+  // back on 0, which is what makes a fully square theme expressible.
+  { name: '--surface-radius', type: 'length', description: 'Corner radius for article surfaces (code, quotes, images); 0 for square corners', default: '8px' },
+  // What *kind* of corner --surface-radius describes. The length above is the
+  // size of the corner treatment; this picks its shape. They are two tokens
+  // rather than one because a bevel and a round are the same measurement applied
+  // differently — a theme switching to bevel keeps whatever depth it already
+  // tuned, and a theme setting `0` gets a square corner under either value.
+  //
+  // Implemented with CSS `corner-shape`, which is the only technique that keeps
+  // a border following the cut. `clip-path: polygon()` was tried and rejected:
+  // it clips the border away at each cut corner, leaving raw open edges on every
+  // bordered surface (fences, mermaid frames, callouts), and it fights
+  // `overflow: auto` on the surfaces that scroll.
+  //
+  // Degrades by construction. `corner-shape` is a young property; a browser
+  // without it drops the declaration and keeps the `border-radius` beside it, so
+  // a beveled theme renders rounded rather than broken. Nothing reads this token
+  // back in JS — it is emitted straight into the style declaration — so there is
+  // no second code path to keep in step with what the browser actually did.
+  {
+    name: '--surface-corner',
+    type: 'enum',
+    description: 'Shape of article surface corners: rounded, or beveled (cut at 45°)',
+    default: 'round',
+    values: ['round', 'bevel'],
+  },
   { name: '--chrome-fg', type: 'color', description: 'Primary text and icons on chrome surfaces', default: '#1f2328' },
   { name: '--chrome-muted', type: 'color', description: 'Secondary text and metadata on chrome surfaces', default: '#59636e' },
   { name: '--chrome-border', type: 'color', description: 'Hairlines and control outlines on chrome surfaces', default: '#d1d9e0' },
   { name: '--chrome-hl', type: 'color', description: 'Hover / active row highlight on chrome surfaces', default: 'rgba(9,105,218,0.08)' },
+  // Shape of the active-file highlight in the sidebar. `wedge` shears its
+  // trailing edge into a diagonal, which is how a theme built on angled planes
+  // states that geometry in the chrome.
+  //
+  // Deliberately scoped to the active row rather than to the chrome fill at
+  // large. Angled planes across the sidebar background were measured and cost
+  // real legibility: the tonal edge cuts through the file list and drops
+  // --chrome-muted contrast from 6.86 to 5.16 behind the names the user is
+  // actually reading. The active row carries no such cost — it is already the
+  // element meant to draw the eye, and its label uses --chrome-fg, which
+  // measures 10.16 on the wedge. Same design language, paid for out of the one
+  // surface that was built to spend it.
+  {
+    name: '--chrome-accent-shape',
+    type: 'enum',
+    description: 'Active sidebar row highlight: rounded rectangle, or diagonal wedge',
+    default: 'flat',
+    values: ['flat', 'wedge'],
+  },
 
   // Text
   { name: '--fg', type: 'color', description: 'Primary text color', default: '#1f2328' },
@@ -89,12 +146,18 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   // while the width is a measurement. A theme that turns the marker off keeps
   // its width value, so re-enabling it restores the intended size rather than
   // reverting to the contract default.
+  // `wedge` is a second glyph family, not a variant of the first: the chevron
+  // ladder ranks its levels by silhouette (solid arrow -> diamond -> hollow),
+  // while the wedge ladder shears a parallelogram and ranks by the same
+  // two-tone/one-tone/hollow progression at a constant diagonal. A theme built
+  // on diagonal geometry cannot express that by recoloring a chevron, which is
+  // why this is an enum value rather than another length knob.
   {
     name: '--heading-marker-style',
     type: 'enum',
-    description: 'Heading marker glyphs: shown or hidden',
+    description: 'Heading marker glyphs: chevron family, diagonal wedge family, or hidden',
     default: 'chevron',
-    values: ['chevron', 'off'],
+    values: ['chevron', 'wedge', 'off'],
   },
   { name: '--heading-marker', type: 'length', description: 'Heading marker width when shown', default: '0.52em' },
   { name: '--heading-rule', type: 'color', description: 'Underline rule beneath level-2 headings', default: '#d1d9e0' },
