@@ -47,20 +47,43 @@ Blockquotes, code blocks, headings, and callouts have their own accent tokens, s
 restyle them without dragging `--link` along. `--quote-accent` draws the blockquote's left bar
 and `--quote-fg` its body text; `--code-header-bg` and `--code-header-fg` style the strip above
 a code block that carries the language label and copy button; `--heading-accent` and
-`--heading-accent-soft` are the two tones of the chevron before level-2 and level-3 headings,
-and `--heading-rule` is the hairline under a level-2 heading. One chevron serves both h2 and
-h3, so a theme that colors those levels differently can split it with `--h2-accent` /
-`--h2-accent-soft` and `--h3-accent` / `--h3-accent-soft`; levels left unset inherit
-`--heading-accent`, which means a theme written before these existed keeps its chevron color.
+`--heading-accent-soft` are the two tones of the marker before a heading, and `--heading-rule`
+is the hairline under a level-2 heading.
 
-The chevron is optional. `--heading-marker` is its width, and setting it to `0` removes the
+Levels 2 through 6 each draw a marker, and each draws a *different shape*: a full-height
+two-tone chevron at h2, an inset two-tone chevron at h3, a single-tone chevron at h4, a
+diamond at h5, a hollow chevron at h6. The weight drops as the level descends, which is what makes depth
+readable — h4 and h6 differ by only 0.22em of type size, far too little to tell apart on their
+own. Note that from h4 down the shapes change *kind* rather than size, because those three
+levels share one floored glyph box (see below) and so have no size step left to differ by.
+h1 has no marker: it opens the document rather than sitting in the outline.
+
+No marker is allowed to render lighter than a body-list bullet, since a heading outranks the
+list beneath it. `--heading-marker` is an em length, so it shrinks with each level's font-size
+and would leave h5 and h6 as specks; the glyph box is therefore floored at a minimum size.
+That floor is a fraction of `--fs`, not a fixed pixel value, because the bullet it is matched
+against is sized off `--fs` too — pinning it in px would let the ratio drift as the reader
+changes font size. A theme that enlarges `--heading-marker` is unaffected: the floor only ever
+raises the bottom of the ladder, and at the default it binds only h5 and h6.
+
+Each level also has its own color pair — `--h2-accent` / `--h2-accent-soft` through
+`--h6-accent` / `--h6-accent-soft` — so a theme that colors its heading levels differently can
+dress each marker in its own heading's hue instead of forcing five glyphs through one accent.
+Levels left unset inherit `--heading-accent`, so a theme written before these existed keeps
+its marker color across all five. The `-soft` tone is the trailing half of the two-tone glyphs
+(h2 and h3); the one-tone shapes below them ignore it, but the token exists at every level so
+a theme can restyle a level without first knowing which shape it draws.
+`azure-corporate` is the worked example: each `--h*-accent` there matches the `--h*-fg` of the
+same level exactly, so every marker reads as part of its heading.
+
+The marker is optional. `--heading-marker` is its width, and setting it to `0` removes the
 glyph entirely — not merely hides it — for themes that would rather carry hierarchy on color,
 size, and spacing alone. `github-light` and `sepia-book` ship with it off; `azure-corporate`
 and `night-owl` keep it. Note that the glyph sits in the text column, so a theme with the
-marker on indents its h2/h3 text by the marker width plus a `0.42em` gap, while h1 and h4–h6
-stay flush left. That offset is the trade for having a marker; the h2 rule is unaffected and
-still spans from the article's left edge. The accent tokens above stay meaningful either way,
-so a theme that turns the marker back on gets a correctly dressed glyph.
+marker on indents h2–h6 text by the marker width plus a `0.42em` gap, while h1 stays flush
+left. That offset is the trade for having a marker; the h2 rule is unaffected and still spans
+from the article's left edge. The accent tokens above stay meaningful either way, so a theme
+that turns the marker back on gets correctly dressed glyphs.
 GitHub-style callouts
 (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`) render as accented
 cards drawing on `--link`, `--ok`/`--ok-bg`, `--warn`/`--warn-bg`, and `--danger`/`--danger-bg`.
@@ -71,9 +94,9 @@ syntaxes are styled by one set of tokens.
 ### Article text color
 
 `--body-fg` colors paragraph text and `--h1-fg` … `--h6-fg` color heading text, one token per
-level. Note the split from the accent tokens above: `--heading-accent`, `--heading-accent-soft`,
-and `--heading-rule` draw the *chevron glyph and the rule*, never the letters — so a theme can
-tint the h2 text and leave its chevron alone, or the reverse.
+level. Note the split from the accent tokens above: `--heading-accent`, the `--h*-accent` pairs,
+and `--heading-rule` draw the *marker glyph and the rule*, never the letters — so a theme can
+tint the h2 text and leave its marker alone, or the reverse.
 
 These are also separate from `--fg`, which colors chrome (toolbar, sidebar, dialogs) as well as
 the canvas. Recoloring the article through `--fg` would drag the surrounding UI with it;

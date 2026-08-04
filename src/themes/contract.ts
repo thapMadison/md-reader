@@ -1,10 +1,10 @@
 export type TokenType = 'color' | 'length' | 'font-stack';
 
-// The one length token, `--heading-marker`, doubles as the chevron's on/off
-// switch: a theme sets it to `0` to drop the glyph entirely, or to an em length
-// to size it. Expressed as a length rather than a boolean because the contract
-// already carries typed lengths, and because a theme keeping the chevron may
-// still want to tune how far it indents the heading it precedes — one number
+// The one length token, `--heading-marker`, doubles as the marker's on/off
+// switch: a theme sets it to `0` to drop the glyphs entirely, or to an em length
+// to size them. Expressed as a length rather than a boolean because the contract
+// already carries typed lengths, and because a theme keeping the markers may
+// still want to tune how far they indent the headings they precede — one number
 // covers both the switch and the size.
 
 export interface TokenSpec {
@@ -52,19 +52,30 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   { name: '--quote-fg', type: 'color', description: 'Blockquote body text', default: '#1f2328' },
   { name: '--code-header-bg', type: 'color', description: 'Code block header strip background', default: '#f6f8fa' },
   { name: '--code-header-fg', type: 'color', description: 'Code block language label and header text', default: '#59636e' },
-  { name: '--heading-accent', type: 'color', description: 'Heading chevron accent, leading tone', default: '#0969da' },
-  { name: '--heading-accent-soft', type: 'color', description: 'Heading chevron accent, trailing tone', default: 'rgba(9,105,218,0.35)' },
-  // Per-level chevron overrides. One chevron serves both h2 and h3, so a theme
-  // that colors those levels differently can't dress the glyph from a single
-  // accent without clashing with one of them. These default to the shared
-  // --heading-accent pair, so a theme only sets them when it wants the split.
-  { name: '--h2-accent', type: 'color', description: 'Level-2 chevron, leading tone', default: '#0969da' },
-  { name: '--h2-accent-soft', type: 'color', description: 'Level-2 chevron, trailing tone', default: 'rgba(9,105,218,0.35)' },
-  { name: '--h3-accent', type: 'color', description: 'Level-3 chevron, leading tone', default: '#0969da' },
-  { name: '--h3-accent-soft', type: 'color', description: 'Level-3 chevron, trailing tone', default: 'rgba(9,105,218,0.35)' },
-  // Width of the h2/h3 chevron. `0` removes the glyph and the space it reserves,
+  { name: '--heading-accent', type: 'color', description: 'Heading marker accent, leading tone', default: '#0969da' },
+  { name: '--heading-accent-soft', type: 'color', description: 'Heading marker accent, trailing tone', default: 'rgba(9,105,218,0.35)' },
+  // Per-level marker colors, h2 through h6. A theme that colors its heading
+  // levels differently can't dress five glyphs from one accent without clashing
+  // with most of them, so each level gets its own pair. All default to the
+  // shared --heading-accent pair, which means a theme only sets the levels it
+  // wants to split — see applyAccentInheritance in merge.ts.
+  //
+  // The `-soft` tone is the trailing half of the two-tone glyphs (h2/h3). The
+  // one-tone glyphs below them ignore it; the token still exists per level so a
+  // theme can restyle a level without first having to know which shape it draws.
+  { name: '--h2-accent', type: 'color', description: 'Level-2 marker, leading tone', default: '#0969da' },
+  { name: '--h2-accent-soft', type: 'color', description: 'Level-2 marker, trailing tone', default: 'rgba(9,105,218,0.35)' },
+  { name: '--h3-accent', type: 'color', description: 'Level-3 marker, leading tone', default: '#0969da' },
+  { name: '--h3-accent-soft', type: 'color', description: 'Level-3 marker, trailing tone', default: 'rgba(9,105,218,0.35)' },
+  { name: '--h4-accent', type: 'color', description: 'Level-4 marker (single-tone chevron)', default: '#0969da' },
+  { name: '--h4-accent-soft', type: 'color', description: 'Level-4 marker, trailing tone (unused by the default shape)', default: 'rgba(9,105,218,0.35)' },
+  { name: '--h5-accent', type: 'color', description: 'Level-5 marker (diamond)', default: '#0969da' },
+  { name: '--h5-accent-soft', type: 'color', description: 'Level-5 marker, trailing tone (unused by the default shape)', default: 'rgba(9,105,218,0.35)' },
+  { name: '--h6-accent', type: 'color', description: 'Level-6 marker (hollow chevron)', default: '#0969da' },
+  { name: '--h6-accent-soft', type: 'color', description: 'Level-6 marker, trailing tone (unused by the default shape)', default: 'rgba(9,105,218,0.35)' },
+  // Width of the h2-h6 marker. `0` removes the glyph and the space it reserves,
   // for themes that would rather carry hierarchy on color and size alone.
-  { name: '--heading-marker', type: 'length', description: 'Heading chevron width; 0 hides the chevron', default: '0.52em' },
+  { name: '--heading-marker', type: 'length', description: 'Heading marker width; 0 hides the marker', default: '0.52em' },
   { name: '--heading-rule', type: 'color', description: 'Underline rule beneath level-2 headings', default: '#d1d9e0' },
   { name: '--badge-bg', type: 'color', description: 'Inline code and chip background', default: '#f6f8fa' },
 
@@ -140,7 +151,12 @@ export interface MetricSpec {
 }
 
 export const METRIC_CONTRACT: readonly MetricSpec[] = [
-  { name: '--fs', description: 'Article base font size', default: 17, min: 15, max: 21, unit: 'px' },
+  // 16px rather than 17: h5 and h6 are deliberately sub-1em (see headingStyle in
+  // Article.tsx), so a larger base makes body text out-shout the headings under
+  // it. Lowering the base keeps every heading's *relative* step intact while
+  // narrowing that gap — the alternative, enlarging h5/h6, would collapse them
+  // into h4, which is exactly the collision their marker shapes exist to avoid.
+  { name: '--fs', description: 'Article base font size', default: 11, min: 11, max: 21, unit: 'px' },
   { name: '--cw', description: 'Article max content width', default: 1280, min: 620, max: 1280, unit: 'px' },
   { name: '--lh', description: 'Article line height', default: 1.7, min: 1.4, max: 2.1, unit: '' },
 ] as const;

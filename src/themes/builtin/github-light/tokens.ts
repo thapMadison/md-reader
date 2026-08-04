@@ -23,14 +23,20 @@ export const tokens: ThemeTokens = {
   '--code-header-fg': '#59636e',
   '--heading-accent': '#0969da',
   '--heading-accent-soft': 'rgba(9,105,218,0.35)',
-  // Headings here are neutral, so both chevrons keep the one blue accent.
+  // Headings here are neutral, so every marker keeps the one blue accent.
   '--h2-accent': '#0969da',
   '--h2-accent-soft': 'rgba(9,105,218,0.35)',
   '--h3-accent': '#0969da',
   '--h3-accent-soft': 'rgba(9,105,218,0.35)',
-  // No chevron: this theme mirrors GitHub's own rendering, where hierarchy is
+  '--h4-accent': '#0969da',
+  '--h4-accent-soft': 'rgba(9,105,218,0.35)',
+  '--h5-accent': '#0969da',
+  '--h5-accent-soft': 'rgba(9,105,218,0.35)',
+  '--h6-accent': '#0969da',
+  '--h6-accent-soft': 'rgba(9,105,218,0.35)',
+  // No marker: this theme mirrors GitHub's own rendering, where hierarchy is
   // carried by size and the h2 rule alone. The --h*-accent values above stay
-  // set so the glyph returns correctly dressed if a user re-enables it.
+  // set so the glyphs return correctly dressed if a user re-enables them.
   '--heading-marker': '0',
   '--heading-rule': '#d1d9e0',
   '--badge-bg': '#f6f8fa',

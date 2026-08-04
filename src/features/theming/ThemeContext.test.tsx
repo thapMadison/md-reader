@@ -32,8 +32,13 @@ describe('metric CSS variables', () => {
     harness();
     await waitFor(() => expect(cssVar('--fs')).not.toBe(''));
 
-    expect(cssVar('--fs')).toBe('17px');
-    expect(cssVar('--cw')).toBe('1280px');
+    // Read the expected values off the contract rather than repeating them: what
+    // this test guards is the px suffix, not the particular default, and pinning
+    // the number here breaks the test every time a default is retuned.
+    const fs = METRIC_CONTRACT.find((m) => m.name === '--fs')!;
+    const cw = METRIC_CONTRACT.find((m) => m.name === '--cw')!;
+    expect(cssVar('--fs')).toBe(`${fs.default}px`);
+    expect(cssVar('--cw')).toBe(`${cw.default}px`);
   });
 
   it('writes --lh unitless, not "1.7px"', async () => {

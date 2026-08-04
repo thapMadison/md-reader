@@ -28,9 +28,10 @@ export const tokens: ThemeTokens = {
   '--quote-fg': '#22334d',
   '--code-header-bg': '#e4ecf4',
   '--code-header-fg': '#4a5d75',
-  // This theme colors h2 and h3 differently, so each chevron takes its own
-  // heading's hue and the glyph reads as part of the heading rather than as a
-  // separate accent. The shared pair below is the fallback for anything that
+  // This theme gives every heading level its own hue, so each marker takes the
+  // hue of the heading it precedes and reads as part of that heading rather
+  // than as a separate accent. Each --h*-accent below matches the --h*-fg of
+  // the same level exactly. The shared pair is the fallback for anything that
   // doesn't consult the per-level tokens (the print block), kept teal because
   // it has to sit beside both the warm h2 and the cool h3.
   '--heading-accent': '#0d9bb5',
@@ -39,8 +40,17 @@ export const tokens: ThemeTokens = {
   '--h2-accent-soft': 'rgba(184,66,14,0.34)',
   '--h3-accent': '#1665a8',
   '--h3-accent-soft': 'rgba(22,101,168,0.34)',
-  // The chevron is this theme's signature mark, and with h2/h3 carrying
-  // different hues it is also what ties each heading to its section accent.
+  // h4-h6 draw single-tone shapes, so the -soft tone is unused by the default
+  // glyphs; it is set to each level's own hue anyway so a theme edit that
+  // switches one of these levels to a two-tone shape stays in palette.
+  '--h4-accent': '#0f7350',
+  '--h4-accent-soft': 'rgba(15,115,80,0.34)',
+  '--h5-accent': '#6d3bc4',
+  '--h5-accent-soft': 'rgba(109,59,196,0.34)',
+  '--h6-accent': '#0b6a8a',
+  '--h6-accent-soft': 'rgba(11,106,138,0.34)',
+  // The marker is this theme's signature, and with every level carrying a
+  // different hue it is also what ties each heading to its section accent.
   '--heading-marker': '0.52em',
   '--heading-rule': '#c9d9e8',
   '--badge-bg': '#e8eef5',

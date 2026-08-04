@@ -237,10 +237,19 @@ article tbody tr:nth-child(even) {
     --h2-accent-soft: rgba(9, 105, 218, 0.35) !important;
     --h3-accent: #0969da !important;
     --h3-accent-soft: rgba(9, 105, 218, 0.35) !important;
+    --h4-accent: #0969da !important;
+    --h4-accent-soft: rgba(9, 105, 218, 0.35) !important;
+    --h5-accent: #0969da !important;
+    --h5-accent-soft: rgba(9, 105, 218, 0.35) !important;
+    --h6-accent: #0969da !important;
+    --h6-accent-soft: rgba(9, 105, 218, 0.35) !important;
     --heading-rule: #d1d9e0 !important;
     /* Kept rather than zeroed: every heading color above is flattened to
-       #1f2328 for print, so the chevron is the only remaining cue that marks an
-       h2/h3 apart from the h4-h6 below it. */
+       #1f2328 for print, so the marker shape is the only cue left that tells one
+       level from another — and on paper, where the reader can't scroll back to
+       re-orient, that ladder is worth more than it is on screen. Every level is
+       pinned to the same blue above so the shapes stay the distinguishing
+       feature and no theme's leftover hue leaks into a printed page. */
     --heading-marker: 0.52em !important;
     --badge-bg: #f6f8fa !important;
     --table-header-bg: #f6f8fa !important;

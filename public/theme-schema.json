@@ -174,43 +174,79 @@
         },
         "--heading-accent": {
           "type": "string",
-          "description": "Heading chevron accent, leading tone",
+          "description": "Heading marker accent, leading tone",
           "default": "#0969da",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
         "--heading-accent-soft": {
           "type": "string",
-          "description": "Heading chevron accent, trailing tone",
+          "description": "Heading marker accent, trailing tone",
           "default": "rgba(9,105,218,0.35)",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
         "--h2-accent": {
           "type": "string",
-          "description": "Level-2 chevron, leading tone",
+          "description": "Level-2 marker, leading tone",
           "default": "#0969da",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
         "--h2-accent-soft": {
           "type": "string",
-          "description": "Level-2 chevron, trailing tone",
+          "description": "Level-2 marker, trailing tone",
           "default": "rgba(9,105,218,0.35)",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
         "--h3-accent": {
           "type": "string",
-          "description": "Level-3 chevron, leading tone",
+          "description": "Level-3 marker, leading tone",
           "default": "#0969da",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
         "--h3-accent-soft": {
           "type": "string",
-          "description": "Level-3 chevron, trailing tone",
+          "description": "Level-3 marker, trailing tone",
+          "default": "rgba(9,105,218,0.35)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h4-accent": {
+          "type": "string",
+          "description": "Level-4 marker (single-tone chevron)",
+          "default": "#0969da",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h4-accent-soft": {
+          "type": "string",
+          "description": "Level-4 marker, trailing tone (unused by the default shape)",
+          "default": "rgba(9,105,218,0.35)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h5-accent": {
+          "type": "string",
+          "description": "Level-5 marker (diamond)",
+          "default": "#0969da",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h5-accent-soft": {
+          "type": "string",
+          "description": "Level-5 marker, trailing tone (unused by the default shape)",
+          "default": "rgba(9,105,218,0.35)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h6-accent": {
+          "type": "string",
+          "description": "Level-6 marker (hollow chevron)",
+          "default": "#0969da",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h6-accent-soft": {
+          "type": "string",
+          "description": "Level-6 marker, trailing tone (unused by the default shape)",
           "default": "rgba(9,105,218,0.35)",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
         "--heading-marker": {
           "type": "string",
-          "description": "Heading chevron width; 0 hides the chevron",
+          "description": "Heading marker width; 0 hides the marker",
           "default": "0.52em",
           "pattern": "^-?(\\d+\\.?\\d*|\\.\\d+)(em|rem|px|ch|ex)?$"
         },

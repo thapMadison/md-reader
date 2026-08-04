@@ -212,26 +212,49 @@ describe('Article images', () => {
 });
 
 describe('Article headings', () => {
-  it('renders the chevron accent on h2 and h3 only', () => {
-    const { container } = renderMd('# One\n\n## Two\n\n### Three\n\n#### Four');
+  // h1 is excluded on purpose: it opens the document rather than sitting in the
+  // outline, and it is already unmistakable at its size.
+  it('renders a marker on h2 through h6 but not on h1', () => {
+    const { container } = renderMd(
+      '# One\n\n## Two\n\n### Three\n\n#### Four\n\n##### Five\n\n###### Six',
+    );
 
     expect(container.querySelector('h1 svg')).toBeNull();
-    expect(container.querySelector('h2 svg')).toBeTruthy();
-    expect(container.querySelector('h3 svg')).toBeTruthy();
-    expect(container.querySelector('h4 svg')).toBeNull();
+    for (const tag of ['h2', 'h3', 'h4', 'h5', 'h6']) {
+      expect(container.querySelector(`${tag} svg`), `${tag} should have a marker`).toBeTruthy();
+    }
   });
 
-  it('keeps the chevron out of the accessibility tree and preserves heading text', () => {
+  // Size alone can't separate h4 (1.02em) from h6 (0.8em) at a glance, so each
+  // level draws a distinct shape. If two levels ever render identical markup the
+  // ladder has collapsed and depth stops being readable from the glyph.
+  it('draws a distinct shape and its own accent pair per level', () => {
+    const { container } = renderMd('## Two\n\n### Three\n\n#### Four\n\n##### Five\n\n###### Six');
+
+    const shapes = ['h2', 'h3', 'h4', 'h5', 'h6'].map(
+      (tag) => container.querySelector(`${tag} svg`)!.innerHTML,
+    );
+    expect(new Set(shapes).size).toBe(shapes.length);
+
+    for (const [i, tag] of ['h2', 'h3', 'h4', 'h5', 'h6'].entries()) {
+      const level = i + 2;
+      expect(shapes[i], `${tag} should read --h${level}-accent`).toContain(
+        `var(--h${level}-accent, var(--heading-accent))`,
+      );
+    }
+  });
+
+  it('keeps the marker out of the accessibility tree and preserves heading text', () => {
     renderMd('## Section title');
     expect(screen.getByRole('heading', { level: 2, name: 'Section title' })).toBeInTheDocument();
   });
 
-  // The chevron sits in the text column rather than hanging in the margin, so
+  // The marker sits in the text column rather than hanging in the margin, so
   // it indents the heading it precedes. That indent is the intended trade for
   // having a marker at all, and the alternative (pulling the glyph out of flow)
   // moves it outside the column the eye tracks — so the in-flow arrangement is
   // asserted rather than left to drift.
-  it('keeps the chevron in flow so it indents the heading text', () => {
+  it('keeps the marker in flow so it indents the heading text', () => {
     const { container } = renderMd('## Two');
 
     const h2 = container.querySelector('h2')!;
@@ -242,10 +265,25 @@ describe('Article headings', () => {
     // by the gap — no positioning offsets involved.
     expect(svg.style.position).toBe('');
     expect(svg.style.left).toBe('');
-    expect(svg).toHaveStyle({ flex: 'none', width: '0.52em', marginRight: '0.42em' });
+    expect(svg).toHaveStyle({ flex: 'none', marginRight: '0.42em' });
+
+    // The theme's em width, floored so the small levels can't shrink under a
+    // body-list bullet. Both operands matter: drop the em and the marker stops
+    // scaling with the heading, drop the floor and h5/h6 shrink to specks.
+    //
+    // Read off the style *attribute* rather than svg.style.width: jsdom's CSS
+    // parser doesn't support max() and silently drops the declaration from the
+    // CSSOM, so style.width reads empty here while browsers render it correctly
+    // (verified in Chromium). The attribute keeps the text either way.
+    const declaredWidth = svg.getAttribute('style') ?? '';
+    expect(declaredWidth).toContain('0.52em');
+    // The floor is relative to --fs, not a fixed px: it exists to match the body
+    // bullet, which is sized off --fs too, so pinning it in px would let the
+    // ratio drift as the reader changes font-size.
+    expect(declaredWidth).toContain('var(--fs');
   });
 
-  it('omits the chevron entirely when the theme zeroes --heading-marker', async () => {
+  it('omits the marker entirely when the theme zeroes --heading-marker', async () => {
     const storage = createFakeStorageService();
     await storage.setPreferences({ themeId: 'github-light' });
 
@@ -264,11 +302,11 @@ describe('Article headings', () => {
     });
     expect(container.querySelector('h3 svg')).toBeNull();
     // And with no glyph the heading is a plain block again, so it carries none
-    // of the flex layout that exists only to seat the chevron.
+    // of the flex layout that exists only to seat the marker.
     expect(container.querySelector('h2')?.style.display).toBe('');
   });
 
-  it('still assigns TOC ids after the chevron refactor', () => {
+  it('still assigns TOC ids after the marker refactor', () => {
     const { container } = renderMd('# Top\n\n## First section\n\n### Nested one');
 
     expect(container.querySelector('h1')?.getAttribute('data-toc')).toBe('top');

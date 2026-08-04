@@ -34,12 +34,18 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | `--quote-fg` | Blockquote body text | `#1f2328` |
 | `--code-header-bg` | Code block header strip background | `#f6f8fa` |
 | `--code-header-fg` | Code block language label and header text | `#59636e` |
-| `--heading-accent` | Heading chevron accent, leading tone | `#0969da` |
-| `--heading-accent-soft` | Heading chevron accent, trailing tone | `rgba(9,105,218,0.35)` |
-| `--h2-accent` | Level-2 chevron, leading tone | `#0969da` |
-| `--h2-accent-soft` | Level-2 chevron, trailing tone | `rgba(9,105,218,0.35)` |
-| `--h3-accent` | Level-3 chevron, leading tone | `#0969da` |
-| `--h3-accent-soft` | Level-3 chevron, trailing tone | `rgba(9,105,218,0.35)` |
+| `--heading-accent` | Heading marker accent, leading tone | `#0969da` |
+| `--heading-accent-soft` | Heading marker accent, trailing tone | `rgba(9,105,218,0.35)` |
+| `--h2-accent` | Level-2 marker, leading tone | `#0969da` |
+| `--h2-accent-soft` | Level-2 marker, trailing tone | `rgba(9,105,218,0.35)` |
+| `--h3-accent` | Level-3 marker, leading tone | `#0969da` |
+| `--h3-accent-soft` | Level-3 marker, trailing tone | `rgba(9,105,218,0.35)` |
+| `--h4-accent` | Level-4 marker (single-tone chevron) | `#0969da` |
+| `--h4-accent-soft` | Level-4 marker, trailing tone (unused by the default shape) | `rgba(9,105,218,0.35)` |
+| `--h5-accent` | Level-5 marker (diamond) | `#0969da` |
+| `--h5-accent-soft` | Level-5 marker, trailing tone (unused by the default shape) | `rgba(9,105,218,0.35)` |
+| `--h6-accent` | Level-6 marker (hollow chevron) | `#0969da` |
+| `--h6-accent-soft` | Level-6 marker, trailing tone (unused by the default shape) | `rgba(9,105,218,0.35)` |
 | `--heading-rule` | Underline rule beneath level-2 headings | `#d1d9e0` |
 | `--badge-bg` | Inline code and chip background | `#f6f8fa` |
 | `--table-header-bg` | Table header row background | `#f6f8fa` |
@@ -69,7 +75,7 @@ tokens below — anything omitted falls back to the base light or dark palette.
 
 | Token | Description | Default |
 | --- | --- | --- |
-| `--heading-marker` | Heading chevron width; 0 hides the chevron | `0.52em` |
+| `--heading-marker` | Heading marker width; 0 hides the marker | `0.52em` |
 
 ## Fonts
 
@@ -83,6 +89,6 @@ tokens below — anything omitted falls back to the base light or dark palette.
 
 | Token | Description | Default | Range |
 | --- | --- | --- | --- |
-| `--fs` | Article base font size | `17px` | 15–21px |
+| `--fs` | Article base font size | `16px` | 15–21px |
 | `--cw` | Article max content width | `1280px` | 620–1280px |
 | `--lh` | Article line height | `1.7` | 1.4–2.1 |

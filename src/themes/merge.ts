@@ -24,12 +24,18 @@ export function mergeThemeTokens(
   return merged;
 }
 
-// The per-level chevron accents post-date --heading-accent, so a theme written
+// The per-level marker accents post-date --heading-accent, so a theme written
 // against the older contract sets only the shared pair. Without this, such a
-// theme would silently get the *contract default* chevron rather than its own
+// theme would silently get the *contract default* marker rather than its own
 // accent: the per-level token is always present after the base spread, so it
 // wins over the shared one and a CSS fallback never gets the chance to fire.
 // Only levels the theme left unset inherit — an explicit per-level value wins.
+//
+// Covers h2 through h6: every level that draws a marker needs the same
+// fallback, or a theme setting only --heading-accent would tint its h2/h3 and
+// leave h4-h6 on the contract blue.
+const MARKER_LEVELS = ['--h2', '--h3', '--h4', '--h5', '--h6'] as const;
+
 function applyAccentInheritance(
   merged: ThemeTokens,
   themeTokens: Partial<ThemeTokens>,
@@ -39,7 +45,7 @@ function applyAccentInheritance(
   for (const suffix of ['-accent', '-accent-soft'] as const) {
     const shared = `--heading${suffix}`;
     if (!(shared in themeTokens) && typeof overrides[shared] !== 'string') continue;
-    for (const level of ['--h2', '--h3'] as const) {
+    for (const level of MARKER_LEVELS) {
       const perLevel = `${level}${suffix}`;
       const setByTheme = perLevel in themeTokens;
       const setByOverride = typeof overrides[perLevel] === 'string';

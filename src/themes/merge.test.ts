@@ -42,21 +42,25 @@ describe('mergeThemeTokens', () => {
     expect(merged['--bg']).toBe('#ffffff');
   });
 
-  // The per-level chevron accents were added after --heading-accent. Because
+  // The per-level marker accents were added after --heading-accent. Because
   // every contract token is present after the base spread, a per-level token
   // shadows the shared one — so without explicit inheritance a theme written
-  // against the older contract would render the default blue chevron instead
+  // against the older contract would render the default blue marker instead
   // of its own accent. A CSS var() fallback cannot fix this; it never fires.
-  describe('chevron accent inheritance', () => {
-    it('a theme setting only --heading-accent colors both chevrons', () => {
+  describe('marker accent inheritance', () => {
+    // All five marker levels, not just h2/h3: h4-h6 arrived last and are the
+    // ones a theme predating them would leave stranded on contract blue.
+    const LEVELS = ['--h2', '--h3', '--h4', '--h5', '--h6'] as const;
+
+    it('a theme setting only --heading-accent colors every marker level', () => {
       const merged = mergeThemeTokens('light', {
         '--heading-accent': '#ff0000',
         '--heading-accent-soft': 'rgba(255,0,0,0.3)',
       });
-      expect(merged['--h2-accent']).toBe('#ff0000');
-      expect(merged['--h3-accent']).toBe('#ff0000');
-      expect(merged['--h2-accent-soft']).toBe('rgba(255,0,0,0.3)');
-      expect(merged['--h3-accent-soft']).toBe('rgba(255,0,0,0.3)');
+      for (const level of LEVELS) {
+        expect(merged[`${level}-accent`], `${level}-accent`).toBe('#ff0000');
+        expect(merged[`${level}-accent-soft`], `${level}-accent-soft`).toBe('rgba(255,0,0,0.3)');
+      }
     });
 
     it('an explicit per-level accent wins over the shared one', () => {
@@ -66,6 +70,7 @@ describe('mergeThemeTokens', () => {
       });
       expect(merged['--h2-accent']).toBe('#00ff00');
       expect(merged['--h3-accent']).toBe('#ff0000');
+      expect(merged['--h6-accent']).toBe('#ff0000');
     });
 
     it('inherits through the override path too', () => {
@@ -83,8 +88,9 @@ describe('mergeThemeTokens', () => {
 
     it('leaves the contract defaults alone when a theme sets no accent', () => {
       const merged = mergeThemeTokens('light', {});
-      expect(merged['--h2-accent']).toBe('#0969da');
-      expect(merged['--h3-accent']).toBe('#0969da');
+      for (const level of LEVELS) {
+        expect(merged[`${level}-accent`], `${level}-accent`).toBe('#0969da');
+      }
     });
   });
 });

@@ -84,28 +84,141 @@ const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
   }
 };
 
-// Headings carrying a chevron pin their own line-height rather than inheriting
+// Headings carrying a marker pin their own line-height rather than inheriting
 // the article's 1.7, both to tighten multi-line headings and to give the glyph
 // a known line box to center against.
 const CHEVRON_LINE_HEIGHT = 1.35;
 
-// Gap between the chevron and the heading text, in em of the heading's own
+// Gap between the marker and the heading text, in em of the heading's own
 // font-size.
 const CHEVRON_GAP = '0.42em';
 
-// Two-tone angled chevron rendered before h2/h3. Inline SVG rather than a
-// ::before pseudo-element because markdown styling here is entirely inline
-// style objects — a pseudo-element would have to live in index.css, splitting
-// article styling across two mechanisms — and two tones need two fills.
+// Levels that draw a marker. h1 is deliberately excluded: it is the document
+// title, appears once, is already twice the size of anything else, and marking
+// it would only push the one line a reader never has to hunt for off the left
+// edge of the page.
+type MarkerLevel = 2 | 3 | 4 | 5 | 6;
+
+// Per-level marker shapes, all on one 10x14 viewBox so a single width/height
+// pair positions every level identically and the glyphs share an optical
+// baseline. Size alone cannot separate these levels — h4 is 1.02em and h6 is
+// 0.8em, a difference the eye cannot rank — so the *shape* carries the depth:
 //
-// Takes the level because h2 and h3 can carry different text colors, and a
-// glyph dressed from one shared accent then clashes with whichever level it
-// wasn't chosen for.
+//   h2  two-tone chevron, full height   — section break
+//   h3  two-tone chevron, inset         — same glyph, visibly lighter
+//   h4  single-tone chevron             — the pair collapses to one arrow
+//   h5  diamond                         — the arrow rotates; still pointed
+//   h6  hollow chevron                  — the arrow empties out
 //
+// Note the ladder changes *kind* from h4 down, not just size. h4-h6 all sit on
+// the same floored box (see MARKER_MIN_WIDTH), so a size step between them is
+// no longer available — h5 as a smaller arrow was indistinguishable from h4.
+//
+// Every level fills most of its viewBox rather than shrinking inside it. The
+// glyph already scales with the heading's font-size, so drawing it small *and*
+// scaling it down compounds: h6's dot was r=1.9 of a 10-wide box at 0.8em and
+// came out 2.7px across — barely a third of the ~5.9px body-list bullet, on an
+// element that outranks the list. A marker should never be lighter than a
+// bullet, so the small levels are drawn near the edges of the box and depth is
+// carried by silhouette and by the size the heading already gives them.
+//
+// Rendered as inline SVG rather than a ::before pseudo-element because markdown
+// styling here is entirely inline style objects (a pseudo-element would have to
+// live in index.css, splitting article styling across two mechanisms) and the
+// two-tone shapes need two fills.
+//
+// `lead`/`trail` name the two tones; shapes that use one tone simply ignore
+// `trail`, which is why every level still carries an --h*-accent-soft token.
+const MARKER_SHAPES: Record<MarkerLevel, (lead: string, trail: string) => ReactNode> = {
+  2: (lead, trail) => (
+    <>
+      <path d="M0 0 L5 7 L0 14 Z" fill={lead} />
+      <path d="M5 0 L10 7 L5 14 Z" fill={trail} />
+    </>
+  ),
+  // Same silhouette as h2 but inset top and bottom, so it reads as the same
+  // family one step down rather than as a different mark.
+  3: (lead, trail) => (
+    <>
+      <path d="M0.5 1.5 L5.25 7 L0.5 12.5 Z" fill={lead} />
+      <path d="M5.25 1.5 L10 7 L5.25 12.5 Z" fill={trail} />
+    </>
+  ),
+  // One tone only: at h4's size a second fill is two shades inside ~9px and
+  // muddies into a smudge rather than reading as two halves. Drawn wide and
+  // full-height rather than inset: h4 is the first level to hit
+  // MARKER_MIN_WIDTH, so from here down the box no longer shrinks and the
+  // silhouette is the only thing left to rank the levels by. A narrow arrow
+  // here came out lighter than the h5 diamond below it, inverting the ladder.
+  4: (lead) => <path d="M0.5 1 L8.5 7 L0.5 13 Z" fill={lead} />,
+  // Rotated, not smaller. h5 used to be a scaled-down copy of h4's arrow, and
+  // once both levels sit on the same floored box the few units between them
+  // were invisible — the two read as one rank. A diamond differs by *angle*,
+  // which survives at any size, while the points keep it in the same directional
+  // family as the arrows above (a plain square reads as a different system, and
+  // an outline arrow came out lighter than the body-list bullet).
+  //
+  // Equal half-diagonals, so the diamond is as wide as it is tall on screen.
+  // The 10x14 viewBox maps to a 10:14 element, so units are square and no
+  // aspect correction is needed here — the taller box just leaves headroom
+  // above and below, which is what centres the glyph on the text line.
+  5: (lead) => <path d="M5 2.6 L9.4 7 L5 11.4 L0.6 7 Z" fill={lead} />,
+  // Hollow, closing the ladder: h2-h5 are all solid, so drawing the last level
+  // as an outline drops its weight below every one of them without needing a
+  // size step the floored box no longer allows.
+  //
+  // The stroke width is tuned against measured painted pixels, not the bounding
+  // box — a stroke has almost no relationship between the two. The floor is a
+  // body-list bullet: a heading marker should never render lighter than the
+  // bullets in the list beneath it, and below roughly a 2.0 stroke this one
+  // does. The ceiling is the solid h5 diamond above it, which must stay heavier
+  // or the ladder inverts. Re-measure both if either moves.
+  6: (lead) => (
+    <path
+      d="M1.9 2.8 L6.9 7 L1.9 11.2"
+      fill="none"
+      stroke={lead}
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  ),
+};
+
+// Smallest the marker box is allowed to get. --heading-marker is in em, so it
+// scales with each *heading's* font-size and compounds with the smaller glyphs:
+// at h6 (0.8em) a 0.52em box is ~7px wide, and a shape inside it cannot reach a
+// body-list bullet. This floor decouples the bottom of the ladder from the
+// heading size so h5/h6 stay at least as heavy as a bullet.
+//
+// Expressed against --fs, not the heading's own em and not a fixed px. The thing
+// being matched is the body bullet, which is sized off --fs, so the floor has to
+// track --fs or the ratio drifts with the reader's font-size setting: pinned at
+// 9px it measured 1.02x a bullet at --fs 17 but 1.42x at --fs 16, because the
+// bullet shrank and the floor didn't. Tying it to --fs holds the ratio steady
+// across the whole 15-21px range.
+//
+// 0.48 is measured, not chosen: it puts h6 at 1.04x a bullet, the closest the
+// sweep got without dropping under it (0.45 lands at 0.93x). Re-measure if the
+// h6 stroke or the bullet's own size changes. h4 leaves the floor behind at this
+// value — its own 0.52em is already wider — so it only binds h5 and h6.
+const MARKER_MIN_WIDTH = 'calc(var(--fs, 16px) * 0.48)';
+
 // `width` is the theme's --heading-marker rather than a constant, so a theme
-// can resize the glyph — or set it to 0, which drops the chevron entirely and
+// can resize the glyph — or set it to 0, which drops the marker entirely and
 // is handled by the heading rather than here.
-function HeadingChevron({ level, width }: { level: 2 | 3; width: string }) {
+function HeadingMarker({ level, width }: { level: MarkerLevel; width: string }) {
+  // Per-level token. The shared accent is a fallback for contexts that bypass
+  // mergeThemeTokens and set only the older pair; for themes, that inheritance
+  // is resolved in merge.ts instead, since the per-level token is always set by
+  // then and would otherwise shadow the shared one.
+  const lead = `var(--h${level}-accent, var(--heading-accent))`;
+  const trail = `var(--h${level}-accent-soft, var(--heading-accent-soft))`;
+  // One expression for the box width, reused by height and the centering offset
+  // so the floor can never apply to one dimension and not the others — that
+  // would stretch the glyph off its 10:14 aspect at exactly the small levels the
+  // floor exists to protect.
+  const boxWidth = `max(${width}, ${MARKER_MIN_WIDTH})`;
   return (
     <svg
       viewBox="0 0 10 14"
@@ -122,26 +235,18 @@ function HeadingChevron({ level, width }: { level: 2 | 3; width: string }) {
       // heading level or letter case.
       style={{
         flex: 'none',
-        width,
-        height: `calc(${width} * 1.4)`,
+        width: boxWidth,
+        height: `calc(${boxWidth} * 1.4)`,
         marginRight: CHEVRON_GAP,
-        marginTop: `calc((${CHEVRON_LINE_HEIGHT}em - ${width} * 1.4) / 2)`,
+        marginTop: `calc((${CHEVRON_LINE_HEIGHT}em - ${boxWidth} * 1.4) / 2)`,
       }}
     >
-      {/* Per-level token. The shared accent is a fallback for contexts that
-          bypass mergeThemeTokens and set only the older pair; for themes, that
-          inheritance is resolved in merge.ts instead, since the per-level token
-          is always set by then and would otherwise shadow the shared one. */}
-      <path d="M0 0 L5 7 L0 14 Z" fill={`var(--h${level}-accent, var(--heading-accent))`} />
-      <path
-        d="M5 0 L10 7 L5 14 Z"
-        fill={`var(--h${level}-accent-soft, var(--heading-accent-soft))`}
-      />
+      {MARKER_SHAPES[level](lead, trail)}
     </svg>
   );
 }
 
-// A theme turns the chevron off by setting --heading-marker to zero. Parsing
+// A theme turns the marker off by setting --heading-marker to zero. Parsing
 // the number rather than string-comparing against "0" accepts every spelling a
 // theme might use ("0", "0em", "0.0px") through one check.
 function markerIsHidden(marker: string): boolean {
@@ -253,32 +358,36 @@ function makeHeadingFactory(headingIds: Map<number, string>, marker: string) {
       }
 
       const id = sourceId;
-      const chevronLevel = !hideMarker && (level === 2 || level === 3) ? level : null;
+      const markerLevel = !hideMarker && level !== 1 ? level : null;
       return (
         <Tag
           id={id}
           data-toc={id}
-          // The chevron is a flex item, so it indents the heading text by its
+          // The marker is a flex item, so it indents the heading text by its
           // own width plus the gap. Kept in flow on purpose: a theme that turns
           // the marker on is accepting that offset, and hanging the glyph in the
           // margin instead would put it outside the column the reader's eye is
           // tracking. Themes that don't want the indent set --heading-marker to
           // 0 and get no glyph at all.
           //
-          // h2's borderBottom still spans the full row, chevron included, so the
+          // Every marked level indents by the same em amount, so the indent
+          // tracks each level's own font-size and h2 ends up stepped further in
+          // than h6 — depth reads as a taper rather than as one flat offset.
+          //
+          // h2's borderBottom still spans the full row, marker included, so the
           // rule keeps starting at the article's left edge even though the text
           // above it does not.
           //
-          // flex-start (not center) so the chevron stays on the first line of a
+          // flex-start (not center) so the marker stays on the first line of a
           // heading that wraps to two lines instead of floating mid-block.
           style={{
             ...headingStyle(level),
-            ...(chevronLevel
+            ...(markerLevel
               ? { display: 'flex', alignItems: 'flex-start', lineHeight: CHEVRON_LINE_HEIGHT }
               : {}),
           }}
         >
-          {chevronLevel && <HeadingChevron level={chevronLevel} width={marker} />}
+          {markerLevel && <HeadingMarker level={markerLevel} width={marker} />}
           {children}
         </Tag>
       );
