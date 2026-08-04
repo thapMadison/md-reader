@@ -41,4 +41,50 @@ describe('mergeThemeTokens', () => {
     const merged = mergeThemeTokens('light', {}, { '--bg': 123 as unknown as string });
     expect(merged['--bg']).toBe('#ffffff');
   });
+
+  // The per-level chevron accents were added after --heading-accent. Because
+  // every contract token is present after the base spread, a per-level token
+  // shadows the shared one — so without explicit inheritance a theme written
+  // against the older contract would render the default blue chevron instead
+  // of its own accent. A CSS var() fallback cannot fix this; it never fires.
+  describe('chevron accent inheritance', () => {
+    it('a theme setting only --heading-accent colors both chevrons', () => {
+      const merged = mergeThemeTokens('light', {
+        '--heading-accent': '#ff0000',
+        '--heading-accent-soft': 'rgba(255,0,0,0.3)',
+      });
+      expect(merged['--h2-accent']).toBe('#ff0000');
+      expect(merged['--h3-accent']).toBe('#ff0000');
+      expect(merged['--h2-accent-soft']).toBe('rgba(255,0,0,0.3)');
+      expect(merged['--h3-accent-soft']).toBe('rgba(255,0,0,0.3)');
+    });
+
+    it('an explicit per-level accent wins over the shared one', () => {
+      const merged = mergeThemeTokens('light', {
+        '--heading-accent': '#ff0000',
+        '--h2-accent': '#00ff00',
+      });
+      expect(merged['--h2-accent']).toBe('#00ff00');
+      expect(merged['--h3-accent']).toBe('#ff0000');
+    });
+
+    it('inherits through the override path too', () => {
+      const shared = mergeThemeTokens('light', {}, { '--heading-accent': '#123456' });
+      expect(shared['--h2-accent']).toBe('#123456');
+
+      const perLevel = mergeThemeTokens(
+        'light',
+        {},
+        { '--heading-accent': '#123456', '--h3-accent': '#abcdef' },
+      );
+      expect(perLevel['--h2-accent']).toBe('#123456');
+      expect(perLevel['--h3-accent']).toBe('#abcdef');
+    });
+
+    it('leaves the contract defaults alone when a theme sets no accent', () => {
+      const merged = mergeThemeTokens('light', {});
+      expect(merged['--h2-accent']).toBe('#0969da');
+      expect(merged['--h3-accent']).toBe('#0969da');
+    });
+  });
 });

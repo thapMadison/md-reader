@@ -48,12 +48,42 @@ restyle them without dragging `--link` along. `--quote-accent` draws the blockqu
 and `--quote-fg` its body text; `--code-header-bg` and `--code-header-fg` style the strip above
 a code block that carries the language label and copy button; `--heading-accent` and
 `--heading-accent-soft` are the two tones of the chevron before level-2 and level-3 headings,
-and `--heading-rule` is the hairline under a level-2 heading. GitHub-style callouts
+and `--heading-rule` is the hairline under a level-2 heading. One chevron serves both h2 and
+h3, so a theme that colors those levels differently can split it with `--h2-accent` /
+`--h2-accent-soft` and `--h3-accent` / `--h3-accent-soft`; levels left unset inherit
+`--heading-accent`, which means a theme written before these existed keeps its chevron color.
+GitHub-style callouts
 (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`) render as accented
 cards drawing on `--link`, `--ok`/`--ok-bg`, `--warn`/`--warn-bg`, and `--danger`/`--danger-bg`.
 The same cards are produced by `<blockquote alt="info|success|warn|danger">`, so both callout
 syntaxes are styled by one set of tokens.
 `src/themes/builtin/azure-corporate/tokens.ts` is again the worked example.
+
+### Article text color
+
+`--body-fg` colors paragraph text and `--h1-fg` … `--h6-fg` color heading text, one token per
+level. Note the split from the accent tokens above: `--heading-accent`, `--heading-accent-soft`,
+and `--heading-rule` draw the *chevron glyph and the rule*, never the letters — so a theme can
+tint the h2 text and leave its chevron alone, or the reverse.
+
+These are also separate from `--fg`, which colors chrome (toolbar, sidebar, dialogs) as well as
+the canvas. Recoloring the article through `--fg` would drag the surrounding UI with it;
+`--body-fg` and the `--h*-fg` set change only what is inside the article. A theme that wants the
+default uniform look simply repeats its `--fg` value across all seven.
+
+```json
+{
+  "name": "Colorful headings",
+  "mode": "light",
+  "tokens": {
+    "--body-fg": "#333333",
+    "--h1-fg": "#d63384",
+    "--h2-fg": "#6f42c1"
+  }
+}
+```
+
+Omitted levels fall back to the base palette, so a theme only lists the ones it changes.
 
 ### Syntax highlighting
 

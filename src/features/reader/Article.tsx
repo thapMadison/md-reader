@@ -18,10 +18,21 @@ interface ArticleProps {
   padding: string;
 }
 
+// Heading color is per-level (--h1-fg … --h6-fg) rather than inherited from the
+// article, so a theme can tint h1 without dragging body text along. These are
+// distinct from --heading-accent* and --heading-rule, which color the chevron
+// glyph and the rule under h2 — not the heading text itself.
 const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
   switch (level) {
     case 1:
-      return { fontSize: '2.1em', lineHeight: 1.25, fontWeight: 700, letterSpacing: '-0.02em', margin: '0.6em 0 0.5em' };
+      return {
+        fontSize: '2.1em',
+        lineHeight: 1.25,
+        fontWeight: 700,
+        letterSpacing: '-0.02em',
+        margin: '0.6em 0 0.5em',
+        color: 'var(--h1-fg)',
+      };
     case 2:
       return {
         fontSize: '1.5em',
@@ -30,18 +41,25 @@ const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
         margin: '1.8em 0 0.7em',
         paddingBottom: '0.35em',
         borderBottom: '1px solid var(--heading-rule)',
+        color: 'var(--h2-fg)',
       };
     case 3:
-      return { fontSize: '1.18em', fontWeight: 650, margin: '1.5em 0 0.6em' };
+      return { fontSize: '1.18em', fontWeight: 650, margin: '1.5em 0 0.6em', color: 'var(--h3-fg)' };
     case 4:
-      return { fontSize: '1.02em', fontWeight: 650, margin: '1.3em 0 0.5em' };
+      return { fontSize: '1.02em', fontWeight: 650, margin: '1.3em 0 0.5em', color: 'var(--h4-fg)' };
     case 5:
-      return { fontSize: '0.92em', fontWeight: 650, letterSpacing: '.01em', margin: '1.2em 0 0.4em' };
+      return {
+        fontSize: '0.92em',
+        fontWeight: 650,
+        letterSpacing: '.01em',
+        margin: '1.2em 0 0.4em',
+        color: 'var(--h5-fg)',
+      };
     case 6:
       return {
         fontSize: '0.8em',
         fontWeight: 600,
-        color: 'var(--muted)',
+        color: 'var(--h6-fg)',
         textTransform: 'uppercase',
         letterSpacing: '.06em',
         margin: '1.2em 0 0.4em',
@@ -58,7 +76,11 @@ const CHEVRON_LINE_HEIGHT = 1.35;
 // ::before pseudo-element because markdown styling here is entirely inline
 // style objects — a pseudo-element would have to live in index.css, splitting
 // article styling across two mechanisms — and two tones need two fills.
-function HeadingChevron() {
+//
+// Takes the level because h2 and h3 can carry different text colors, and a
+// glyph dressed from one shared accent then clashes with whichever level it
+// wasn't chosen for.
+function HeadingChevron({ level }: { level: 2 | 3 }) {
   return (
     <svg
       viewBox="0 0 10 14"
@@ -76,8 +98,15 @@ function HeadingChevron() {
         marginTop: `calc((${CHEVRON_LINE_HEIGHT}em - 0.72em) / 2)`,
       }}
     >
-      <path d="M0 0 L5 7 L0 14 Z" fill="var(--heading-accent)" />
-      <path d="M5 0 L10 7 L5 14 Z" fill="var(--heading-accent-soft)" />
+      {/* Per-level token. The shared accent is a fallback for contexts that
+          bypass mergeThemeTokens and set only the older pair; for themes, that
+          inheritance is resolved in merge.ts instead, since the per-level token
+          is always set by then and would otherwise shadow the shared one. */}
+      <path d="M0 0 L5 7 L0 14 Z" fill={`var(--h${level}-accent, var(--heading-accent))`} />
+      <path
+        d="M5 0 L10 7 L5 14 Z"
+        fill={`var(--h${level}-accent-soft, var(--heading-accent-soft))`}
+      />
     </svg>
   );
 }
@@ -186,7 +215,7 @@ function makeHeadingFactory(headingIds: Map<number, string>) {
       }
 
       const id = sourceId;
-      const showChevron = level === 2 || level === 3;
+      const chevronLevel = level === 2 || level === 3 ? level : null;
       return (
         <Tag
           id={id}
@@ -195,12 +224,12 @@ function makeHeadingFactory(headingIds: Map<number, string>) {
           // heading that wraps to two lines instead of floating mid-block.
           style={{
             ...headingStyle(level),
-            ...(showChevron
+            ...(chevronLevel
               ? { display: 'flex', alignItems: 'flex-start', lineHeight: CHEVRON_LINE_HEIGHT }
               : {}),
           }}
         >
-          {showChevron && <HeadingChevron />}
+          {chevronLevel && <HeadingChevron level={chevronLevel} />}
           {children}
         </Tag>
       );
@@ -609,7 +638,7 @@ export function Article({ source, padding }: ArticleProps) {
         fontFamily: 'var(--font-body)',
         fontSize: 'var(--fs)',
         lineHeight: 'var(--lh, 1.7)',
-        color: 'var(--fg)',
+        color: 'var(--body-fg)',
         // Break only where a break is legal (never mid-syllable), but allow an
         // unbroken run with no break opportunity — a long URL or path — to wrap
         // rather than push the article into horizontal scroll.

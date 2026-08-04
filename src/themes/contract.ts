@@ -29,6 +29,17 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   { name: '--muted', type: 'color', description: 'Secondary text, metadata, placeholders', default: '#59636e' },
   { name: '--link', type: 'color', description: 'Links, active states, primary accent', default: '#0969da' },
 
+  // Article text. Deliberately separate from --fg, which also colors chrome:
+  // recoloring the article shouldn't drag the toolbar and sidebar along with it.
+  // Each level gets its own token so a theme can tint h1 without touching h3.
+  { name: '--body-fg', type: 'color', description: 'Article body text', default: '#1f2328' },
+  { name: '--h1-fg', type: 'color', description: 'Level-1 heading text', default: '#1f2328' },
+  { name: '--h2-fg', type: 'color', description: 'Level-2 heading text', default: '#1f2328' },
+  { name: '--h3-fg', type: 'color', description: 'Level-3 heading text', default: '#1f2328' },
+  { name: '--h4-fg', type: 'color', description: 'Level-4 heading text', default: '#1f2328' },
+  { name: '--h5-fg', type: 'color', description: 'Level-5 heading text', default: '#1f2328' },
+  { name: '--h6-fg', type: 'color', description: 'Level-6 heading text', default: '#59636e' },
+
   // Block accents — blockquote, code block chrome, heading accents
   { name: '--quote-accent', type: 'color', description: 'Blockquote left accent bar', default: '#0969da' },
   { name: '--quote-fg', type: 'color', description: 'Blockquote body text', default: '#1f2328' },
@@ -36,6 +47,14 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   { name: '--code-header-fg', type: 'color', description: 'Code block language label and header text', default: '#59636e' },
   { name: '--heading-accent', type: 'color', description: 'Heading chevron accent, leading tone', default: '#0969da' },
   { name: '--heading-accent-soft', type: 'color', description: 'Heading chevron accent, trailing tone', default: 'rgba(9,105,218,0.35)' },
+  // Per-level chevron overrides. One chevron serves both h2 and h3, so a theme
+  // that colors those levels differently can't dress the glyph from a single
+  // accent without clashing with one of them. These default to the shared
+  // --heading-accent pair, so a theme only sets them when it wants the split.
+  { name: '--h2-accent', type: 'color', description: 'Level-2 chevron, leading tone', default: '#0969da' },
+  { name: '--h2-accent-soft', type: 'color', description: 'Level-2 chevron, trailing tone', default: 'rgba(9,105,218,0.35)' },
+  { name: '--h3-accent', type: 'color', description: 'Level-3 chevron, leading tone', default: '#0969da' },
+  { name: '--h3-accent-soft', type: 'color', description: 'Level-3 chevron, trailing tone', default: 'rgba(9,105,218,0.35)' },
   { name: '--heading-rule', type: 'color', description: 'Underline rule beneath level-2 headings', default: '#d1d9e0' },
   { name: '--badge-bg', type: 'color', description: 'Inline code and chip background', default: '#f6f8fa' },
 

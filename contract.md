@@ -23,12 +23,23 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | `--fg` | Primary text color | `#1f2328` |
 | `--muted` | Secondary text, metadata, placeholders | `#59636e` |
 | `--link` | Links, active states, primary accent | `#0969da` |
+| `--body-fg` | Article body text | `#1f2328` |
+| `--h1-fg` | Level-1 heading text | `#1f2328` |
+| `--h2-fg` | Level-2 heading text | `#1f2328` |
+| `--h3-fg` | Level-3 heading text | `#1f2328` |
+| `--h4-fg` | Level-4 heading text | `#1f2328` |
+| `--h5-fg` | Level-5 heading text | `#1f2328` |
+| `--h6-fg` | Level-6 heading text | `#59636e` |
 | `--quote-accent` | Blockquote left accent bar | `#0969da` |
 | `--quote-fg` | Blockquote body text | `#1f2328` |
 | `--code-header-bg` | Code block header strip background | `#f6f8fa` |
 | `--code-header-fg` | Code block language label and header text | `#59636e` |
 | `--heading-accent` | Heading chevron accent, leading tone | `#0969da` |
 | `--heading-accent-soft` | Heading chevron accent, trailing tone | `rgba(9,105,218,0.35)` |
+| `--h2-accent` | Level-2 chevron, leading tone | `#0969da` |
+| `--h2-accent-soft` | Level-2 chevron, trailing tone | `rgba(9,105,218,0.35)` |
+| `--h3-accent` | Level-3 chevron, leading tone | `#0969da` |
+| `--h3-accent-soft` | Level-3 chevron, trailing tone | `rgba(9,105,218,0.35)` |
 | `--heading-rule` | Underline rule beneath level-2 headings | `#d1d9e0` |
 | `--badge-bg` | Inline code and chip background | `#f6f8fa` |
 | `--table-header-bg` | Table header row background | `#f6f8fa` |
@@ -67,5 +78,5 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | Token | Description | Default | Range |
 | --- | --- | --- | --- |
 | `--fs` | Article base font size | `17px` | 15–21px |
-| `--cw` | Article max content width | `960px` | 620–1280px |
+| `--cw` | Article max content width | `1280px` | 620–1280px |
 | `--lh` | Article line height | `1.7` | 1.4–2.1 |

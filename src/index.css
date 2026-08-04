@@ -217,6 +217,13 @@ article tbody tr:nth-child(even) {
     --fg: #1f2328 !important;
     --muted: #59636e !important;
     --link: #0969da !important;
+    --body-fg: #1f2328 !important;
+    --h1-fg: #1f2328 !important;
+    --h2-fg: #1f2328 !important;
+    --h3-fg: #1f2328 !important;
+    --h4-fg: #1f2328 !important;
+    --h5-fg: #1f2328 !important;
+    --h6-fg: #59636e !important;
     --border: #d1d9e0 !important;
     --code-bg: #f6f8fa !important;
     --quote-bg: rgba(9, 105, 218, 0.05) !important;
@@ -226,6 +233,10 @@ article tbody tr:nth-child(even) {
     --code-header-fg: #59636e !important;
     --heading-accent: #0969da !important;
     --heading-accent-soft: rgba(9, 105, 218, 0.35) !important;
+    --h2-accent: #0969da !important;
+    --h2-accent-soft: rgba(9, 105, 218, 0.35) !important;
+    --h3-accent: #0969da !important;
+    --h3-accent-soft: rgba(9, 105, 218, 0.35) !important;
     --heading-rule: #d1d9e0 !important;
     --badge-bg: #f6f8fa !important;
     --table-header-bg: #f6f8fa !important;

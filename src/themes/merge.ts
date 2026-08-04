@@ -20,5 +20,30 @@ export function mergeThemeTokens(
       (merged as Record<string, string>)[name] = v;
     }
   }
+  applyAccentInheritance(merged, themeTokens, overrides);
   return merged;
+}
+
+// The per-level chevron accents post-date --heading-accent, so a theme written
+// against the older contract sets only the shared pair. Without this, such a
+// theme would silently get the *contract default* chevron rather than its own
+// accent: the per-level token is always present after the base spread, so it
+// wins over the shared one and a CSS fallback never gets the chance to fire.
+// Only levels the theme left unset inherit — an explicit per-level value wins.
+function applyAccentInheritance(
+  merged: ThemeTokens,
+  themeTokens: Partial<ThemeTokens>,
+  overrides: Partial<Record<string, unknown>>,
+): void {
+  const m = merged as Record<string, string>;
+  for (const suffix of ['-accent', '-accent-soft'] as const) {
+    const shared = `--heading${suffix}`;
+    if (!(shared in themeTokens) && typeof overrides[shared] !== 'string') continue;
+    for (const level of ['--h2', '--h3'] as const) {
+      const perLevel = `${level}${suffix}`;
+      const setByTheme = perLevel in themeTokens;
+      const setByOverride = typeof overrides[perLevel] === 'string';
+      if (!setByTheme && !setByOverride) m[perLevel] = m[shared];
+    }
+  }
 }

@@ -6,6 +6,20 @@ export const tokens: ThemeTokens = {
   '--fg': '#111c2e',
   '--muted': '#5a6b80',
   '--link': '#1782c4',
+  // Heading levels cycle the four section accents this theme's UI uses for
+  // OUTPUT / PROGRESS / IMPROVEMENT / IMPACT, so nesting depth reads as color
+  // rather than size alone. The accents are darkened from their chip values:
+  // as chips they sit on a fill and only need 3:1, but as heading text on --bg
+  // they carry the glyph, and h4-h6 are small (1.02em down to 0.8em). Every
+  // value below clears 4.5:1 on both --bg and the blockquote wash; the raw chip
+  // cyan (#1a9ed4) came in at 2.89 and would have been unreadable at 0.8em.
+  '--body-fg': '#263449',
+  '--h1-fg': '#0f1b2d',
+  '--h2-fg': '#b8420e',
+  '--h3-fg': '#1665a8',
+  '--h4-fg': '#0f7350',
+  '--h5-fg': '#6d3bc4',
+  '--h6-fg': '#0b6a8a',
   '--border': '#d8e0e9',
   '--code-bg': '#eef2f7',
   '--quote-bg': 'rgba(41,163,224,0.07)',
@@ -14,8 +28,17 @@ export const tokens: ThemeTokens = {
   '--quote-fg': '#22334d',
   '--code-header-bg': '#e4ecf4',
   '--code-header-fg': '#4a5d75',
-  '--heading-accent': '#29a3e0',
-  '--heading-accent-soft': 'rgba(41,163,224,0.32)',
+  // This theme colors h2 and h3 differently, so each chevron takes its own
+  // heading's hue and the glyph reads as part of the heading rather than as a
+  // separate accent. The shared pair below is the fallback for anything that
+  // doesn't consult the per-level tokens (the print block), kept teal because
+  // it has to sit beside both the warm h2 and the cool h3.
+  '--heading-accent': '#0d9bb5',
+  '--heading-accent-soft': 'rgba(13,155,181,0.34)',
+  '--h2-accent': '#b8420e',
+  '--h2-accent-soft': 'rgba(184,66,14,0.34)',
+  '--h3-accent': '#1665a8',
+  '--h3-accent-soft': 'rgba(22,101,168,0.34)',
   '--heading-rule': '#c9d9e8',
   '--badge-bg': '#e8eef5',
   '--table-header-bg': '#e4ecf4',

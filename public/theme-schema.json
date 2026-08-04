@@ -106,6 +106,48 @@
           "default": "#0969da",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
+        "--body-fg": {
+          "type": "string",
+          "description": "Article body text",
+          "default": "#1f2328",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h1-fg": {
+          "type": "string",
+          "description": "Level-1 heading text",
+          "default": "#1f2328",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h2-fg": {
+          "type": "string",
+          "description": "Level-2 heading text",
+          "default": "#1f2328",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h3-fg": {
+          "type": "string",
+          "description": "Level-3 heading text",
+          "default": "#1f2328",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h4-fg": {
+          "type": "string",
+          "description": "Level-4 heading text",
+          "default": "#1f2328",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h5-fg": {
+          "type": "string",
+          "description": "Level-5 heading text",
+          "default": "#1f2328",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h6-fg": {
+          "type": "string",
+          "description": "Level-6 heading text",
+          "default": "#59636e",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
         "--quote-accent": {
           "type": "string",
           "description": "Blockquote left accent bar",
@@ -139,6 +181,30 @@
         "--heading-accent-soft": {
           "type": "string",
           "description": "Heading chevron accent, trailing tone",
+          "default": "rgba(9,105,218,0.35)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h2-accent": {
+          "type": "string",
+          "description": "Level-2 chevron, leading tone",
+          "default": "#0969da",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h2-accent-soft": {
+          "type": "string",
+          "description": "Level-2 chevron, trailing tone",
+          "default": "rgba(9,105,218,0.35)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h3-accent": {
+          "type": "string",
+          "description": "Level-3 chevron, leading tone",
+          "default": "#0969da",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--h3-accent-soft": {
+          "type": "string",
+          "description": "Level-3 chevron, trailing tone",
           "default": "rgba(9,105,218,0.35)",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
