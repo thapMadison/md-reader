@@ -152,10 +152,160 @@ describe('Article tables', () => {
     expect(container.querySelector('th')?.style.background).toContain('--table-header-bg');
   });
 
-  it('keeps the scroll wrapper for genuinely wide tables', () => {
+  it('draws cell padding from the table tokens', () => {
     const { container } = renderMd(table);
-    const wrapper = container.querySelector('table')?.parentElement;
-    expect(wrapper?.style.overflowX).toBe('auto');
+    const cell = container.querySelector<HTMLElement>('td');
+
+    expect(cell?.style.padding).toContain('--table-cell-pad-y');
+    expect(cell?.style.padding).toContain('--table-cell-pad-x');
+  });
+
+  // Cell rules moved out of the inline style when --table-style arrived: which
+  // edges a cell draws depends on the variant, and an inline style cannot branch
+  // on a CSS variable. They are asserted through the frame and the attribute the
+  // stylesheet selects on instead.
+  it('carries the outer border and radius on the clipping frame', () => {
+    const { container } = renderMd(table);
+    const frame = container.querySelector<HTMLElement>('[data-table-frame]');
+
+    expect(frame?.style.border).toContain('--table-border');
+    expect(frame?.style.borderRadius).toContain('--table-radius');
+    // Without this the radius would not actually cut the table's square corners.
+    expect(frame?.style.overflow).toBe('hidden');
+  });
+
+  it('keeps the scroll port inside the frame so the radius can clip it', () => {
+    const { container } = renderMd(table);
+    const frame = container.querySelector<HTMLElement>('[data-table-frame]');
+    const wrap = container.querySelector<HTMLElement>('[data-table-wrap]');
+
+    expect(wrap?.parentElement).toBe(frame);
+    expect(container.querySelector('table')?.parentElement).toBe(wrap);
+    // overflow:hidden on the frame and auto here are mutually exclusive on one
+    // element — which is exactly why there are two.
+    expect(wrap?.style.overflowX).toBe('auto');
+    expect(wrap?.style.overflowY).toBe('auto');
+  });
+
+  it('exposes the theme table style as an attribute CSS can select on', () => {
+    const { container } = renderMd(table);
+    // Default when no ThemeProvider is mounted, per the contract default.
+    expect(container.querySelector('article')?.getAttribute('data-table-style')).toBe('grid');
+  });
+
+  // Regression: th hardcoded `textAlign: 'left'` and td dropped the node's style
+  // outright, so remark-gfm's alignment row was parsed and then silently thrown
+  // away — the one piece of table formatting Markdown can express did nothing.
+  it('honors per-column alignment from the delimiter row', () => {
+    const { container } = renderMd(
+      '| L | C | R |\n| :--- | :---: | ---: |\n| a | b | c |',
+    );
+
+    expect([...container.querySelectorAll('th')].map((c) => (c as HTMLElement).style.textAlign)).toEqual([
+      'left',
+      'center',
+      'right',
+    ]);
+    expect([...container.querySelectorAll('td')].map((c) => (c as HTMLElement).style.textAlign)).toEqual([
+      'left',
+      'center',
+      'right',
+    ]);
+  });
+
+  // The left default moved from an inline style to `article th` in index.css.
+  // As an inline style it outranked the numeric-column rule at any specificity,
+  // so a header label stayed left above its own right-aligned numbers. Inline
+  // alignment is now the signal that the author wrote one explicitly.
+  it('leaves alignment to the stylesheet when no delimiter row alignment is given', () => {
+    const { container } = renderMd(table);
+    expect(container.querySelector<HTMLElement>('th')?.style.textAlign).toBe('');
+    expect(container.querySelector<HTMLElement>('td')?.style.textAlign).toBe('');
+  });
+
+  // B5: numeric columns are right-aligned so digits line up by place value.
+  // The decision is made at the table level and published as a space-separated
+  // list of 1-based column indices, which index.css matches with `~=` — a td
+  // cannot know its own position, and CSS cannot interpolate one into
+  // :nth-child, so the two halves meet at this attribute.
+  it('marks an all-numeric column for right alignment', () => {
+    const { container } = renderMd(
+      '| Mục | Số lượng |\n| --- | --- |\n| Alpha | 1,204 |\n| Bravo | 87 |\n| Charlie | 9 |',
+    );
+    expect(
+      container.querySelector('[data-table-frame]')?.getAttribute('data-numeric-cols'),
+    ).toBe('2');
+  });
+
+  it('does not mark a prose column, even one whose cells open with digits', () => {
+    const { container } = renderMd(
+      '| Mục | Ghi chú |\n| --- | --- |\n| Alpha | 3 vấn đề còn lại |\n| Bravo | 2024 in review |',
+    );
+    expect(
+      container.querySelector('[data-table-frame]')?.getAttribute('data-numeric-cols'),
+    ).toBeNull();
+  });
+
+  // Unanimity, not majority: one prose cell opts the column out. A paragraph
+  // jammed against the right edge is a worse failure than a numeric column left
+  // at the default alignment, so the safe direction to err in is "don't".
+  it('lets a single prose cell veto an otherwise numeric column', () => {
+    const { container } = renderMd(
+      '| Mục | Số |\n| --- | --- |\n| Alpha | 1,204 |\n| Bravo | 87 |\n| Charlie | chưa có |',
+    );
+    expect(
+      container.querySelector('[data-table-frame]')?.getAttribute('data-numeric-cols'),
+    ).toBeNull();
+  });
+
+  it('marks several numeric columns independently of the prose ones', () => {
+    const { container } = renderMd(
+      '| Mục | Q1 | Ghi chú | Q2 |\n| --- | --- | --- | --- |\n' +
+        '| Alpha | 1,204 | tăng mạnh | 88.5% |\n| Bravo | 87 | giảm nhẹ | 12.5% |',
+    );
+    expect(
+      container.querySelector('[data-table-frame]')?.getAttribute('data-numeric-cols'),
+    ).toBe('2 4');
+  });
+
+  // A numeric header label must not make a prose column look numeric, so only
+  // tbody cells are sampled.
+  it('ignores the header row when judging a column', () => {
+    const { container } = renderMd(
+      '| Mục | 2024 |\n| --- | --- |\n| Alpha | tăng mạnh |\n| Bravo | giảm nhẹ |',
+    );
+    expect(
+      container.querySelector('[data-table-frame]')?.getAttribute('data-numeric-cols'),
+    ).toBeNull();
+  });
+
+  // An author who wrote the delimiter row has already answered the question, so
+  // remark-gfm's inline textAlign must survive detection and outrank it. The
+  // column is still *detected* — the attribute is what index.css keys on — but
+  // the inline style beats the stylesheet rule regardless of specificity.
+  it('keeps explicit centre alignment on a column that also reads as numeric', () => {
+    const { container } = renderMd(
+      '| Mục | Số |\n| --- | :---: |\n| Alpha | 1,204 |\n| Bravo | 87 |',
+    );
+    const cells = [...container.querySelectorAll('td')] as HTMLElement[];
+    // Only the marked column carries an inline alignment; the unmarked one is
+    // left to the stylesheet, which is the whole point of the move above.
+    expect(cells.map((c) => c.style.textAlign)).toEqual(['', 'center', '', 'center']);
+    // Detection still ran — index.css keys its rule on this — but the inline
+    // style above outranks it, so the author's choice is what renders.
+    expect(
+      container.querySelector('[data-table-frame]')?.getAttribute('data-numeric-cols'),
+    ).toBe('2');
+  });
+
+  it('pins the header row so it survives a long table scroll', () => {
+    const { container } = renderMd(table);
+    const th = container.querySelector<HTMLElement>('th');
+
+    expect(th?.style.position).toBe('sticky');
+    expect(th?.style.top).toBe('0px');
+    // A sticky header must be opaque, or scrolled rows show through it.
+    expect(th?.style.background).toContain('--table-header-bg');
   });
 });
 
@@ -267,23 +417,28 @@ describe('Article headings', () => {
     expect(svg.style.left).toBe('');
     expect(svg).toHaveStyle({ flex: 'none', marginRight: '0.42em' });
 
-    // The theme's em width, floored so the small levels can't shrink under a
-    // body-list bullet. Both operands matter: drop the em and the marker stops
-    // scaling with the heading, drop the floor and h5/h6 shrink to specks.
+    // The theme's width, floored so the small levels can't shrink under a
+    // body-list bullet. Both operands matter: drop the theme width and the
+    // marker stops scaling with the heading, drop the floor and h5/h6 shrink to
+    // specks.
+    //
+    // The width is the raw `var(--heading-marker)` rather than a resolved length
+    // because nothing in JS needs its value any more — only --heading-marker-style
+    // is read back, to decide whether this element exists at all.
     //
     // Read off the style *attribute* rather than svg.style.width: jsdom's CSS
     // parser doesn't support max() and silently drops the declaration from the
     // CSSOM, so style.width reads empty here while browsers render it correctly
     // (verified in Chromium). The attribute keeps the text either way.
     const declaredWidth = svg.getAttribute('style') ?? '';
-    expect(declaredWidth).toContain('0.52em');
+    expect(declaredWidth).toContain('var(--heading-marker)');
     // The floor is relative to --fs, not a fixed px: it exists to match the body
     // bullet, which is sized off --fs too, so pinning it in px would let the
     // ratio drift as the reader changes font-size.
     expect(declaredWidth).toContain('var(--fs');
   });
 
-  it('omits the marker entirely when the theme zeroes --heading-marker', async () => {
+  it('omits the marker entirely when the theme sets --heading-marker-style to off', async () => {
     const storage = createFakeStorageService();
     await storage.setPreferences({ themeId: 'github-light' });
 

@@ -11,8 +11,9 @@ import { hasMath, MATH_OPTIONS } from './pipeline/math';
 import { CodeBlock } from './CodeBlock';
 import { MarkdownImage } from './MarkdownImage';
 import { reactNodeToText } from './reactText';
+import { isNumericColumn } from './tableAlign';
 import { buildHeadingIds } from './pipeline/parse';
-import { useHeadingMarker } from '@/features/theming/ThemeContext';
+import { useHeadingMarkerStyle, useTableStyle } from '@/features/theming/ThemeContext';
 
 interface ArticleProps {
   source: string;
@@ -205,8 +206,9 @@ const MARKER_SHAPES: Record<MarkerLevel, (lead: string, trail: string) => ReactN
 const MARKER_MIN_WIDTH = 'calc(var(--fs, 16px) * 0.48)';
 
 // `width` is the theme's --heading-marker rather than a constant, so a theme
-// can resize the glyph — or set it to 0, which drops the marker entirely and
-// is handled by the heading rather than here.
+// can resize the glyph. Whether the glyph is drawn at all is a separate
+// question, answered by --heading-marker-style and handled by the heading
+// rather than here.
 function HeadingMarker({ level, width }: { level: MarkerLevel; width: string }) {
   // Per-level token. The shared accent is a fallback for contexts that bypass
   // mergeThemeTokens and set only the older pair; for themes, that inheritance
@@ -246,11 +248,48 @@ function HeadingMarker({ level, width }: { level: MarkerLevel; width: string }) 
   );
 }
 
-// A theme turns the marker off by setting --heading-marker to zero. Parsing
-// the number rather than string-comparing against "0" accepts every spelling a
-// theme might use ("0", "0em", "0.0px") through one check.
-function markerIsHidden(marker: string): boolean {
-  return parseFloat(marker) === 0;
+// Collects the text of every body cell, grouped by column index.
+//
+// This has to happen at the <table> level rather than in the td component: "is
+// this column numeric?" is a question about every cell in the column, and a td
+// sees only itself. Deciding per-cell would right-align a lone number sitting in
+// an otherwise prose column, which is exactly the misalignment B5 exists to fix.
+//
+// react-markdown hands this component already-rendered React elements, not mdast
+// nodes, so the walk is over element children rather than a syntax tree — hence
+// reactNodeToText for the leaf text.
+function bodyColumnTexts(children: ReactNode): string[][] {
+  const columns: string[][] = [];
+  // Only tbody rows count. A numeric header label ("2024") must not make an
+  // otherwise-prose column look numeric, and the header cell is styled by its
+  // own rule anyway.
+  for (const section of Children.toArray(children)) {
+    if (!isValidElement(section) || section.type !== 'tbody') continue;
+    const sectionChildren = (section.props as { children?: ReactNode }).children;
+    for (const row of Children.toArray(sectionChildren)) {
+      if (!isValidElement(row)) continue;
+      const rowChildren = (row.props as { children?: ReactNode }).children;
+      let col = 0;
+      for (const cell of Children.toArray(rowChildren)) {
+        if (!isValidElement(cell)) continue;
+        const cellProps = cell.props as { children?: ReactNode; colSpan?: number };
+        (columns[col] ??= []).push(reactNodeToText(cellProps.children));
+        // A spanning cell covers several columns; advancing by the span keeps
+        // every later cell in this row under the right column index.
+        col += Math.max(1, cellProps.colSpan ?? 1);
+      }
+    }
+  }
+  return columns;
+}
+
+// A theme turns the marker off with --heading-marker-style: off. This used to
+// parse a number out of --heading-marker and test it against zero, which is
+// what an enum-shaped choice costs when it is encoded as a length: every
+// spelling of zero ("0", "0em", "0.0px") had to round-trip through parseFloat
+// to recover a boolean the theme already knew.
+function markerIsHidden(markerStyle: string): boolean {
+  return markerStyle === 'off';
 }
 
 // GitHub-style alerts: `> [!NOTE]` and friends. remark-gfm leaves them as a
@@ -323,8 +362,8 @@ function stripCalloutMarker(children: ReactNode): ReactNode | null {
 // with a spurious "-1" suffix — breaking every TOC anchor. Rewinding more often
 // cannot fix that, because a render pass is not an observable boundary. A lookup
 // has no such dependency: the same heading yields the same id however often it renders.
-function makeHeadingFactory(headingIds: Map<number, string>, marker: string) {
-  const hideMarker = markerIsHidden(marker);
+function makeHeadingFactory(headingIds: Map<number, string>, markerStyle: string) {
+  const hideMarker = markerIsHidden(markerStyle);
   const heading = function heading(level: 1 | 2 | 3 | 4 | 5 | 6) {
     return function Heading({ children, node }: { children?: ReactNode; node?: HastElement }) {
       const offset = node?.position?.start.offset;
@@ -367,8 +406,8 @@ function makeHeadingFactory(headingIds: Map<number, string>, marker: string) {
           // own width plus the gap. Kept in flow on purpose: a theme that turns
           // the marker on is accepting that offset, and hanging the glyph in the
           // margin instead would put it outside the column the reader's eye is
-          // tracking. Themes that don't want the indent set --heading-marker to
-          // 0 and get no glyph at all.
+          // tracking. Themes that don't want the indent set
+          // --heading-marker-style to `off` and get no glyph at all.
           //
           // Every marked level indents by the same em amount, so the indent
           // tracks each level's own font-size and h2 ends up stepped further in
@@ -387,7 +426,7 @@ function makeHeadingFactory(headingIds: Map<number, string>, marker: string) {
               : {}),
           }}
         >
-          {markerLevel && <HeadingMarker level={markerLevel} width={marker} />}
+          {markerLevel && <HeadingMarker level={markerLevel} width="var(--heading-marker)" />}
           {children}
         </Tag>
       );
@@ -396,8 +435,8 @@ function makeHeadingFactory(headingIds: Map<number, string>, marker: string) {
   return { heading };
 }
 
-function buildComponents(headingIds: Map<number, string>, marker: string): Components {
-  const { heading } = makeHeadingFactory(headingIds, marker);
+function buildComponents(headingIds: Map<number, string>, markerStyle: string): Components {
+  const { heading } = makeHeadingFactory(headingIds, markerStyle);
   const components: Components = {
     h1: heading(1),
     h2: heading(2),
@@ -611,44 +650,123 @@ function buildComponents(headingIds: Map<number, string>, marker: string): Compo
         )}
       </span>
     ),
-    table: ({ children }) => (
-      <div
-        style={{
-          overflowX: 'auto',
-          margin: '1.4em 0',
-          background:
-            'linear-gradient(90deg,var(--bg) 33%,transparent) left/28px 100% no-repeat local,' +
-            'linear-gradient(270deg,var(--bg) 33%,transparent) right/28px 100% no-repeat local,' +
-            'linear-gradient(90deg,var(--edge-shadow),transparent) left/12px 100% no-repeat scroll,' +
-            'linear-gradient(270deg,var(--edge-shadow),transparent) right/12px 100% no-repeat scroll',
-        }}
-      >
-        <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: '0.88em' }}>{children}</table>
-      </div>
-    ),
+    // Two nested wrappers, and both are load-bearing:
+    //
+    //   outer (data-table-frame) — carries the rounded border and clips to it.
+    //   inner (data-table-wrap)  — the scroll port.
+    //
+    // They cannot be merged. `overflow: hidden` is what makes a radius actually
+    // cut the square corners of the table inside it, but `hidden` and `auto`
+    // are mutually exclusive on the same axis, and the inner element needs
+    // `auto` on both: X for wide tables, Y so the sticky header below has a
+    // scrolling ancestor to pin against. Capping at viewport height means short
+    // tables never scroll internally and only long ones do.
+    //
+    // The border lives on the frame rather than on the table's own edge cells,
+    // so `--table-style` can drop the interior rules without also erasing the
+    // outline — the two are separate decisions.
+    table: ({ children }) => {
+      // Auto right-alignment for numeric columns (see tableAlign.ts for what
+      // counts as one). Emitted as a data attribute rather than an inline style
+      // on each cell because the alignment has to reach *every* cell in the
+      // column, header included, and a td component cannot know its own index —
+      // whereas `:nth-child` in CSS gets it from the DOM for free. This mirrors
+      // how --table-style and zebra striping are already handled.
+      //
+      // The generated selectors are scoped by this attribute, so a column that
+      // remark-gfm already aligned explicitly keeps its inline textAlign: an
+      // inline style beats a stylesheet rule regardless of specificity.
+      const numeric = bodyColumnTexts(children)
+        .map((cells, i) => (isNumericColumn(cells) ? i + 1 : 0))
+        .filter((n) => n > 0);
+      return (
+        <div
+          data-table-frame=""
+          data-numeric-cols={numeric.length ? numeric.join(' ') : undefined}
+          style={{
+            margin: '1.4em 0',
+            border: 'var(--table-border-width) solid var(--table-border)',
+            borderRadius: 'var(--table-radius)',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            data-table-wrap=""
+            style={{
+              overflowX: 'auto',
+              overflowY: 'auto',
+              maxHeight: '82vh',
+              background:
+                'linear-gradient(90deg,var(--bg) 33%,transparent) left/28px 100% no-repeat local,' +
+                'linear-gradient(270deg,var(--bg) 33%,transparent) right/28px 100% no-repeat local,' +
+                'linear-gradient(90deg,var(--edge-shadow),transparent) left/12px 100% no-repeat scroll,' +
+                'linear-gradient(270deg,var(--edge-shadow),transparent) right/12px 100% no-repeat scroll',
+            }}
+          >
+            <table
+              style={{
+                width: 'max-content',
+                minWidth: '100%',
+                borderCollapse: 'collapse',
+                fontSize: 'var(--table-font-size)',
+              }}
+            >
+              {children}
+            </table>
+          </div>
+        </div>
+      );
+    },
     // No `whiteSpace: nowrap` on cells. Forcing every cell onto one line made
     // any table with prose in it — especially Vietnamese, where words are
     // multi-syllable and diacritics widen the run — stretch far past the
     // viewport and rely on horizontal scrolling to read at all. Cells now wrap
     // naturally; the wrapper below still scrolls for genuinely wide tables.
-    th: ({ children }) => (
+    //
+    // `style` is spread from the node rather than dropped: remark-gfm encodes a
+    // column's alignment row (`:---`, `:---:`, `---:`) as a textAlign on every
+    // cell in that column, so discarding it silently threw away the one piece of
+    // table formatting Markdown can express. It is spread last so an explicit
+    // alignment wins over the left default.
+    // Cell rules are not set here. Which edges a cell draws depends on
+    // --table-style, and an inline style cannot branch on a CSS variable — so
+    // the borders live in index.css under `article[data-table-style]`, where a
+    // selector can. Padding stays inline: it is unconditional.
+    //
+    // The left-alignment default is *also* in CSS now, and it has to be. As an
+    // inline style it beat the numeric-column rule at any specificity, so the
+    // header label stayed left while its own numbers were right-aligned under
+    // it. Inline is now reserved for alignment the author wrote explicitly,
+    // which is precisely the thing that should outrank the auto-detection.
+    th: ({ children, style }) => (
       <th
         style={{
-          textAlign: 'left',
-          padding: '9px 14px',
-          border: '1px solid var(--border)',
+          padding: 'var(--table-cell-pad-y) var(--table-cell-pad-x)',
           background: 'var(--table-header-bg)',
+          color: 'var(--table-header-fg)',
           fontWeight: 650,
+          // Pins the header row while the body scrolls under it. The background
+          // above is not optional once this is set — a transparent sticky header
+          // would let the scrolled rows show through it.
+          position: 'sticky',
+          top: 0,
+          zIndex: 1,
+          ...style,
         }}
       >
         {children}
       </th>
     ),
-    // Zebra striping is done in index.css via `tbody tr:nth-child(even)` rather
-    // than here: an inline style would need a row index this component cannot
-    // see, while :nth-child gets it from the DOM for free.
+    // Zebra striping and row hover are done in index.css via `tbody tr:nth-child`
+    // and `:hover` rather than here: an inline style would need a row index this
+    // component cannot see and cannot express a pseudo-class at all, while CSS
+    // gets both from the DOM for free.
     tr: ({ children }) => <tr>{children}</tr>,
-    td: ({ children }) => <td style={{ padding: '9px 14px', border: '1px solid var(--border)' }}>{children}</td>,
+    td: ({ children, style }) => (
+      <td style={{ padding: 'var(--table-cell-pad-y) var(--table-cell-pad-x)', ...style }}>
+        {children}
+      </td>
+    ),
     sup: ({ children }) => <sup>{children}</sup>,
     section: ({ children, className, ...rest }) => {
       if (className !== 'footnotes') {
@@ -766,14 +884,19 @@ function useMathPlugins(source: string): MathPlugins | null {
 }
 
 export function Article({ source, padding }: ArticleProps) {
-  // Read as a value, not left to CSS: the marker decides whether the chevron
-  // element is rendered at all, and `display: none` on a themeable glyph would
-  // still cost a DOM node per heading in long documents.
-  const marker = useHeadingMarker();
+  // Read as a value, not left to CSS: the marker style decides whether the
+  // chevron element is rendered at all, and `display: none` on a themeable glyph
+  // would still cost a DOM node per heading in long documents. The glyph's width
+  // stays in CSS — only the on/off choice has to be visible to JS.
+  const markerStyle = useHeadingMarkerStyle();
   const components = useMemo(
-    () => buildComponents(buildHeadingIds(source), marker),
-    [source, marker],
+    () => buildComponents(buildHeadingIds(source), markerStyle),
+    [source, markerStyle],
   );
+
+  // Mirrored onto an attribute below because CSS can match `[data-table-style]`
+  // but cannot select on the value of `var(--table-style)`.
+  const tableStyle = useTableStyle();
 
   // Null until (and unless) the document needs math and the chunk has arrived.
   // Before then the document renders normally with the formulas as plain text,
@@ -794,6 +917,7 @@ export function Article({ source, padding }: ArticleProps) {
   );
   return (
     <article
+      data-table-style={tableStyle}
       style={{
         width: '100%',
         maxWidth: 'var(--cw)',

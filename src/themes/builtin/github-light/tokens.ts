@@ -36,12 +36,25 @@ export const tokens: ThemeTokens = {
   '--h6-accent-soft': 'rgba(9,105,218,0.35)',
   // No marker: this theme mirrors GitHub's own rendering, where hierarchy is
   // carried by size and the h2 rule alone. The --h*-accent values above stay
-  // set so the glyphs return correctly dressed if a user re-enables them.
-  '--heading-marker': '0',
+  // set so the glyphs return correctly dressed if a user re-enables them — and
+  // the width below is kept for the same reason, since `off` no longer has to
+  // be spelled as a zero width.
+  '--heading-marker-style': 'off',
+  '--heading-marker': '0.52em',
   '--heading-rule': '#d1d9e0',
   '--badge-bg': '#f6f8fa',
+  // GitHub renders the full grid with square corners; this theme mirrors that.
+  '--table-style': 'grid',
+  '--table-radius': '6px',
   '--table-header-bg': '#f6f8fa',
+  '--table-header-fg': '#1f2328',
   '--table-row-alt': 'rgba(9,105,218,0.03)',
+  '--table-row-hover': 'rgba(9,105,218,0.06)',
+  '--table-border': '#d1d9e0',
+  '--table-border-width': '1px',
+  '--table-cell-pad-y': '9px',
+  '--table-cell-pad-x': '14px',
+  '--table-font-size': '0.88em',
   '--math-fg': '#1f2328',
   '--math-bg': 'rgba(9,105,218,0.04)',
   '--danger': '#cf222e',

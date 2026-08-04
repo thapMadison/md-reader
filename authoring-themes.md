@@ -76,9 +76,13 @@ a theme can restyle a level without first knowing which shape it draws.
 `azure-corporate` is the worked example: each `--h*-accent` there matches the `--h*-fg` of the
 same level exactly, so every marker reads as part of its heading.
 
-The marker is optional. `--heading-marker` is its width, and setting it to `0` removes the
-glyph entirely — not merely hides it — for themes that would rather carry hierarchy on color,
-size, and spacing alone. `github-light` and `sepia-book` ship with it off; `azure-corporate`
+The marker is optional, and the switch is separate from the size: `--heading-marker-style: off`
+removes the glyph entirely — not merely hides it — for themes that would rather carry hierarchy
+on color, size, and spacing alone, while `--heading-marker` sets its width when shown. Keeping
+them apart means a theme that turns the marker off still records the width it wants, so
+switching back to `chevron` restores the intended size rather than the contract default.
+(Earlier versions spelled "off" as `--heading-marker: 0`; that overloading is gone.)
+`github-light` and `sepia-book` ship with it off; `azure-corporate`
 and `night-owl` keep it. Note that the glyph sits in the text column, so a theme with the
 marker on indents h2–h6 text by the marker width plus a `0.42em` gap, while h1 stays flush
 left. That offset is the trade for having a marker; the h2 rule is unaffected and still spans
@@ -143,9 +147,46 @@ Because these are colors on a code background, check them against `--code-bg` ra
 
 ### Tables and math
 
-`--table-header-bg` fills the header row and `--table-row-alt` the even body rows (zebra
-striping); keep the latter subtle, since it sits under body text. `--math-fg` colors KaTeX
-formulas and `--math-bg` fills the block behind a `$$…$$` display formula.
+`--table-style` picks which rules the table draws, and it is the one table token to decide
+first — the rest read differently depending on it:
+
+- `grid` — the full lattice. Best when every cell is a short discrete value and the vertical
+  rules stop the eye drifting across columns. `github-light` and `azure-corporate` use it.
+- `horizontal` — row rules only, the Notion / GitHub-docs look. Quieter when cells hold prose.
+  On a dark theme it is usually the right default, because a full lattice of light rules reads
+  as a brighter object than the text inside it. `sepia-book` and `night-owl` use it.
+- `minimal` — a single rule under the header, with whitespace separating the body rows.
+
+`grid` and `minimal` lean on the zebra wash to keep long rows trackable, so do not set
+`--table-row-alt` to fully transparent when using them.
+
+The surrounding frame is styled independently of those interior rules: `--table-border` colors
+both, `--table-border-width` sets their thickness (`0` removes the interior grid), and
+`--table-radius` rounds the outer corners — `0` for square, which suits print-like themes.
+Because the outline lives on the frame rather than on the edge cells, changing `--table-style`
+never erases it.
+
+For the rest: `--table-header-bg` and `--table-header-fg` fill and color the header row,
+`--table-row-alt` the even body rows (zebra striping) and `--table-row-hover` the row under the
+cursor; keep both washes subtle, since they sit under body text. `--table-cell-pad-y` /
+`--table-cell-pad-x` set cell padding and `--table-font-size` the table's text size relative to
+the article — together these three are what make a theme's tables read as dense or airy.
+`sepia-book` is the roomy worked example, `azure-corporate` the compact one.
+
+Column alignment is deliberately *not* a theme token. A column whose body cells all read as
+numbers is right-aligned automatically, with tabular figures so the digits line up by place
+value — that is a property of the data, not of the theme, and a theme that could override it
+would be able to make its own tables harder to read. The rules: every non-blank cell in the
+column must parse as a number (currency, percentages, thousands separators, parenthesised
+negatives and scientific notation all count), blanks and `—` placeholders are skipped rather
+than counted against it, and at least two numbers are needed before the alignment changes.
+One prose cell opts the column out. An explicit `---:` or `:---:` delimiter row always wins,
+since an author who wrote it has already answered the question. Only the header row is
+excluded from the sample, so a numeric-looking label such as `2024` cannot drag a prose
+column with it.
+
+`--math-fg` colors KaTeX formulas and `--math-bg` fills the block behind a `$$…$$` display
+formula.
 
 ## Validation rules
 
@@ -159,9 +200,12 @@ failure) if:
   --code-bg?)` — via a prefix check first, then Levenshtein distance for near-miss typos.
 - A token's value doesn't match the type it's declared with in the contract. Each type has
   its own predicate in `src/themes/schema.ts`: `isColorValue` for colors, `isFontStackValue`
-  for the font stacks (`--font-ui`, `--font-body`, `--font-mono`), and `isLengthValue` for
-  `--heading-marker`, which takes a bare number with an optional unit (`0`, `0.52em`) and
-  rejects `calc()` and `var()` — that value is read back in JavaScript, not only by CSS.
+  for the font stacks (`--font-ui`, `--font-body`, `--font-mono`), `isLengthValue` for the
+  lengths (`--heading-marker`, `--table-radius`, `--table-border-width`, the cell paddings,
+  `--table-font-size`), which take a bare number with an optional unit (`0`, `0.52em`) and
+  reject `calc()` and `var()`, and `isEnumValue` for the option tokens
+  (`--heading-marker-style`, `--table-style`), which must be one of the values listed for
+  them in `contract.md` — an unlisted value is rejected and names the accepted set.
 
 Up to 6 errors are shown at once. Unknown keys are always dropped rather than silently
 passed through — this is the security boundary that keeps a theme file from ever injecting

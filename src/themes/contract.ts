@@ -1,17 +1,27 @@
-export type TokenType = 'color' | 'length' | 'font-stack';
+export type TokenType = 'color' | 'length' | 'font-stack' | 'enum';
 
-// The one length token, `--heading-marker`, doubles as the marker's on/off
-// switch: a theme sets it to `0` to drop the glyphs entirely, or to an em length
-// to size them. Expressed as a length rather than a boolean because the contract
-// already carries typed lengths, and because a theme keeping the markers may
-// still want to tune how far they indent the headings they precede — one number
-// covers both the switch and the size.
+// Some length tokens double as on/off switches: `--table-border-width` set to
+// `0` removes the table grid, and a theme keeping the grid still wants to tune
+// its thickness — one number covers both the switch and the measurement, and
+// zero is a genuine point on that scale rather than a sentinel.
+//
+// `--heading-marker` is deliberately NOT one of those, despite having been
+// written as a length. Its `0` was a sentinel meaning "no glyph at all", which
+// the renderer had to recover by parsing the number back out of the string
+// (markerIsHidden in Article.tsx). That is a discrete choice wearing a
+// continuous type: `0.52em` and `0` differ in kind, not in degree, and nothing
+// between `0` and a usable width is meaningful. It now pairs an `enum` switch
+// with a separate length for the size — see --heading-marker-style below.
 
 export interface TokenSpec {
   name: string;
   type: TokenType;
   description: string;
   default: string;
+  // Enum tokens only: the closed set of accepted values. Validation rejects
+  // anything outside it, and the generated JSON schema emits it as `enum` so an
+  // editor completes the options rather than offering a free-text string.
+  values?: readonly string[];
 }
 
 // Single source of truth for every themeable token. Generator scripts, the zod
@@ -73,15 +83,55 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   { name: '--h5-accent-soft', type: 'color', description: 'Level-5 marker, trailing tone (unused by the default shape)', default: 'rgba(9,105,218,0.35)' },
   { name: '--h6-accent', type: 'color', description: 'Level-6 marker (hollow chevron)', default: '#0969da' },
   { name: '--h6-accent-soft', type: 'color', description: 'Level-6 marker, trailing tone (unused by the default shape)', default: 'rgba(9,105,218,0.35)' },
-  // Width of the h2-h6 marker. `0` removes the glyph and the space it reserves,
-  // for themes that would rather carry hierarchy on color and size alone.
-  { name: '--heading-marker', type: 'length', description: 'Heading marker width; 0 hides the marker', default: '0.52em' },
+  // Whether the h2-h6 glyph is drawn at all, and how wide it is when it is.
+  // Split across two tokens because they answer different questions: `off` is a
+  // structural choice (themes that carry hierarchy on color and size alone),
+  // while the width is a measurement. A theme that turns the marker off keeps
+  // its width value, so re-enabling it restores the intended size rather than
+  // reverting to the contract default.
+  {
+    name: '--heading-marker-style',
+    type: 'enum',
+    description: 'Heading marker glyphs: shown or hidden',
+    default: 'chevron',
+    values: ['chevron', 'off'],
+  },
+  { name: '--heading-marker', type: 'length', description: 'Heading marker width when shown', default: '0.52em' },
   { name: '--heading-rule', type: 'color', description: 'Underline rule beneath level-2 headings', default: '#d1d9e0' },
   { name: '--badge-bg', type: 'color', description: 'Inline code and chip background', default: '#f6f8fa' },
 
-  // Tables
+  // Tables. `--table-border` is deliberately separate from the shared --border:
+  // a table's grid is the densest run of hairlines in the article, and a theme
+  // often wants it lighter than the borders it uses on code blocks and chrome —
+  // which one shared token cannot express. The cell padding and font size are
+  // tokens rather than constants for the same reason the metrics are: table
+  // density is a reading preference, and a compact theme and an airy one differ
+  // in little else.
+  // Which rules the grid draws. `grid` is the full lattice; `horizontal` keeps
+  // only the row rules (the Notion/GitHub-docs look, which reads quieter when
+  // cells hold prose); `minimal` keeps a single rule under the header and lets
+  // whitespace separate the rest. An enum rather than a set of per-edge booleans
+  // because the three are a designed set, not an arbitrary combination — and a
+  // theme picking one should not have to know which four edges that implies.
+  {
+    name: '--table-style',
+    type: 'enum',
+    description: 'Table rule style: full grid, row rules only, or header rule only',
+    default: 'grid',
+    values: ['grid', 'horizontal', 'minimal'],
+  },
+  { name: '--table-radius', type: 'length', description: 'Table outer corner radius; 0 for square corners', default: '8px' },
   { name: '--table-header-bg', type: 'color', description: 'Table header row background', default: '#f6f8fa' },
+  { name: '--table-header-fg', type: 'color', description: 'Table header row text', default: '#1f2328' },
   { name: '--table-row-alt', type: 'color', description: 'Alternating (even) table row background', default: 'rgba(9,105,218,0.03)' },
+  { name: '--table-row-hover', type: 'color', description: 'Table row background on hover', default: 'rgba(9,105,218,0.06)' },
+  { name: '--table-border', type: 'color', description: 'Table cell grid lines', default: '#d1d9e0' },
+  { name: '--table-border-width', type: 'length', description: 'Table cell grid line thickness; 0 removes the grid', default: '1px' },
+  { name: '--table-cell-pad-y', type: 'length', description: 'Table cell padding, vertical', default: '9px' },
+  { name: '--table-cell-pad-x', type: 'length', description: 'Table cell padding, horizontal', default: '14px' },
+  // In em so it tracks the article's --fs rather than freezing table text at one
+  // pixel size while the rest of the body scales around it.
+  { name: '--table-font-size', type: 'length', description: 'Table text size, relative to article body', default: '0.88em' },
 
   // Math (KaTeX)
   { name: '--math-fg', type: 'color', description: 'Math formula text', default: '#1f2328' },
@@ -137,6 +187,13 @@ export const FONT_STACK_TOKEN_NAMES = TOKEN_CONTRACT.filter((t) => t.type === 'f
 
 export const LENGTH_TOKEN_NAMES = TOKEN_CONTRACT.filter((t) => t.type === 'length').map((t) => t.name);
 
+// Keyed by name rather than exposed as a name list like the others: validating
+// an enum needs the token's accepted `values`, not merely the knowledge that it
+// is one.
+export const ENUM_TOKEN_VALUES: Record<string, readonly string[]> = Object.fromEntries(
+  TOKEN_CONTRACT.filter((t) => t.type === 'enum').map((t) => [t.name, t.values ?? []]),
+);
+
 // App-level metrics: user reading preferences, not part of a theme's palette.
 export interface MetricSpec {
   name: '--fs' | '--cw' | '--lh';
@@ -156,7 +213,7 @@ export const METRIC_CONTRACT: readonly MetricSpec[] = [
   // it. Lowering the base keeps every heading's *relative* step intact while
   // narrowing that gap — the alternative, enlarging h5/h6, would collapse them
   // into h4, which is exactly the collision their marker shapes exist to avoid.
-  { name: '--fs', description: 'Article base font size', default: 11, min: 11, max: 21, unit: 'px' },
+  { name: '--fs', description: 'Article base font size', default: 16, min: 15, max: 21, unit: 'px' },
   { name: '--cw', description: 'Article max content width', default: 1280, min: 620, max: 1280, unit: 'px' },
   { name: '--lh', description: 'Article line height', default: 1.7, min: 1.4, max: 2.1, unit: '' },
 ] as const;

@@ -45,3 +45,12 @@ export const isFontStackValue = (v: unknown): v is string =>
   v.length <= 300 &&
   FONT_STACK_RE.test(v) &&
   !v.includes(';');
+
+// An enum value must be one of the spec's own listed strings. This is the
+// tightest of the predicates here — membership in a closed set, so no CSS
+// syntax reaches setProperty at all — but it still belongs in this file rather
+// than being inlined at the call site: every value crossing into setProperty
+// passes through one predicate here, and an exception to that rule is how the
+// font tokens went unvalidated for as long as they did.
+export const isEnumValue = (v: unknown, values: readonly string[]): v is string =>
+  typeof v === 'string' && values.includes(v.trim());

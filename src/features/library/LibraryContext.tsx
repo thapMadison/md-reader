@@ -17,6 +17,7 @@ import {
   queryHandlePermission,
   requestHandlePermission,
   rereadHandle,
+  statHandle,
   supportsFileSystemAccess,
   type OpenedFile,
 } from '@/services/filesystem';
@@ -88,13 +89,33 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
             perm = 'denied';
           }
         }
+        // A live file whose permission survived the reload must be re-read from
+        // disk. Previously hydration only *queried* the permission and then used
+        // the IndexedDB copy regardless, so an already-granted file showed the
+        // bytes captured when it was first opened — forever. The one code path
+        // that re-read (grantAccess) is unreachable here, since it is only
+        // offered when perm === 'prompt'.
+        let content = r.content;
+        let stat: { size: number; lastModified: number } | undefined;
+        if (r.kind === 'live' && r.handle && perm === 'granted') {
+          try {
+            content = await rereadHandle(r.handle);
+            stat = await statHandle(r.handle);
+          } catch {
+            // File moved, deleted, or renamed since last visit. The cached copy
+            // is the honest fallback — better a stale document than none.
+            perm = 'denied';
+          }
+        }
         restored.push({
           name: r.name,
           kind: r.kind,
           perm,
-          originalContent: r.content,
-          editedContent: r.content,
+          originalContent: content,
+          editedContent: content,
           handle: r.handle,
+          size: stat?.size,
+          lastModified: stat?.lastModified,
         });
       }
       if (restored.length === 0) {
@@ -123,6 +144,21 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       }
 
       setFiles(restored);
+      // Refresh the cached copy for anything that came back changed, so the
+      // offline fallback does not stay pinned to first-open bytes.
+      for (const r of records) {
+        const f = restored.find((x) => x.name === r.name);
+        if (!f || f.originalContent === r.content) continue;
+        storage
+          .saveFile({
+            name: f.name,
+            content: f.originalContent,
+            kind: f.kind,
+            handle: f.handle,
+            savedAt: Date.now(),
+          })
+          .catch(() => {});
+      }
       if (prefs.activeFile && restored.some((f) => f.name === prefs.activeFile)) {
         setActiveName(prefs.activeFile);
       } else if (restored.length > 0) {
@@ -188,6 +224,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
             originalContent: o.content,
             editedContent: o.content,
             handle: o.handle,
+            size: o.size,
+            lastModified: o.lastModified,
           });
         }
         return Array.from(byName.values());
@@ -282,9 +320,19 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     const state = await requestHandlePermission(f.handle);
     if (state === 'granted') {
       const content = await rereadHandle(f.handle);
+      const stat = await statHandle(f.handle).catch(() => undefined);
       setFiles((cur) =>
         cur.map((x) =>
-          x.name === name ? { ...x, perm: 'granted', originalContent: content, editedContent: content } : x,
+          x.name === name
+            ? {
+                ...x,
+                perm: 'granted',
+                originalContent: content,
+                editedContent: content,
+                size: stat?.size,
+                lastModified: stat?.lastModified,
+              }
+            : x,
         ),
       );
     } else {

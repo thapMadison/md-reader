@@ -6,5 +6,6 @@ export {
   queryHandlePermission,
   requestHandlePermission,
   rereadHandle,
+  statHandle,
 } from './openFiles';
 export { readDroppedFiles } from './dragDrop';

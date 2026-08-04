@@ -26,6 +26,28 @@ function formatMb(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1);
 }
 
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${formatMb(bytes)} MB`;
+}
+
+// Recent edits are the interesting case — "2 min ago" answers "did my save land?"
+// far better than a timestamp the user has to diff against the clock themselves.
+function formatWhen(ms: number): string {
+  const diff = Date.now() - ms;
+  if (diff < 60_000) return 'just now';
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} min ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} h ago`;
+  const d = new Date(ms);
+  const now = new Date();
+  return d.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    ...(d.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
+  });
+}
+
 // Names the specific stakes rather than a generic "are you sure". The two that
 // matter are unsaved edits (gone for good — edits live only in memory and are
 // never written back to disk) and snapshots (no handle to reopen from, unlike
@@ -199,6 +221,29 @@ export function Sidebar({
                     ×
                   </span>
                 </div>
+                {/* Live files only: the FS Access API never exposes a real path,
+                    so size + mtime are the only disk-backed facts that tell two
+                    same-named files apart and confirm a re-read saw the edit. */}
+                {f.kind === 'live' && f.size !== undefined && (
+                  <div
+                    style={{
+                      paddingLeft: 20,
+                      fontSize: 10,
+                      color: 'var(--chrome-muted)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                    title={
+                      f.lastModified !== undefined
+                        ? `${formatSize(f.size)} — modified ${new Date(f.lastModified).toLocaleString()}`
+                        : formatSize(f.size)
+                    }
+                  >
+                    {formatSize(f.size)}
+                    {f.lastModified !== undefined && ` · ${formatWhen(f.lastModified)}`}
+                  </div>
+                )}
                 {(showBadge || prompt || unsaved) && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingLeft: 20 }}>
                     {unsaved && (

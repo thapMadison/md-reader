@@ -25,6 +25,19 @@ function generateContractMd(): string {
   for (const t of TOKEN_CONTRACT.filter((t) => t.type === 'length')) {
     lines.push(`| \`${t.name}\` | ${t.description} | \`${t.default}\` |`);
   }
+  lines.push(
+    '',
+    '## Options',
+    '',
+    'Tokens with a closed set of accepted values. Anything outside the listed values is rejected on import.',
+    '',
+    '| Token | Description | Values | Default |',
+    '| --- | --- | --- | --- |',
+  );
+  for (const t of TOKEN_CONTRACT.filter((t) => t.type === 'enum')) {
+    const values = (t.values ?? []).map((v) => `\`${v}\``).join(' · ');
+    lines.push(`| \`${t.name}\` | ${t.description} | ${values} | \`${t.default}\` |`);
+  }
   lines.push('', '## Fonts', '', '| Token | Description | Default |', '| --- | --- | --- |');
   for (const t of TOKEN_CONTRACT.filter((t) => t.type === 'font-stack')) {
     lines.push(`| \`${t.name}\` | ${t.description} | \`${t.default}\` |`);
@@ -54,6 +67,9 @@ function generateSchemaJson(): string {
         ? { pattern: '^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$' }
         : {}),
       ...(t.type === 'length' ? { pattern: '^-?(\\d+\\.?\\d*|\\.\\d+)(em|rem|px|ch|ex)?$' } : {}),
+      // `enum` rather than a pattern: an editor reading the schema offers the
+      // options as completions instead of silently accepting any string.
+      ...(t.type === 'enum' ? { enum: t.values ?? [] } : {}),
     };
   }
   const schema = {

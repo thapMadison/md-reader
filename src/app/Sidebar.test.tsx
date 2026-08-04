@@ -40,6 +40,28 @@ const setup = (files: LibraryFile[], isDirty: (name: string) => boolean = () => 
 const clickClearAll = () =>
   fireEvent.click(within(screen.getByRole('navigation')).getByRole('button', { name: 'Clear all' }));
 
+describe('Sidebar live-file identity line', () => {
+  it('shows size and a relative mtime so the user can tell which file this is', () => {
+    setup([file('a.md', { size: 2048, lastModified: Date.now() - 5 * 60_000 })]);
+
+    expect(screen.getByText(/2\.0 KB/)).toBeInTheDocument();
+    expect(screen.getByText(/5 min ago/)).toBeInTheDocument();
+  });
+
+  it('exposes the exact timestamp on hover, since the row only has room for a rough one', () => {
+    const lastModified = Date.now() - 5 * 60_000;
+    setup([file('a.md', { size: 2048, lastModified })]);
+
+    expect(screen.getByText(/2\.0 KB/).title).toContain(new Date(lastModified).toLocaleString());
+  });
+
+  it('omits the line for snapshots, which have no disk file backing them', () => {
+    setup([file('a.md', { kind: 'snapshot', perm: 'na', size: undefined })]);
+
+    expect(screen.queryByText(/KB|B$/)).toBeNull();
+  });
+});
+
 describe('Sidebar clear-all confirmation', () => {
   it('does not clear anything on the first click — it opens a confirmation', () => {
     const { onClearAll } = setup([file('a.md')]);

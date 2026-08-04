@@ -38,11 +38,26 @@ export const tokens: ThemeTokens = {
   // Kept: on a dark canvas the accent glyph is the cheapest way to make a
   // heading findable when scanning, since the contrast range for text is
   // narrower than it is on the light themes.
+  '--heading-marker-style': 'chevron',
   '--heading-marker': '0.52em',
   '--heading-rule': '#1d3b53',
   '--badge-bg': '#0b2942',
+  // Row rules only: on a dark canvas a full lattice of light rules reads as a
+  // brighter object than the text it contains, which is the opposite of what a
+  // dark theme is for. The zebra wash carries row tracking instead.
+  '--table-style': 'horizontal',
+  '--table-radius': '8px',
   '--table-header-bg': '#0b2942',
+  '--table-header-fg': '#c5e4fd',
   '--table-row-alt': 'rgba(130,170,255,0.05)',
+  '--table-row-hover': 'rgba(130,170,255,0.10)',
+  // Lighter than the shared --border (#1d3b53): on a dark canvas a full-strength
+  // grid reads as a lattice competing with the text inside it.
+  '--table-border': '#1d3b53',
+  '--table-border-width': '1px',
+  '--table-cell-pad-y': '9px',
+  '--table-cell-pad-x': '14px',
+  '--table-font-size': '0.88em',
   '--math-fg': '#d6deeb',
   '--math-bg': 'rgba(130,170,255,0.07)',
   '--danger': '#ef5350',

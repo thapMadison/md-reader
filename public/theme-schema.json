@@ -244,9 +244,18 @@
           "default": "rgba(9,105,218,0.35)",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
+        "--heading-marker-style": {
+          "type": "string",
+          "description": "Heading marker glyphs: shown or hidden",
+          "default": "chevron",
+          "enum": [
+            "chevron",
+            "off"
+          ]
+        },
         "--heading-marker": {
           "type": "string",
-          "description": "Heading marker width; 0 hides the marker",
+          "description": "Heading marker width when shown",
           "default": "0.52em",
           "pattern": "^-?(\\d+\\.?\\d*|\\.\\d+)(em|rem|px|ch|ex)?$"
         },
@@ -262,10 +271,32 @@
           "default": "#f6f8fa",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
+        "--table-style": {
+          "type": "string",
+          "description": "Table rule style: full grid, row rules only, or header rule only",
+          "default": "grid",
+          "enum": [
+            "grid",
+            "horizontal",
+            "minimal"
+          ]
+        },
+        "--table-radius": {
+          "type": "string",
+          "description": "Table outer corner radius; 0 for square corners",
+          "default": "8px",
+          "pattern": "^-?(\\d+\\.?\\d*|\\.\\d+)(em|rem|px|ch|ex)?$"
+        },
         "--table-header-bg": {
           "type": "string",
           "description": "Table header row background",
           "default": "#f6f8fa",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--table-header-fg": {
+          "type": "string",
+          "description": "Table header row text",
+          "default": "#1f2328",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
         "--table-row-alt": {
@@ -273,6 +304,42 @@
           "description": "Alternating (even) table row background",
           "default": "rgba(9,105,218,0.03)",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--table-row-hover": {
+          "type": "string",
+          "description": "Table row background on hover",
+          "default": "rgba(9,105,218,0.06)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--table-border": {
+          "type": "string",
+          "description": "Table cell grid lines",
+          "default": "#d1d9e0",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
+        "--table-border-width": {
+          "type": "string",
+          "description": "Table cell grid line thickness; 0 removes the grid",
+          "default": "1px",
+          "pattern": "^-?(\\d+\\.?\\d*|\\.\\d+)(em|rem|px|ch|ex)?$"
+        },
+        "--table-cell-pad-y": {
+          "type": "string",
+          "description": "Table cell padding, vertical",
+          "default": "9px",
+          "pattern": "^-?(\\d+\\.?\\d*|\\.\\d+)(em|rem|px|ch|ex)?$"
+        },
+        "--table-cell-pad-x": {
+          "type": "string",
+          "description": "Table cell padding, horizontal",
+          "default": "14px",
+          "pattern": "^-?(\\d+\\.?\\d*|\\.\\d+)(em|rem|px|ch|ex)?$"
+        },
+        "--table-font-size": {
+          "type": "string",
+          "description": "Table text size, relative to article body",
+          "default": "0.88em",
+          "pattern": "^-?(\\d+\\.?\\d*|\\.\\d+)(em|rem|px|ch|ex)?$"
         },
         "--math-fg": {
           "type": "string",

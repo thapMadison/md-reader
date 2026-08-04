@@ -133,6 +133,109 @@ article tbody tr:nth-child(even) {
   background: var(--table-row-alt);
 }
 
+/* Row hover. Also CSS-only, for a second reason on top of the one above: an
+   inline style cannot express a pseudo-class at all. Listed after the zebra rule
+   so it wins on even rows at equal specificity — a hover that only worked on odd
+   rows would read as a rendering bug. */
+article tbody tr:hover {
+  background: var(--table-row-hover);
+}
+
+/* Header cells default to left, matching the browser default for td. This is a
+   stylesheet rule rather than an inline style on th because an inline style
+   would outrank the numeric-column rule below at any specificity, pinning the
+   header label left above its own right-aligned numbers. Inline alignment is
+   now reserved for what the author wrote in the delimiter row. Declared before
+   the numeric rule so that rule wins at equal specificity. */
+article th {
+  text-align: left;
+}
+
+/* Auto right-alignment for numeric columns.
+
+   A column of numbers is compared digit-by-digit in the same place value, which
+   only works when the digits line up. Left-aligned, the ones digit of "9" sits
+   under the hundreds digit of "1,204" and the column loses its scannable shape.
+
+   Article.tsx decides *which* columns qualify (it can see every cell in a
+   column; a td component cannot) and writes their 1-based indices into
+   data-numeric-cols as a space-separated list. `~=` is the attribute selector
+   built for exactly that format, so one rule per position covers any table.
+
+   Capped at 12 columns: each index needs its own selector because CSS cannot
+   interpolate a value into :nth-child, and a table wide enough to exceed this
+   is being scrolled rather than scanned. Beyond column 12 cells simply keep the
+   default alignment.
+
+   Body cells and header cell both, so the label stays over its own numbers. */
+article [data-numeric-cols~='1'] :is(th, td):nth-child(1),
+article [data-numeric-cols~='2'] :is(th, td):nth-child(2),
+article [data-numeric-cols~='3'] :is(th, td):nth-child(3),
+article [data-numeric-cols~='4'] :is(th, td):nth-child(4),
+article [data-numeric-cols~='5'] :is(th, td):nth-child(5),
+article [data-numeric-cols~='6'] :is(th, td):nth-child(6),
+article [data-numeric-cols~='7'] :is(th, td):nth-child(7),
+article [data-numeric-cols~='8'] :is(th, td):nth-child(8),
+article [data-numeric-cols~='9'] :is(th, td):nth-child(9),
+article [data-numeric-cols~='10'] :is(th, td):nth-child(10),
+article [data-numeric-cols~='11'] :is(th, td):nth-child(11),
+article [data-numeric-cols~='12'] :is(th, td):nth-child(12) {
+  text-align: right;
+  /* Tabular figures make the digits themselves equal-width, so the columns of a
+     number line up vertically even in a proportional body font — right-aligning
+     the cell is only half the job if "1" is narrower than "8". */
+  font-variant-numeric: tabular-nums;
+}
+
+/* An explicit `---:` / `:---:` delimiter row always wins: remark-gfm emits it as
+   an inline text-align on every cell in that column, and an inline style beats a
+   stylesheet rule regardless of specificity. That ordering is the intended one —
+   auto-alignment is a guess about un-annotated tables, and an author who wrote
+   the alignment row has already answered the question. */
+
+/* Table rule styles, selected by --table-style and mirrored onto the article as
+   a data-attribute (CSS can match an attribute's value; it cannot match a custom
+   property's). Cell rules live here rather than inline on th/td for exactly that
+   reason — an inline style has no way to branch on the chosen variant.
+
+   Every variant draws its rules with border-right / border-bottom only, never a
+   full `border`. Adjacent cells would otherwise each draw the shared edge and,
+   under border-collapse, the heavier of the two wins — which makes a theme's
+   --table-border-width behave inconsistently at the seams. One owner per edge
+   keeps the thickness exactly what the theme asked for.
+
+   The outer border and the corner radius are on the frame wrapper, not here, so
+   dropping interior rules never erases the table's outline. */
+article[data-table-style='grid'] th,
+article[data-table-style='grid'] td {
+  border-right: var(--table-border-width) solid var(--table-border);
+  border-bottom: var(--table-border-width) solid var(--table-border);
+}
+/* The frame already draws the right edge; a cell drawing it again lands a
+   double line just inside the rounded corner. */
+article[data-table-style='grid'] tr > *:last-child {
+  border-right: 0;
+}
+
+/* Row rules only — the Notion / GitHub-docs look. Quieter than the full grid
+   when cells hold prose rather than short values. */
+article[data-table-style='horizontal'] th,
+article[data-table-style='horizontal'] td {
+  border-bottom: var(--table-border-width) solid var(--table-border);
+}
+
+/* A single rule under the header; whitespace separates the body rows. Zebra
+   striping still applies and is what keeps long rows trackable here. */
+article[data-table-style='minimal'] thead th {
+  border-bottom: var(--table-border-width) solid var(--table-border);
+}
+
+/* The last row's bottom rule sits directly on the frame's own border in every
+   variant, doubling it. Dropping it leaves the frame as the single edge. */
+article[data-table-style] tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
 /* Syntax highlighting: maps highlight.js output classes onto the theme's
    --syn-* tokens. This is one of the few things that cannot be an inline style
    object like the rest of Article's markdown styling — rehype-highlight injects
@@ -244,16 +347,37 @@ article tbody tr:nth-child(even) {
     --h6-accent: #0969da !important;
     --h6-accent-soft: rgba(9, 105, 218, 0.35) !important;
     --heading-rule: #d1d9e0 !important;
-    /* Kept rather than zeroed: every heading color above is flattened to
-       #1f2328 for print, so the marker shape is the only cue left that tells one
-       level from another — and on paper, where the reader can't scroll back to
-       re-orient, that ladder is worth more than it is on screen. Every level is
-       pinned to the same blue above so the shapes stay the distinguishing
-       feature and no theme's leftover hue leaks into a printed page. */
+    /* Every heading color above is flattened to #1f2328 for print, so the marker
+       shape is the only cue left that tells one level from another — and on
+       paper, where the reader can't scroll back to re-orient, that ladder is
+       worth more than it is on screen. Every level is pinned to the same blue
+       above so the shapes stay the distinguishing feature and no theme's
+       leftover hue leaks into a printed page.
+
+       Only the *width* can be forced here. Whether the glyph exists at all is
+       --heading-marker-style, which the renderer reads in JS to decide whether
+       to emit the element — a print rule cannot bring back a node that was
+       never rendered, so a theme set to `off` prints without markers. That is
+       the honest outcome: the alternative is print silently disagreeing with
+       what the theme asked for. */
     --heading-marker: 0.52em !important;
     --badge-bg: #f6f8fa !important;
     --table-header-bg: #f6f8fa !important;
+    --table-header-fg: #1f2328 !important;
     --table-row-alt: rgba(9, 105, 218, 0.03) !important;
+    /* Transparent rather than a wash: hover is meaningless on paper, and the
+       browser still applies :hover styles to whatever the cursor happens to rest
+       on while the print snapshot is taken. */
+    --table-row-hover: transparent !important;
+    --table-border: #d1d9e0 !important;
+    --table-border-width: 1px !important;
+    --table-cell-pad-y: 9px !important;
+    --table-cell-pad-x: 14px !important;
+    --table-font-size: 0.88em !important;
+    /* Square on paper: the radius exists to soften a UI surface, and a rounded
+       frame reads as a screenshot pasted into a document rather than as a
+       printed table. */
+    --table-radius: 0 !important;
     --math-fg: #1f2328 !important;
     --math-bg: rgba(9, 105, 218, 0.04) !important;
     --syn-kw: #cf222e !important;
@@ -311,6 +435,37 @@ article tbody tr:nth-child(even) {
   article table,
   article img {
     break-inside: avoid;
+  }
+  /* Undo the table's scroll port and the frame's clip. On screen the port caps
+     height so the sticky header has something to stick to, and the frame's
+     `overflow: hidden` is what rounds the corners; on paper either one would
+     print just the first screenful of a long table and silently drop the rest.
+     Targeted by data-attribute rather than the `:has(> table)` this used to
+     use — the wrappers now name themselves, so the selector no longer has to
+     describe them by their contents. */
+  article [data-table-frame],
+  article [data-table-wrap] {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  /* Full grid on paper regardless of the theme's --table-style. The lighter
+     variants lean on zebra striping and hover to keep long rows trackable;
+     neither survives print (backgrounds are commonly dropped, hover has no
+     meaning), so the rules have to carry the whole job. Forced through the
+     attribute selector rather than a token override because --table-style is
+     mirrored onto an attribute, which @media cannot reassign. */
+  article[data-table-style] th,
+  article[data-table-style] td {
+    border-right: 1px solid var(--table-border) !important;
+    border-bottom: 1px solid var(--table-border) !important;
+  }
+  article[data-table-style] tr > *:last-child {
+    border-right: 0 !important;
+  }
+  /* Sticky resolves against the print page box and would repeat or float the
+     header mid-page. Static lets it print once, in place. */
+  article thead th {
+    position: static !important;
   }
   [data-copy] {
     display: none !important;

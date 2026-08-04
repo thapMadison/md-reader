@@ -34,11 +34,27 @@ export const tokens: ThemeTokens = {
   '--h6-accent': '#9c5a1a',
   '--h6-accent-soft': 'rgba(156,90,26,0.30)',
   // No marker: a print-book theme sets headings in type, not in dingbats.
-  '--heading-marker': '0',
+  '--heading-marker-style': 'off',
+  '--heading-marker': '0.52em',
   '--heading-rule': '#ddd0b6',
   '--badge-bg': '#efe4cd',
+  // Row rules only, square corners: a typeset book table separates rows with
+  // horizontal rules and never boxes them in, and rounded corners are a screen
+  // idiom this theme is deliberately not borrowing.
+  '--table-style': 'horizontal',
+  '--table-radius': '0',
   '--table-header-bg': '#efe4cd',
+  '--table-header-fg': '#3d3226',
   '--table-row-alt': 'rgba(156,90,26,0.04)',
+  '--table-row-hover': 'rgba(156,90,26,0.09)',
+  '--table-border': '#ddd0b6',
+  '--table-border-width': '1px',
+  // Roomier than the contract default: a print-book theme sets tables the way a
+  // typeset page does, with the air around the type doing the separating work
+  // that heavier rules would otherwise have to do.
+  '--table-cell-pad-y': '11px',
+  '--table-cell-pad-x': '16px',
+  '--table-font-size': '0.9em',
   '--math-fg': '#3d3226',
   '--math-bg': 'rgba(156,90,26,0.06)',
   '--danger': '#a03d2e',

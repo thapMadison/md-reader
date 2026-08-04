@@ -49,7 +49,10 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | `--heading-rule` | Underline rule beneath level-2 headings | `#d1d9e0` |
 | `--badge-bg` | Inline code and chip background | `#f6f8fa` |
 | `--table-header-bg` | Table header row background | `#f6f8fa` |
+| `--table-header-fg` | Table header row text | `#1f2328` |
 | `--table-row-alt` | Alternating (even) table row background | `rgba(9,105,218,0.03)` |
+| `--table-row-hover` | Table row background on hover | `rgba(9,105,218,0.06)` |
+| `--table-border` | Table cell grid lines | `#d1d9e0` |
 | `--math-fg` | Math formula text | `#1f2328` |
 | `--math-bg` | Display-math ($$…$$) block background | `rgba(9,105,218,0.04)` |
 | `--danger` | Errors and destructive hover states | `#cf222e` |
@@ -75,7 +78,21 @@ tokens below — anything omitted falls back to the base light or dark palette.
 
 | Token | Description | Default |
 | --- | --- | --- |
-| `--heading-marker` | Heading marker width; 0 hides the marker | `0.52em` |
+| `--heading-marker` | Heading marker width when shown | `0.52em` |
+| `--table-radius` | Table outer corner radius; 0 for square corners | `8px` |
+| `--table-border-width` | Table cell grid line thickness; 0 removes the grid | `1px` |
+| `--table-cell-pad-y` | Table cell padding, vertical | `9px` |
+| `--table-cell-pad-x` | Table cell padding, horizontal | `14px` |
+| `--table-font-size` | Table text size, relative to article body | `0.88em` |
+
+## Options
+
+Tokens with a closed set of accepted values. Anything outside the listed values is rejected on import.
+
+| Token | Description | Values | Default |
+| --- | --- | --- | --- |
+| `--heading-marker-style` | Heading marker glyphs: shown or hidden | `chevron` · `off` | `chevron` |
+| `--table-style` | Table rule style: full grid, row rules only, or header rule only | `grid` · `horizontal` · `minimal` | `grid` |
 
 ## Fonts
 

@@ -25,8 +25,8 @@ interface ThemeContextValue {
   activeThemeId: string;
   activeTheme: Theme;
   // Post-merge tokens — the same values written to the document root. Exposed
-  // because --heading-marker has to be read back in JS, not just consumed as a
-  // CSS variable: it decides whether the chevron element is rendered at all.
+  // because --heading-marker-style has to be read back in JS, not just consumed
+  // as a CSS variable: it decides whether the chevron element is rendered at all.
   resolvedTokens: ThemeTokens;
   fontSize: number;
   contentWidth: number;
@@ -45,7 +45,9 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-export const HEADING_MARKER_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--heading-marker')!.default;
+export const HEADING_MARKER_STYLE_DEFAULT = TOKEN_CONTRACT.find(
+  (t) => t.name === '--heading-marker-style',
+)!.default;
 
 const FONT_SPEC = METRIC_CONTRACT.find((m) => m.name === '--fs')!;
 const WIDTH_SPEC = METRIC_CONTRACT.find((m) => m.name === '--cw')!;
@@ -238,11 +240,22 @@ export function useTheme(): ThemeContextValue {
 }
 
 // Non-throwing counterpart for the one value the renderer needs in JS rather
-// than in CSS: the chevron's width, which decides whether the glyph is drawn at
-// all. Article is mounted without a ThemeProvider in tests and would have no
+// than in CSS: whether the chevron is drawn at all. The glyph's *width* is not
+// here — it stays a pure CSS variable, because nothing in JS has to branch on
+// it. Article is mounted without a ThemeProvider in tests and would have no
 // reason to require one otherwise, so a missing provider yields the contract
 // default instead of an error.
-export function useHeadingMarker(): string {
+export function useHeadingMarkerStyle(): string {
   const ctx = useContext(ThemeContext);
-  return ctx?.resolvedTokens['--heading-marker'] ?? HEADING_MARKER_DEFAULT;
+  return ctx?.resolvedTokens['--heading-marker-style'] ?? HEADING_MARKER_STYLE_DEFAULT;
+}
+
+export const TABLE_STYLE_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--table-style')!.default;
+
+// Read in JS for a different reason than the marker above: not to decide what to
+// render, but because a CSS selector cannot branch on a custom property's value.
+// Article mirrors this onto a data-attribute the stylesheet can actually match.
+export function useTableStyle(): string {
+  const ctx = useContext(ThemeContext);
+  return ctx?.resolvedTokens['--table-style'] ?? TABLE_STYLE_DEFAULT;
 }

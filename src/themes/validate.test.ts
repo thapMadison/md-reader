@@ -26,6 +26,32 @@ describe('validateThemeFile', () => {
     expect(result.errors).toContain('--bg: expected a color, got 0');
   });
 
+  it('accepts a listed enum value', () => {
+    const result = validateThemeFile({
+      name: 'Enum',
+      tokens: { '--table-style': 'horizontal', '--heading-marker-style': 'off' },
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.tokens['--table-style']).toBe('horizontal');
+  });
+
+  it('rejects an unlisted enum value and names the accepted ones', () => {
+    const result = validateThemeFile({ name: 'Bad', tokens: { '--table-style': 'zebra' } });
+    expect(result.errors).toContain('--table-style: expected one of grid, horizontal, minimal, got "zebra"');
+  });
+
+  // An enum token must not fall through to the color branch, which is the
+  // unconditional fallback — a CSS-injection payload in an enum slot has to be
+  // rejected on membership, not merely on failing to parse as a color.
+  it('rejects arbitrary CSS in an enum token', () => {
+    const result = validateThemeFile({
+      name: 'Hostile',
+      tokens: { '--table-style': 'grid; background: url(https://tracker.example/p)' },
+    });
+    expect(result.errors[0]).toMatch(/^--table-style: expected one of /);
+    expect(result.tokens['--table-style']).toBeUndefined();
+  });
+
   it('flags unknown tokens with a did-you-mean suggestion', () => {
     const result = validateThemeFile({
       name: 'Bad',

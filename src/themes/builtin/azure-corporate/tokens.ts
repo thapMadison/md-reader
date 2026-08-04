@@ -51,11 +51,26 @@ export const tokens: ThemeTokens = {
   '--h6-accent-soft': 'rgba(11,106,138,0.34)',
   // The marker is this theme's signature, and with every level carrying a
   // different hue it is also what ties each heading to its section accent.
+  '--heading-marker-style': 'chevron',
   '--heading-marker': '0.52em',
   '--heading-rule': '#c9d9e8',
   '--badge-bg': '#e8eef5',
+  // Full grid: this theme is for spec and status tables, where every cell is a
+  // discrete value and the vertical rules are what stop the eye drifting across
+  // columns. Softer corners match the rest of its UI surfaces.
+  '--table-style': 'grid',
+  '--table-radius': '8px',
   '--table-header-bg': '#e4ecf4',
+  '--table-header-fg': '#0f1b2d',
   '--table-row-alt': 'rgba(41,163,224,0.05)',
+  '--table-row-hover': 'rgba(41,163,224,0.10)',
+  '--table-border': '#d8e0e9',
+  '--table-border-width': '1px',
+  // Denser than the contract default: this theme is for spec and status tables,
+  // where fitting more rows on screen beats the air around each one.
+  '--table-cell-pad-y': '7px',
+  '--table-cell-pad-x': '13px',
+  '--table-font-size': '0.86em',
   '--math-fg': '#111c2e',
   '--math-bg': 'rgba(41,163,224,0.06)',
   '--danger': '#e5534b',

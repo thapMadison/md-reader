@@ -15,6 +15,22 @@ async function readHandle(handle: FileSystemFileHandle): Promise<string> {
   return file.text();
 }
 
+/**
+ * Identity details for a live file, read fresh from disk.
+ *
+ * The File System Access API deliberately never exposes a filesystem path —
+ * `handle.name` is the bare filename, with no directory and no drive. Size and
+ * last-modified are the only disk-backed facts available to distinguish two
+ * files that share a name, and lastModified doubles as proof the re-read
+ * actually picked up an on-disk edit.
+ */
+export async function statHandle(
+  handle: FileSystemFileHandle,
+): Promise<{ size: number; lastModified: number }> {
+  const file = await handle.getFile();
+  return { size: file.size, lastModified: file.lastModified };
+}
+
 // FS Access API path: file stays "live", re-readable from disk, with its
 // handle persisted (the `handle` field of StoredFileRecord in services/storage)
 // so permission can be re-requested on a later visit. Falls back to
@@ -42,8 +58,18 @@ export async function pickFilesLive(): Promise<OpenedFile[]> {
   }
   const files: OpenedFile[] = [];
   for (const handle of handles) {
-    const content = await readHandle(handle);
-    files.push({ name: handle.name, content, kind: 'live', perm: 'granted', handle });
+    // One getFile() for both content and metadata: two calls could straddle an
+    // on-disk write and report a size that does not match the text shown.
+    const file = await handle.getFile();
+    files.push({
+      name: handle.name,
+      content: await file.text(),
+      kind: 'live',
+      perm: 'granted',
+      handle,
+      size: file.size,
+      lastModified: file.lastModified,
+    });
   }
   return files;
 }

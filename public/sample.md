@@ -198,10 +198,10 @@ not a real diagram type
 some nonsense
 ```
 
-## Table
+## Tables
 
 A prose table — cells wrap instead of being forced onto one line, and even rows
-carry the zebra tint:
+carry the zebra tint. Hover a row to see `--table-row-hover`:
 
 | Tính năng | Mô tả |
 | --- | --- |
@@ -209,12 +209,110 @@ carry the zebra tint:
 | Công thức toán | Dựng bằng KaTeX, chỉ tải khi tài liệu thật sự có công thức |
 | Callout | Hai cú pháp, cùng một kiểu hiển thị |
 
-Wide table to exercise horizontal scroll and edge-fade gradient:
+### Numeric columns align themselves
+
+No alignment row is written below, yet the numeric columns right-align on their
+own and the prose columns do not. Digits line up by place value, so the column
+can be scanned rather than read cell by cell — note how `9` sits under the ones
+digit of `1,204`. The header label follows its own column:
+
+| Gói | Số bản ghi | Dung lượng | Thay đổi | Ghi chú |
+| --- | --- | --- | --- | --- |
+| Alpha | 1,204 | 12.5% | +3.4 | Ổn định qua hai kỳ |
+| Bravo | 87 | 4.02% | −0.5 | Giảm nhẹ so với quý trước |
+| Charlie | 9 | 0.31% | +12.75 | Mới thêm trong tháng này |
+| Delta | 26,530 | 61.7% | −8.2 | Chiếm phần lớn dung lượng |
+
+Currency, parenthesised negatives, and placeholder cells stay in the same column
+without breaking it — a blank or `—` carries no value, so it neither counts as
+prose nor vetoes the alignment:
+
+| Hạng mục | Chi phí | Chênh lệch |
+| --- | --- | --- |
+| Hạ tầng | $1,299 | (240.50) |
+| Giấy phép | $99 | — |
+| Đào tạo | $12,400 | (1,020) |
+| Dự phòng | | 0 |
+
+A column is only right-aligned when *every* non-blank cell reads as a number.
+One prose cell opts the whole column out, which is why `Số liệu` below stays
+left-aligned even though two of its three cells are numeric:
+
+| Khu vực | Số liệu |
+| --- | --- |
+| Miền Bắc | 1,204 |
+| Miền Trung | 87 |
+| Miền Nam | chưa có số liệu |
+
+Prose that merely *starts* with a digit is not a number, so this column is left
+alone:
+
+| Mục | Trạng thái |
+| --- | --- |
+| Alpha | 3 vấn đề còn lại |
+| Bravo | 2024 in review |
+| Charlie | 10 GB nhật ký |
+
+### Explicit alignment always wins
+
+An author who writes the delimiter row has already answered the question, so
+`:---:` here beats the auto-detection — the numbers are centred despite reading
+as a numeric column:
+
+| Trái | Giữa | Phải |
+| :--- | :---: | ---: |
+| Alpha | 1,204 | 1,204 |
+| Bravo | 87 | 87 |
+| Charlie | 9 | 9 |
+
+### Wide table
+
+Exercises horizontal scroll, the edge-fade gradient, and the rounded frame
+clipping the table's own square corners:
 
 | Column Alpha | Column Bravo | Column Charlie | Column Delta | Column Echo | Column Foxtrot | Column Golf | Column Hotel |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Row one alpha value | Row one bravo value | Row one charlie value | Row one delta value | Row one echo value | Row one foxtrot value | Row one golf value | Row one hotel value |
 | Row two alpha value | Row two bravo value | Row two charlie value | Row two delta value | Row two echo value | Row two foxtrot value | Row two golf value | Row two hotel value |
+
+### Long table
+
+Long enough to scroll inside its own frame, which is what pins the header row —
+scroll the block and the header stays put:
+
+| # | Mã | Tên mục | Giá trị |
+| --- | --- | --- | --- |
+| 1 | A-001 | Mục thứ nhất | 1,204 |
+| 2 | A-002 | Mục thứ hai | 87 |
+| 3 | A-003 | Mục thứ ba | 9 |
+| 4 | A-004 | Mục thứ tư | 26,530 |
+| 5 | A-005 | Mục thứ năm | 412 |
+| 6 | A-006 | Mục thứ sáu | 3,908 |
+| 7 | A-007 | Mục thứ bảy | 55 |
+| 8 | A-008 | Mục thứ tám | 17,640 |
+| 9 | A-009 | Mục thứ chín | 231 |
+| 10 | A-010 | Mục thứ mười | 6,015 |
+| 11 | A-011 | Mục mười một | 78 |
+| 12 | A-012 | Mục mười hai | 2,344 |
+| 13 | A-013 | Mục mười ba | 190 |
+| 14 | A-014 | Mục mười bốn | 8,721 |
+| 15 | A-015 | Mục mười lăm | 76 |
+| 16 | A-016 | Mục mười sáu | 5,334 |
+| 17 | A-017 | Mục mười bảy | 1,230 |
+| 18 | A-018 | Mục mười tám | 567 |
+| 19 | A-019 | Mục mười chín | 987 |
+| 20 | A-020 | Mục hai mươi | 1 |
+
+### Rich cells
+
+Inline formatting, code, links, and math all survive inside cells:
+
+| Kiểu | Ví dụ | Ghi chú |
+| --- | --- | --- |
+| Đậm & nghiêng | **đậm**, *nghiêng*, ~~gạch~~ | Cùng một ô |
+| Mã | `const x = 1` | Nền mã trong ô |
+| Liên kết | [example.com](https://example.com) | Màu `--link` |
+| Công thức | $$a^2 + b^2 = c^2$$ | KaTeX trong ô |
 
 ## Images
 

@@ -1,5 +1,5 @@
-import { THEME_TOKEN_NAMES, FONT_STACK_TOKEN_NAMES, LENGTH_TOKEN_NAMES } from './contract';
-import { isColorValue, isFontStackValue, isLengthValue } from './schema';
+import { THEME_TOKEN_NAMES, FONT_STACK_TOKEN_NAMES, LENGTH_TOKEN_NAMES, ENUM_TOKEN_VALUES } from './contract';
+import { isColorValue, isFontStackValue, isLengthValue, isEnumValue } from './schema';
 
 function levenshtein(a: string, b: string): number {
   const dp: number[][] = Array.from({ length: a.length + 1 }, (_, i) => [
@@ -79,7 +79,17 @@ export function validateThemeFile(raw: unknown): ThemeValidationResult {
     // here still gets validated as *something* rather than falling through
     // unchecked to setProperty.
     const describe = () => (typeof v === 'string' ? `"${v}"` : String(v));
-    if (FONT_STACK_TOKEN_NAMES.includes(key)) {
+    // Enum first: its accepted values are a closed set, so listing them in the
+    // error is more useful than any generic "expected a ..." message the later
+    // branches can produce.
+    const enumValues = ENUM_TOKEN_VALUES[key];
+    if (enumValues) {
+      if (!isEnumValue(v, enumValues)) {
+        errors.push(`${key}: expected one of ${enumValues.join(', ')}, got ${describe()}`);
+        continue;
+      }
+      tokens[key] = v.trim();
+    } else if (FONT_STACK_TOKEN_NAMES.includes(key)) {
       if (!isFontStackValue(v)) {
         errors.push(`${key}: expected a font stack, got ${describe()}`);
         continue;
