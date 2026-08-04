@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useStorage } from '@/services/storage/StorageContext';
-import { StorageQuotaExceededError } from '@/services/storage/types';
+import { MAX_STORAGE_BYTES, StorageQuotaExceededError } from '@/services/storage/types';
 import {
   pickFilesLive,
   readFileListSettled,
@@ -52,7 +52,6 @@ interface LibraryContextValue {
 }
 
 const LibraryContext = createContext<LibraryContextValue | null>(null);
-const FALLBACK_QUOTA_BYTES = 60 * 1024 * 1024;
 
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const storage = useStorage();
@@ -60,7 +59,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const [activeName, setActiveName] = useState<string | null>(null);
   const [dismissedBanners, setDismissedBanners] = useState<Record<string, boolean>>({});
   const [storageUsedBytes, setStorageUsedBytes] = useState(0);
-  const [storageQuotaBytes, setStorageQuotaBytes] = useState(FALLBACK_QUOTA_BYTES);
+  const [storageQuotaBytes, setStorageQuotaBytes] = useState(MAX_STORAGE_BYTES);
   const [unpersisted, setUnpersisted] = useState<Record<string, boolean>>({});
   const hydrated = useRef(false);
   // Mirrors `files` so callbacks can read the current list without either
@@ -76,7 +75,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const refreshStorageEstimate = useCallback(async () => {
     const est = await storage.estimate();
     setStorageUsedBytes(est.usedBytes);
-    setStorageQuotaBytes(est.quotaBytes || FALLBACK_QUOTA_BYTES);
+    setStorageQuotaBytes(est.quotaBytes || MAX_STORAGE_BYTES);
   }, [storage]);
 
   useEffect(() => {

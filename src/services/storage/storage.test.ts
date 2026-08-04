@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createFakeStorageService } from './fakeStorage';
-import { StorageQuotaExceededError } from './types';
+import { MAX_STORAGE_BYTES, StorageQuotaExceededError } from './types';
 
 describe('StorageService (fake adapter)', () => {
   it('round-trips a saved file', async () => {
@@ -40,6 +40,19 @@ describe('StorageService (fake adapter)', () => {
     await storage.saveFile({ name: 'a.md', content: 'x'.repeat(8), kind: 'snapshot', savedAt: 1 });
     await storage.saveFile({ name: 'a.md', content: 'y'.repeat(9), kind: 'snapshot', savedAt: 2 });
     expect((await storage.getFile('a.md'))?.content).toBe('y'.repeat(9));
+  });
+
+  it('defaults to the 100MB app cap when no quota is given', async () => {
+    const storage = createFakeStorageService();
+    expect((await storage.estimate()).quotaBytes).toBe(MAX_STORAGE_BYTES);
+    await expect(
+      storage.saveFile({
+        name: 'huge.md',
+        content: 'x'.repeat(MAX_STORAGE_BYTES + 1),
+        kind: 'snapshot',
+        savedAt: 1,
+      }),
+    ).rejects.toThrow(StorageQuotaExceededError);
   });
 
   it('persists preferences independently of files', async () => {

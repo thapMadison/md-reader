@@ -18,6 +18,14 @@ export interface StoredPreferences {
   scrollPositions?: Record<string, number>;
 }
 
+// Application-level storage ceiling, independent of whatever the browser
+// grants the origin. Browsers typically hand out quotas in the gigabytes and
+// only reject a write once the disk is genuinely under pressure — far too late
+// to be a useful signal, and the point at which they evict is not ours to
+// predict. Capping ourselves keeps the sidebar meter meaningful and makes the
+// "this file was not persisted" path reachable and testable.
+export const MAX_STORAGE_BYTES = 100 * 1024 * 1024;
+
 export class StorageQuotaExceededError extends Error {
   constructor() {
     super('Storage quota exceeded');

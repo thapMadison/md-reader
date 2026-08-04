@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { StorageQuotaExceededError } from './types';
+import { MAX_STORAGE_BYTES, StorageQuotaExceededError } from './types';
 
 // `idb` is mocked rather than exercised against a real IndexedDB: jsdom ships
 // none, and the logic worth testing here is not the database itself but the
@@ -13,14 +13,35 @@ vi.mock('idb', () => ({ openDB }));
 // Imported after the mock is registered.
 const { createIdbStorageService, StorageUnavailableError } = await import('./idbStorage');
 
+// saveFile runs its usage check and its write inside one readwrite
+// transaction, so the double has to model `db.transaction(...)` as well as the
+// direct helpers. The object store delegates to the same put/get/getAll mocks
+// the db exposes, which keeps every assertion written against them working
+// whichever path reaches the store.
 function fakeDb(overrides: Record<string, unknown> = {}) {
-  return {
+  const db = {
     put: vi.fn().mockResolvedValue(undefined),
     get: vi.fn().mockResolvedValue(undefined),
     getAll: vi.fn().mockResolvedValue([]),
     delete: vi.fn().mockResolvedValue(undefined),
     clear: vi.fn().mockResolvedValue(undefined),
     ...overrides,
+  };
+  const abort = vi.fn();
+  return {
+    ...db,
+    abort,
+    transaction: vi.fn(() => ({
+      // The store's put takes no store-name argument, unlike db.put; dropping it
+      // here keeps the underlying mock's call record uniform.
+      objectStore: () => ({
+        get: (key: string) => db.get(key),
+        getAll: () => db.getAll(),
+        put: (record: unknown) => db.put(record),
+      }),
+      done: Promise.resolve(),
+      abort,
+    })),
   };
 }
 
@@ -69,6 +90,96 @@ describe('idbStorage quota translation', () => {
 
     const service = createIdbStorageService();
     await expect(service.saveFile(RECORD)).rejects.toBe(other);
+  });
+});
+
+describe('idbStorage 100MB cap', () => {
+  const filler = (name: string, bytes: number) => ({
+    name,
+    content: 'x'.repeat(bytes),
+    kind: 'snapshot' as const,
+    savedAt: 1,
+  });
+
+  it('rejects a single file larger than the whole budget without touching the db', async () => {
+    const put = vi.fn().mockResolvedValue(undefined);
+    openDB.mockResolvedValue(fakeDb({ put }));
+
+    const service = createIdbStorageService();
+    await expect(service.saveFile(filler('huge.md', MAX_STORAGE_BYTES + 1))).rejects.toBeInstanceOf(
+      StorageQuotaExceededError,
+    );
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it('rejects a write that would push the total past the cap', async () => {
+    const stored = filler('big.md', MAX_STORAGE_BYTES - 100);
+    const put = vi.fn().mockResolvedValue(undefined);
+    openDB.mockResolvedValue(fakeDb({ getAll: vi.fn().mockResolvedValue([stored]), put }));
+
+    const service = createIdbStorageService();
+    await expect(service.saveFile(filler('next.md', 101))).rejects.toBeInstanceOf(
+      StorageQuotaExceededError,
+    );
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it('accepts a write that exactly fills the remaining headroom', async () => {
+    const stored = filler('big.md', MAX_STORAGE_BYTES - 100);
+    const put = vi.fn().mockResolvedValue(undefined);
+    openDB.mockResolvedValue(fakeDb({ getAll: vi.fn().mockResolvedValue([stored]), put }));
+
+    const service = createIdbStorageService();
+    await service.saveFile(filler('next.md', 100));
+    expect(put).toHaveBeenCalledTimes(1);
+  });
+
+  // Overwriting a name replaces its bytes. Counting the incoming record against
+  // a total that still includes the old copy would reject a save that shrinks
+  // the library — the case where the user edits a near-cap file down.
+  it('counts an overwrite as a delta, not an addition', async () => {
+    const stored = filler('a.md', MAX_STORAGE_BYTES - 10);
+    const put = vi.fn().mockResolvedValue(undefined);
+    openDB.mockResolvedValue(
+      fakeDb({
+        get: vi.fn().mockResolvedValue(stored),
+        getAll: vi.fn().mockResolvedValue([stored]),
+        put,
+      }),
+    );
+
+    const service = createIdbStorageService();
+    await service.saveFile(filler('a.md', MAX_STORAGE_BYTES));
+    expect(put).toHaveBeenCalledTimes(1);
+  });
+
+  // content.length would read this as 2 bytes and let it through; the UTF-8
+  // encoding it is actually stored as is 8.
+  it('measures multi-byte content by its UTF-8 size', async () => {
+    const put = vi.fn().mockResolvedValue(undefined);
+    openDB.mockResolvedValue(fakeDb({ put }));
+
+    const service = createIdbStorageService();
+    const record = { name: 'e.md', content: '𝄞😀', kind: 'snapshot' as const, savedAt: 1 };
+    await expect(service.saveFile(record)).resolves.toBeUndefined();
+
+    const est = await (async () => {
+      openDB.mockResolvedValue(fakeDb({ getAll: vi.fn().mockResolvedValue([record]) }));
+      return createIdbStorageService().estimate();
+    })();
+    expect(est.usedBytes).toBe(8);
+  });
+
+  it('reports usage against the app cap rather than the browser quota', async () => {
+    openDB.mockResolvedValue(
+      fakeDb({ getAll: vi.fn().mockResolvedValue([filler('a.md', 2048)]) }),
+    );
+
+    const service = createIdbStorageService();
+    await expect(service.estimate()).resolves.toEqual({
+      usedBytes: 2048,
+      quotaBytes: MAX_STORAGE_BYTES,
+    });
   });
 });
 

@@ -318,7 +318,7 @@ Inline formatting, code, links, and math all survive inside cells:
 
 A working image:
 
-![A placeholder image](https://via.placeholder.com/200x100)
+![A placeholder image](./sample-image.svg)
 
 A broken image (bad URL, exercises the fallback state):
 

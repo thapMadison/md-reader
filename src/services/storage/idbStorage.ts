@@ -1,6 +1,11 @@
 import { openDB, type IDBPDatabase } from 'idb';
-import type { StorageEstimate, StorageService, StoredPreferences } from './types';
-import { StorageQuotaExceededError } from './types';
+import type {
+  StorageEstimate,
+  StorageService,
+  StoredFileRecord,
+  StoredPreferences,
+} from './types';
+import { MAX_STORAGE_BYTES, StorageQuotaExceededError } from './types';
 
 const DB_NAME = 'mdreader';
 const DB_VERSION = 1;
@@ -65,6 +70,22 @@ function isQuotaError(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'QuotaExceededError';
 }
 
+// Encoded size of the record's payload. `content.length` counts UTF-16 code
+// units, which undercounts every non-ASCII character — a CJK or emoji-heavy
+// document can be three to four times larger on disk than its length suggests.
+// TextEncoder gives the actual UTF-8 byte count that IndexedDB will store.
+const encoder = typeof TextEncoder !== 'undefined' ? new TextEncoder() : null;
+
+function recordBytes(record: StoredFileRecord): number {
+  return encoder ? encoder.encode(record.content).length : record.content.length;
+}
+
+function totalBytes(records: StoredFileRecord[]): number {
+  let total = 0;
+  for (const r of records) total += recordBytes(r);
+  return total;
+}
+
 export function createIdbStorageService(): StorageService {
   const dbPromise = openMdReaderDb();
   // The open can reject before any method awaits it (the service is created at
@@ -76,9 +97,33 @@ export function createIdbStorageService(): StorageService {
   return {
     async saveFile(record) {
       const db = await dbPromise;
+      const incoming = recordBytes(record);
+      // A single file larger than the whole budget can never fit, whatever else
+      // is stored. Checked up front so the caller gets the typed error without
+      // opening a transaction that is guaranteed to abort.
+      if (incoming > MAX_STORAGE_BYTES) throw new StorageQuotaExceededError();
       try {
-        await db.put(FILES_STORE, record);
+        // The usage read and the write share one readwrite transaction. Split
+        // across two, concurrent saves could each read the same pre-write total,
+        // both conclude they fit, and land the library over the cap.
+        const tx = db.transaction(FILES_STORE, 'readwrite');
+        const store = tx.objectStore(FILES_STORE);
+        const existing = (await store.get(record.name)) as StoredFileRecord | undefined;
+        const all = (await store.getAll()) as StoredFileRecord[];
+        // Overwriting a name replaces its bytes rather than adding to them, so
+        // the delta — not the raw size — is what has to fit in the headroom.
+        const projected = totalBytes(all) - (existing ? recordBytes(existing) : 0) + incoming;
+        if (projected > MAX_STORAGE_BYTES) {
+          // Abort explicitly: returning early would let the transaction commit
+          // on its own with no write, which is harmless, but aborting keeps the
+          // rejection path identical to a real write failure.
+          tx.abort();
+          throw new StorageQuotaExceededError();
+        }
+        await store.put(record);
+        await tx.done;
       } catch (err) {
+        if (err instanceof StorageQuotaExceededError) throw err;
         if (isQuotaError(err)) throw new StorageQuotaExceededError();
         throw err;
       }
@@ -105,12 +150,15 @@ export function createIdbStorageService(): StorageService {
       await db.clear(PREFS_STORE);
     },
 
+    // Reports against the app's own cap, not navigator.storage.estimate(). That
+    // API measures the whole origin (caches, service worker, other stores),
+    // pads its numbers for privacy, and reports a quota in the gigabytes — so
+    // the meter it drove could sit near zero while a save was being rejected.
+    // Summing the records is the figure the cap is actually enforced against.
     async estimate(): Promise<StorageEstimate> {
-      if (typeof navigator !== 'undefined' && navigator.storage?.estimate) {
-        const { usage, quota } = await navigator.storage.estimate();
-        return { usedBytes: usage ?? 0, quotaBytes: quota ?? 0 };
-      }
-      return { usedBytes: 0, quotaBytes: 0 };
+      const db = await dbPromise;
+      const all = (await db.getAll(FILES_STORE)) as StoredFileRecord[];
+      return { usedBytes: totalBytes(all), quotaBytes: MAX_STORAGE_BYTES };
     },
 
     async getPreferences(): Promise<StoredPreferences> {
