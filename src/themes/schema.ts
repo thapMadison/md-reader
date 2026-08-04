@@ -1,3 +1,5 @@
+import { ENUM_TOKEN_VALUES, FONT_STACK_TOKEN_NAMES, LENGTH_TOKEN_NAMES } from './contract';
+
 // Value-level validation for theme token values.
 //
 // This is the security boundary for imported themes: every value that reaches
@@ -54,3 +56,21 @@ export const isFontStackValue = (v: unknown): v is string =>
 // font tokens went unvalidated for as long as they did.
 export const isEnumValue = (v: unknown, values: readonly string[]): v is string =>
   typeof v === 'string' && values.includes(v.trim());
+
+// Dispatches a token to the predicate its contract type calls for. The branch
+// order mirrors validate.ts deliberately — enum first (closed set), then font
+// stack, then length, with color as the unconditional fallback so a token added
+// to the contract without a matching branch is still validated as *something*
+// rather than reaching setProperty unchecked.
+//
+// Lives here rather than in validate.ts because it is needed on two paths, not
+// one: import-time validation *and* merge-time re-validation of tokens that
+// arrive from persisted storage. Duplicating the branch logic across the two
+// is how they would drift apart.
+export function isValidTokenValue(name: string, value: unknown): value is string {
+  const enumValues = ENUM_TOKEN_VALUES[name];
+  if (enumValues) return isEnumValue(value, enumValues);
+  if (FONT_STACK_TOKEN_NAMES.includes(name)) return isFontStackValue(value);
+  if (LENGTH_TOKEN_NAMES.includes(name)) return isLengthValue(value);
+  return isColorValue(value);
+}

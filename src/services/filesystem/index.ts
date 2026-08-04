@@ -2,7 +2,7 @@ export { supportsFileSystemAccess } from './types';
 export type { OpenedFile, FilePermission } from './types';
 export {
   pickFilesLive,
-  readFileListAsSnapshots,
+  readFileListSettled,
   queryHandlePermission,
   requestHandlePermission,
   rereadHandle,

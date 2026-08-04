@@ -109,15 +109,31 @@ export function AppShell() {
   const isMobile = mode === 'mobile';
   const hasFile = !!active;
 
+  // A reopened-while-dirty file takes the banner over the permission prompt:
+  // it reports something that already happened to the user's own edits, which
+  // is more urgent than an access request they can retry at any time.
+  const showCollisionBanner = !!active && library.collisions.includes(active.name);
+  // Unreadable files are not tied to the active document — the batch they came
+  // from may have opened nothing at all — so this one shows whenever the list
+  // is non-empty, and outranks the others: it is the only notice reporting
+  // files the user asked for that are not on screen anywhere.
+  const showUnreadableBanner = library.unreadable.length > 0;
   const showPermBanner =
+    !showCollisionBanner &&
+    !showUnreadableBanner &&
     !!active &&
     !library.dismissedBanners[active.name] &&
     (active.perm === 'denied' || active.perm === 'prompt');
   const bannerDenied = active?.perm === 'denied';
-  const bannerText = bannerDenied
-    ? 'Access denied — showing the last cached copy of this file. Changes on disk will not appear until you grant access again.'
-    : 'MDReader needs permission to re-read this file from disk.';
-  const bannerShowGrantButton = active?.perm === 'prompt';
+  const bannerText = showUnreadableBanner
+    ? `Could not read ${library.unreadable.length === 1 ? '' : `${library.unreadable.length} files: `}${library.unreadable.join(', ')}. Any other files you opened are available.`
+    : showCollisionBanner
+      ? 'This file was reopened while it had unsaved edits. Your edits were kept — use Revert to load the version now on disk.'
+      : bannerDenied
+        ? 'Access denied — showing the last cached copy of this file. Changes on disk will not appear until you grant access again.'
+        : 'MDReader needs permission to re-read this file from disk.';
+  const bannerShowGrantButton =
+    !showCollisionBanner && !showUnreadableBanner && active?.perm === 'prompt';
 
   const activeTocEntry = scrollSpy.toc.find((t) => t.id === scrollSpy.activeId);
   const readerHiddenOnMobile = isMobile && layout.editing && layout.mobileTab === 'source';
@@ -218,7 +234,7 @@ export function AppShell() {
           onScroll={onScroll}
           activeFile={active}
           contentReady={contentReady}
-          showPermBanner={showPermBanner}
+          showPermBanner={showPermBanner || showCollisionBanner || showUnreadableBanner}
           bannerText={bannerText}
           bannerDenied={!!bannerDenied}
           bannerShowGrantButton={!!bannerShowGrantButton}
@@ -228,7 +244,11 @@ export function AppShell() {
               console.error('Failed to grant access', err);
             });
           }}
-          onDismissBanner={() => active && library.dismissBanner(active.name)}
+          onDismissBanner={() => {
+            if (!active) return;
+            if (showCollisionBanner) library.dismissCollisions();
+            else library.dismissBanner(active.name);
+          }}
           onOpenFileClick={openFileInput}
         />
         {mode === 'desktop' && hasFile && !layout.editing && (

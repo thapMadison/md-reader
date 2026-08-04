@@ -1,5 +1,5 @@
 import { THEME_TOKEN_NAMES, FONT_STACK_TOKEN_NAMES, LENGTH_TOKEN_NAMES, ENUM_TOKEN_VALUES } from './contract';
-import { isColorValue, isFontStackValue, isLengthValue, isEnumValue } from './schema';
+import { isValidTokenValue } from './schema';
 
 function levenshtein(a: string, b: string): number {
   const dp: number[][] = Array.from({ length: a.length + 1 }, (_, i) => [
@@ -79,35 +79,28 @@ export function validateThemeFile(raw: unknown): ThemeValidationResult {
     // here still gets validated as *something* rather than falling through
     // unchecked to setProperty.
     const describe = () => (typeof v === 'string' ? `"${v}"` : String(v));
-    // Enum first: its accepted values are a closed set, so listing them in the
-    // error is more useful than any generic "expected a ..." message the later
-    // branches can produce.
-    const enumValues = ENUM_TOKEN_VALUES[key];
-    if (enumValues) {
-      if (!isEnumValue(v, enumValues)) {
-        errors.push(`${key}: expected one of ${enumValues.join(', ')}, got ${describe()}`);
-        continue;
-      }
-      tokens[key] = v.trim();
-    } else if (FONT_STACK_TOKEN_NAMES.includes(key)) {
-      if (!isFontStackValue(v)) {
-        errors.push(`${key}: expected a font stack, got ${describe()}`);
-        continue;
-      }
-      tokens[key] = v;
-    } else if (LENGTH_TOKEN_NAMES.includes(key)) {
-      if (!isLengthValue(v)) {
-        errors.push(`${key}: expected a length, got ${describe()}`);
-        continue;
-      }
-      tokens[key] = v;
-    } else {
-      if (!isColorValue(v)) {
-        errors.push(`${key}: expected a color, got ${describe()}`);
-        continue;
-      }
-      tokens[key] = v;
+    // The accept/reject decision itself lives in schema.ts (isValidTokenValue),
+    // shared with merge.ts so import-time and merge-time validation cannot drift.
+    // What stays here is the *reporting*: which expectation to name in the error,
+    // which only the import path needs. Enum is described first because its
+    // accepted values are a closed set, so listing them beats any generic
+    // "expected a ..." message.
+    if (!isValidTokenValue(key, v)) {
+      const enumValues = ENUM_TOKEN_VALUES[key];
+      const expected = enumValues
+        ? `one of ${enumValues.join(', ')}`
+        : FONT_STACK_TOKEN_NAMES.includes(key)
+          ? 'a font stack'
+          : LENGTH_TOKEN_NAMES.includes(key)
+            ? 'a length'
+            : 'a color';
+      errors.push(`${key}: expected ${expected}, got ${describe()}`);
+      continue;
     }
+    // Enum and length values are stored trimmed; their predicates accept
+    // surrounding whitespace, and the raw form would otherwise be what a
+    // consumer reads back out of resolvedTokens.
+    tokens[key] = ENUM_TOKEN_VALUES[key] || LENGTH_TOKEN_NAMES.includes(key) ? v.trim() : v;
   }
 
   if (Object.keys(rawTokens).length === 0) {

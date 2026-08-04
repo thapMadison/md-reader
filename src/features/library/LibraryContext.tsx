@@ -12,7 +12,7 @@ import { useStorage } from '@/services/storage/StorageContext';
 import { StorageQuotaExceededError } from '@/services/storage/types';
 import {
   pickFilesLive,
-  readFileListAsSnapshots,
+  readFileListSettled,
   readDroppedFiles,
   queryHandlePermission,
   requestHandlePermission,
@@ -41,6 +41,11 @@ interface LibraryContextValue {
   isUnpersisted: (name: string) => boolean;
   dismissedBanners: Record<string, boolean>;
   dismissBanner: (name: string) => void;
+  /** Names reopened while holding unsaved edits; those edits were kept, not overwritten. */
+  collisions: string[];
+  /** Names that could not be read at all; the rest of the batch still opened. */
+  unreadable: string[];
+  dismissCollisions: () => void;
   storageUsedBytes: number;
   storageQuotaBytes: number;
   fsAccessSupported: boolean;
@@ -211,18 +216,46 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     [storage, refreshStorageEstimate],
   );
 
+  // Files are keyed by name, so reopening a name already in the library replaces
+  // that entry. When the open copy has unsaved edits, replacing it outright
+  // discards them with no warning and no undo — the incoming file is a different
+  // file on disk that merely shares a basename (the FS Access API exposes no
+  // path to tell them apart). The edits win: the fresh content still lands in
+  // originalContent, so the editor's own revert control offers it deliberately,
+  // and `collisions` lets the UI say what happened.
+  const [collisions, setCollisions] = useState<string[]>([]);
+  // Files that matched the extension filter but could not be read. Kept separate
+  // from `collisions` because the user action differs: a collision is resolvable
+  // in the editor, an unreadable file has to be reopened from disk.
+  const [unreadable, setUnreadable] = useState<string[]>([]);
+  const dismissCollisions = useCallback(() => {
+    setCollisions([]);
+    setUnreadable([]);
+  }, []);
+
   const addOpenedFiles = useCallback(
     async (opened: OpenedFile[]) => {
       if (opened.length === 0) return;
+      // Derived from the ref before the updater runs, not inside it: React calls
+      // updaters twice under StrictMode, so collecting names there would report
+      // each clash twice. The updater below stays pure.
+      const dirtyNames = new Set(
+        opened
+          .map((o) => filesRef.current.find((f) => f.name === o.name))
+          .filter((f): f is LibraryFile => !!f && f.editedContent !== f.originalContent)
+          .map((f) => f.name),
+      );
       setFiles((prev) => {
         const byName = new Map(prev.map((f) => [f.name, f]));
         for (const o of opened) {
+          const existing = byName.get(o.name);
+          const keepEdits = dirtyNames.has(o.name) && !!existing;
           byName.set(o.name, {
             name: o.name,
             kind: o.kind,
             perm: o.perm,
             originalContent: o.content,
-            editedContent: o.content,
+            editedContent: keepEdits ? existing.editedContent : o.content,
             handle: o.handle,
             size: o.size,
             lastModified: o.lastModified,
@@ -230,6 +263,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         }
         return Array.from(byName.values());
       });
+      setCollisions([...dirtyNames]);
       setActiveName(opened[opened.length - 1].name);
       for (const o of opened) {
         await persistFile({
@@ -257,7 +291,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   // without the FS Access API that was every file the user opened.
   const openViaInput = useCallback(
     async (fileList: FileList) => {
-      const opened = await readFileListAsSnapshots(fileList);
+      const { files: opened, failed } = await readFileListSettled(fileList);
+      setUnreadable(failed);
       await addOpenedFiles(opened);
     },
     [addOpenedFiles],
@@ -265,7 +300,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
   const openViaDrop = useCallback(
     async (dataTransfer: DataTransfer) => {
-      const opened = await readDroppedFiles(dataTransfer);
+      const { files: opened, failed } = await readDroppedFiles(dataTransfer);
+      setUnreadable(failed);
       await addOpenedFiles(opened);
     },
     [addOpenedFiles],
@@ -383,6 +419,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     isUnpersisted,
     dismissedBanners,
     dismissBanner,
+    collisions,
+    unreadable,
+    dismissCollisions,
     storageUsedBytes,
     storageQuotaBytes,
     fsAccessSupported: supportsFileSystemAccess(),

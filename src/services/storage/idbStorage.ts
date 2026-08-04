@@ -8,8 +8,38 @@ const FILES_STORE = 'files';
 const PREFS_STORE = 'preferences';
 const PREFS_KEY = 'preferences';
 
+// How long to wait for the database to open before giving up.
+//
+// `openDB` has no timeout of its own, and two of its outcomes never settle the
+// promise: an upgrade blocked by another tab holding an old version open, and
+// an environment where indexedDB.open simply never fires an event (Firefox
+// private windows, some embedded webviews). Without a bound, every storage call
+// awaiting `dbPromise` stays pending forever — the app shows an empty library
+// and no error, because a promise that never rejects has nothing to catch.
+const OPEN_TIMEOUT_MS = 5000;
+
+export class StorageUnavailableError extends Error {
+  constructor(cause?: unknown) {
+    super('Storage is unavailable');
+    this.name = 'StorageUnavailableError';
+    this.cause = cause;
+  }
+}
+
 function openMdReaderDb(): Promise<IDBPDatabase> {
-  return openDB(DB_NAME, DB_VERSION, {
+  // Checks the value, not just the binding: `globalThis.indexedDB` exists but is
+  // null/undefined in some embedded webviews and sandboxed frames, where a bare
+  // `typeof` guard would pass and leave the open to hang instead.
+  if (typeof globalThis === 'undefined' || !globalThis.indexedDB) {
+    return Promise.reject(new StorageUnavailableError('indexedDB is not available'));
+  }
+
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new StorageUnavailableError('timed out opening database')), OPEN_TIMEOUT_MS);
+  });
+
+  const open = openDB(DB_NAME, DB_VERSION, {
     upgrade(db) {
       if (!db.objectStoreNames.contains(FILES_STORE)) {
         db.createObjectStore(FILES_STORE, { keyPath: 'name' });
@@ -18,7 +48,17 @@ function openMdReaderDb(): Promise<IDBPDatabase> {
         db.createObjectStore(PREFS_STORE);
       }
     },
+    // Another tab is holding the previous version open, so the upgrade cannot
+    // proceed. Rejecting turns an indefinite hang into an error the caller can
+    // report; the racing timeout would otherwise be the only way out.
+    blocked() {
+      throw new StorageUnavailableError('another tab is holding an older version of the database open');
+    },
+  }).catch((err: unknown) => {
+    throw err instanceof StorageUnavailableError ? err : new StorageUnavailableError(err);
   });
+
+  return Promise.race([open, timeout]).finally(() => clearTimeout(timer));
 }
 
 function isQuotaError(err: unknown): boolean {
@@ -27,6 +67,11 @@ function isQuotaError(err: unknown): boolean {
 
 export function createIdbStorageService(): StorageService {
   const dbPromise = openMdReaderDb();
+  // The open can reject before any method awaits it (the service is created at
+  // module scope, the first call comes later), which the browser would report
+  // as an unhandled rejection. This no-op catch marks it handled; every caller
+  // still awaits `dbPromise` itself and sees the real rejection.
+  dbPromise.catch(() => {});
 
   return {
     async saveFile(record) {

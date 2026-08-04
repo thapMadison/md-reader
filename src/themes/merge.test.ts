@@ -42,6 +42,58 @@ describe('mergeThemeTokens', () => {
     expect(merged['--bg']).toBe('#ffffff');
   });
 
+  // The themeTokens argument is as untrusted as overrides. A custom theme's
+  // tokens are persisted to IndexedDB and re-enter here on the next app load,
+  // so anything that edits that record (devtools, a corrupt profile, a theme
+  // written by an older build with looser rules) arrives on this path — which
+  // used to be spread raw, straight through to setProperty.
+  describe('themeTokens is validated, not trusted', () => {
+    it('rejects a CSS-injection payload in themeTokens', () => {
+      const merged = mergeThemeTokens('light', {
+        '--bg': 'red;} body{display:none}',
+      } as Record<string, string>);
+      expect(merged['--bg']).toBe('#ffffff');
+    });
+
+    it('rejects a url() smuggled past a color-function prefix', () => {
+      const merged = mergeThemeTokens('light', {
+        '--bg': 'rgb(0,0,0) url(https://tracker.example/pixel)',
+      } as Record<string, string>);
+      expect(merged['--bg']).toBe('#ffffff');
+    });
+
+    it('rejects unknown keys in themeTokens', () => {
+      const merged = mergeThemeTokens('light', {
+        '--not-a-real-token': '#ff0000',
+      } as Record<string, string>);
+      expect((merged as unknown as Record<string, string>)['--not-a-real-token']).toBeUndefined();
+    });
+
+    it('rejects a value of the wrong contract type', () => {
+      // --table-style is an enum; an arbitrary string is not one of its values.
+      const merged = mergeThemeTokens('light', {
+        '--table-style': 'not-a-listed-style',
+      } as Record<string, string>);
+      expect(merged['--table-style']).not.toBe('not-a-listed-style');
+    });
+
+    it('still accepts well-formed themeTokens', () => {
+      const merged = mergeThemeTokens('light', { '--bg': '#123456' });
+      expect(merged['--bg']).toBe('#123456');
+    });
+
+    // A rejected per-level accent must count as *unset* so it inherits the
+    // shared accent, rather than being treated as explicitly set to a value
+    // that never actually landed.
+    it('a rejected per-level accent still inherits the shared one', () => {
+      const merged = mergeThemeTokens('light', {
+        '--heading-accent': '#ff0000',
+        '--h2-accent': 'javascript:alert(1)',
+      } as Record<string, string>);
+      expect(merged['--h2-accent']).toBe('#ff0000');
+    });
+  });
+
   // The per-level marker accents were added after --heading-accent. Because
   // every contract token is present after the base spread, a per-level token
   // shadows the shared one — so without explicit inheritance a theme written

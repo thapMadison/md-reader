@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { pickFilesLive, readFileListAsSnapshots } from './openFiles';
+import { pickFilesLive, readFileListSettled } from './openFiles';
 
 const setPicker = (impl: () => Promise<unknown>) => {
   (window as unknown as Record<string, unknown>).showOpenFilePicker = vi.fn(impl);
@@ -38,23 +38,32 @@ describe('pickFilesLive', () => {
   });
 });
 
-describe('readFileListAsSnapshots', () => {
+describe('readFileListSettled', () => {
   const asFile = (name: string, body = 'x') => new File([body], name, { type: 'text/plain' });
+  const read = async (files: File[]) => (await readFileListSettled(files)).files;
 
   // The picker's accept list and this filter disagreed: .txt was openable via
   // <input> but not offered by the picker.
   it.each(['a.md', 'b.markdown', 'c.txt', 'D.MD'])('accepts %s', async (name) => {
-    const opened = await readFileListAsSnapshots([asFile(name)]);
+    const opened = await read([asFile(name)]);
     expect(opened.map((o) => o.name)).toEqual([name]);
   });
 
   it('drops files with an unrelated extension', async () => {
-    const opened = await readFileListAsSnapshots([asFile('photo.png'), asFile('keep.md')]);
+    const opened = await read([asFile('photo.png'), asFile('keep.md')]);
     expect(opened.map((o) => o.name)).toEqual(['keep.md']);
   });
 
+  // An extension-filtered file is not a failure — the user gets no notice for
+  // a .png they dropped alongside their markdown, only for markdown that would
+  // not read.
+  it('does not report filtered-out files as failures', async () => {
+    const { failed } = await readFileListSettled([asFile('photo.png'), asFile('keep.md')]);
+    expect(failed).toEqual([]);
+  });
+
   it('labels input-picked files as snapshots, never live', async () => {
-    const opened = await readFileListAsSnapshots([asFile('note.md')]);
+    const opened = await read([asFile('note.md')]);
     // A snapshot has no FileSystemFileHandle, so it can never be re-read from
     // disk or have permission re-granted — mislabelling it 'live' put a dead
     // "Grant access" action in the sidebar.

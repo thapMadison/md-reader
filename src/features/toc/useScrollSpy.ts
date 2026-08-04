@@ -37,7 +37,13 @@ export function useScrollSpy(
       }))
       .filter((t) => t.level <= 3);
     setToc(entries);
-    if (entries.length > 0 && !entries.some((e) => e.id === lastActive.current)) {
+    if (entries.length === 0) {
+      // Switching to a document with no headings used to leave activeId pointing
+      // at a heading from the previous one — an id no longer in the DOM, which
+      // goTo cannot scroll to and no TOC entry can match.
+      setActiveId(null);
+      lastActive.current = null;
+    } else if (!entries.some((e) => e.id === lastActive.current)) {
       setActiveId(entries[0].id);
       lastActive.current = entries[0].id;
     }

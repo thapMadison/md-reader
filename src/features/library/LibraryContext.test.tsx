@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LibraryProvider, useLibrary } from './LibraryContext';
 import { StorageProvider } from '@/services/storage/StorageContext';
@@ -35,6 +36,51 @@ function Probe() {
       <div data-testid="size">{String(active.size)}</div>
     </div>
   );
+}
+
+// Drives the open/edit flow from inside the provider, and reports the notice
+// lists the banner reads.
+function OpenProbe({ files }: { files: File[] }) {
+  const { active, openViaInput, editContent, collisions, unreadable } = useLibrary();
+  return (
+    <div>
+      <button onClick={() => void openViaInput(files as unknown as FileList)}>open</button>
+      <button onClick={() => active && editContent(active.name, 'MY UNSAVED EDIT')}>edit</button>
+      <div data-testid="edited">{active?.editedContent ?? ''}</div>
+      <div data-testid="original">{active?.originalContent ?? ''}</div>
+      <div data-testid="collisions">{collisions.join(',')}</div>
+      <div data-testid="unreadable">{unreadable.join(',')}</div>
+    </div>
+  );
+}
+
+// A File whose text() the FileReader path will read. readFileListSettled uses
+// FileReader, so the mock has to satisfy readAsText rather than File.text().
+function fakeFile(name: string, content: string | { fail: true }): File {
+  return { name, content } as unknown as File;
+}
+
+// Minimal FileReader standing in for jsdom's, driven by the `content` carried on
+// the fake File above: a string resolves, the failure marker fires onerror. This
+// is the only way to exercise a mid-batch read failure, which is exactly the
+// branch that used to sink the whole batch.
+class StubFileReader {
+  result: string | null = null;
+  error: DOMException | null = null;
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  readAsText(file: File) {
+    const content = (file as unknown as { content: string | { fail: true } }).content;
+    queueMicrotask(() => {
+      if (typeof content === 'string') {
+        this.result = content;
+        this.onload?.();
+      } else {
+        this.error = new DOMException('unreadable', 'NotReadableError');
+        this.onerror?.();
+      }
+    });
+  }
 }
 
 const renderLibrary = (storage: StorageService) =>
@@ -159,5 +205,107 @@ describe('hydration re-reads live files from disk', () => {
 
     await waitFor(() => expect(screen.getByTestId('perm')).toHaveTextContent('na'));
     expect(screen.getByTestId('original')).toHaveTextContent('# snapshot content');
+  });
+});
+
+describe('reopening a file that has unsaved edits', () => {
+  const renderOpen = (storage: StorageService, files: File[]) =>
+    render(
+      <StorageProvider service={storage}>
+        <LibraryProvider>
+          <OpenProbe files={files} />
+        </LibraryProvider>
+      </StorageProvider>,
+    );
+
+  beforeEach(() => {
+    vi.stubGlobal('FileReader', StubFileReader);
+  });
+
+  it('keeps the edits instead of silently discarding them', async () => {
+    const user = userEvent.setup();
+    const storage = createFakeStorageService();
+    renderOpen(storage, [fakeFile('a.md', '# from disk')]);
+
+    await user.click(screen.getByText('open'));
+    await waitFor(() => expect(screen.getByTestId('edited')).toHaveTextContent('# from disk'));
+
+    await user.click(screen.getByText('edit'));
+    await waitFor(() => expect(screen.getByTestId('edited')).toHaveTextContent('MY UNSAVED EDIT'));
+
+    // Same name, different bytes — the collision the FS Access API cannot
+    // distinguish from reopening the identical file.
+    await user.click(screen.getByText('open'));
+
+    await waitFor(() => expect(screen.getByTestId('collisions')).toHaveTextContent('a.md'));
+    expect(screen.getByTestId('edited')).toHaveTextContent('MY UNSAVED EDIT');
+  });
+
+  it('still takes the fresh disk content as the revert target', async () => {
+    const user = userEvent.setup();
+    const storage = createFakeStorageService();
+    renderOpen(storage, [fakeFile('a.md', '# from disk')]);
+
+    await user.click(screen.getByText('open'));
+    await waitFor(() => expect(screen.getByTestId('edited')).toHaveTextContent('# from disk'));
+    await user.click(screen.getByText('edit'));
+    await user.click(screen.getByText('open'));
+
+    await waitFor(() => expect(screen.getByTestId('collisions')).toHaveTextContent('a.md'));
+    expect(screen.getByTestId('original')).toHaveTextContent('# from disk');
+  });
+
+  it('reports no collision when the reopened file has no unsaved edits', async () => {
+    const user = userEvent.setup();
+    const storage = createFakeStorageService();
+    renderOpen(storage, [fakeFile('a.md', '# from disk')]);
+
+    await user.click(screen.getByText('open'));
+    await waitFor(() => expect(screen.getByTestId('edited')).toHaveTextContent('# from disk'));
+    await user.click(screen.getByText('open'));
+
+    await waitFor(() => expect(screen.getByTestId('edited')).toHaveTextContent('# from disk'));
+    expect(screen.getByTestId('collisions')).toHaveTextContent('');
+  });
+});
+
+describe('a batch with an unreadable file', () => {
+  const renderOpen = (storage: StorageService, files: File[]) =>
+    render(
+      <StorageProvider service={storage}>
+        <LibraryProvider>
+          <OpenProbe files={files} />
+        </LibraryProvider>
+      </StorageProvider>,
+    );
+
+  beforeEach(() => {
+    vi.stubGlobal('FileReader', StubFileReader);
+  });
+
+  // The whole point of the Promise.allSettled change: one bad file used to
+  // reject the batch, so none of the good ones opened either.
+  it('opens the readable files and names the one it could not read', async () => {
+    const user = userEvent.setup();
+    const storage = createFakeStorageService();
+    renderOpen(storage, [
+      fakeFile('good.md', '# good one'),
+      fakeFile('bad.md', { fail: true }),
+    ]);
+
+    await user.click(screen.getByText('open'));
+
+    await waitFor(() => expect(screen.getByTestId('unreadable')).toHaveTextContent('bad.md'));
+    expect(screen.getByTestId('edited')).toHaveTextContent('# good one');
+  });
+
+  it('reports the failure even when every file in the batch fails', async () => {
+    const user = userEvent.setup();
+    const storage = createFakeStorageService();
+    renderOpen(storage, [fakeFile('bad.md', { fail: true })]);
+
+    await user.click(screen.getByText('open'));
+
+    await waitFor(() => expect(screen.getByTestId('unreadable')).toHaveTextContent('bad.md'));
   });
 });
