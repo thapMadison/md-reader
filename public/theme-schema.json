@@ -208,6 +208,12 @@
           "default": "rgba(9,105,218,0.35)",
           "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
         },
+        "--heading-marker": {
+          "type": "string",
+          "description": "Heading chevron width; 0 hides the chevron",
+          "default": "0.52em",
+          "pattern": "^-?(\\d+\\.?\\d*|\\.\\d+)(em|rem|px|ch|ex)?$"
+        },
         "--heading-rule": {
           "type": "string",
           "description": "Underline rule beneath level-2 headings",

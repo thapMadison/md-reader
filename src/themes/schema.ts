@@ -22,6 +22,16 @@ const FUNC_COLOR_RE = /^(rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch|color)\([0-9a
 export const isColorValue = (v: unknown): v is string =>
   typeof v === 'string' && (COLOR_RE.test(v) || FUNC_COLOR_RE.test(v));
 
+// A single CSS length: a number with an optional unit. `calc()`, `var()` and
+// multi-value shorthands are refused — this token is read back into JS to size
+// an SVG and compute a negative margin, and a value only the browser can
+// resolve would leave those two out of step. A bare `0` is legal CSS and is
+// how a theme turns the chevron off.
+const LENGTH_RE = /^-?(\d+\.?\d*|\.\d+)(em|rem|px|ch|ex)?$/;
+
+export const isLengthValue = (v: unknown): v is string =>
+  typeof v === 'string' && LENGTH_RE.test(v.trim());
+
 // A font stack is a comma-separated list of family names, optionally quoted.
 // Font tokens previously bypassed validation entirely — they are strings, so
 // `v as string` accepted numbers and objects, and any CSS fragment rode through

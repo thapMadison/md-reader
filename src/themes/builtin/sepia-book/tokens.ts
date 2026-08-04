@@ -27,6 +27,8 @@ export const tokens: ThemeTokens = {
   '--h2-accent-soft': 'rgba(156,90,26,0.30)',
   '--h3-accent': '#9c5a1a',
   '--h3-accent-soft': 'rgba(156,90,26,0.30)',
+  // No chevron: a print-book theme sets headings in type, not in dingbats.
+  '--heading-marker': '0',
   '--heading-rule': '#ddd0b6',
   '--badge-bg': '#efe4cd',
   '--table-header-bg': '#efe4cd',

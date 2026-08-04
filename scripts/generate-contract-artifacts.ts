@@ -21,6 +21,10 @@ function generateContractMd(): string {
   for (const t of TOKEN_CONTRACT.filter((t) => t.type === 'color')) {
     lines.push(`| \`${t.name}\` | ${t.description} | \`${t.default}\` |`);
   }
+  lines.push('', '## Lengths', '', '| Token | Description | Default |', '| --- | --- | --- |');
+  for (const t of TOKEN_CONTRACT.filter((t) => t.type === 'length')) {
+    lines.push(`| \`${t.name}\` | ${t.description} | \`${t.default}\` |`);
+  }
   lines.push('', '## Fonts', '', '| Token | Description | Default |', '| --- | --- | --- |');
   for (const t of TOKEN_CONTRACT.filter((t) => t.type === 'font-stack')) {
     lines.push(`| \`${t.name}\` | ${t.description} | \`${t.default}\` |`);
@@ -49,6 +53,7 @@ function generateSchemaJson(): string {
       ...(t.type === 'color'
         ? { pattern: '^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$' }
         : {}),
+      ...(t.type === 'length' ? { pattern: '^-?(\\d+\\.?\\d*|\\.\\d+)(em|rem|px|ch|ex)?$' } : {}),
     };
   }
   const schema = {

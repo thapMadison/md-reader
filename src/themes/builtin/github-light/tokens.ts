@@ -28,6 +28,10 @@ export const tokens: ThemeTokens = {
   '--h2-accent-soft': 'rgba(9,105,218,0.35)',
   '--h3-accent': '#0969da',
   '--h3-accent-soft': 'rgba(9,105,218,0.35)',
+  // No chevron: this theme mirrors GitHub's own rendering, where hierarchy is
+  // carried by size and the h2 rule alone. The --h*-accent values above stay
+  // set so the glyph returns correctly dressed if a user re-enables it.
+  '--heading-marker': '0',
   '--heading-rule': '#d1d9e0',
   '--badge-bg': '#f6f8fa',
   '--table-header-bg': '#f6f8fa',

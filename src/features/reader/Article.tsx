@@ -12,6 +12,7 @@ import { CodeBlock } from './CodeBlock';
 import { MarkdownImage } from './MarkdownImage';
 import { reactNodeToText } from './reactText';
 import { buildHeadingIds } from './pipeline/parse';
+import { useHeadingMarker } from '@/features/theming/ThemeContext';
 
 interface ArticleProps {
   source: string;
@@ -22,6 +23,22 @@ interface ArticleProps {
 // article, so a theme can tint h1 without dragging body text along. These are
 // distinct from --heading-accent* and --heading-rule, which color the chevron
 // glyph and the rule under h2 — not the heading text itself.
+//
+// Spacing carries the hierarchy that size can no longer carry on its own. By h4
+// the type is only 1.02em and by h6 it is 0.8em, so adjacent levels differ by a
+// fraction the eye cannot rank; what does rank is the gap above each heading,
+// which halves roughly per level (h2 1.8em -> h3 2em* -> h4 1.7 -> h5 1.45 ->
+// h6 1.25) while the gap *below* shrinks in step. That widening ratio between
+// space-above and space-below is what binds a heading to the content under it
+// rather than to the block above — the same job an indent would do, without
+// moving anything off the left edge.
+//
+// (*h3 sits above h2 deliberately: h2 already owns a horizontal rule, which
+// reads as separation on its own, so h3 needs more raw space to feel as
+// distinct from the prose above it as the ruled h2 does.)
+//
+// Margins are in em, so every gap scales with the reader's --fs rather than
+// freezing at one font size.
 const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
   switch (level) {
     case 1:
@@ -44,15 +61,15 @@ const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
         color: 'var(--h2-fg)',
       };
     case 3:
-      return { fontSize: '1.18em', fontWeight: 650, margin: '1.5em 0 0.6em', color: 'var(--h3-fg)' };
+      return { fontSize: '1.18em', fontWeight: 650, margin: '2em 0 0.55em', color: 'var(--h3-fg)' };
     case 4:
-      return { fontSize: '1.02em', fontWeight: 650, margin: '1.3em 0 0.5em', color: 'var(--h4-fg)' };
+      return { fontSize: '1.02em', fontWeight: 650, margin: '1.7em 0 0.45em', color: 'var(--h4-fg)' };
     case 5:
       return {
         fontSize: '0.92em',
         fontWeight: 650,
         letterSpacing: '.01em',
-        margin: '1.2em 0 0.4em',
+        margin: '1.45em 0 0.35em',
         color: 'var(--h5-fg)',
       };
     case 6:
@@ -62,7 +79,7 @@ const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
         color: 'var(--h6-fg)',
         textTransform: 'uppercase',
         letterSpacing: '.06em',
-        margin: '1.2em 0 0.4em',
+        margin: '1.25em 0 0.3em',
       };
   }
 };
@@ -72,6 +89,10 @@ const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
 // a known line box to center against.
 const CHEVRON_LINE_HEIGHT = 1.35;
 
+// Gap between the chevron and the heading text, in em of the heading's own
+// font-size.
+const CHEVRON_GAP = '0.42em';
+
 // Two-tone angled chevron rendered before h2/h3. Inline SVG rather than a
 // ::before pseudo-element because markdown styling here is entirely inline
 // style objects — a pseudo-element would have to live in index.css, splitting
@@ -80,22 +101,31 @@ const CHEVRON_LINE_HEIGHT = 1.35;
 // Takes the level because h2 and h3 can carry different text colors, and a
 // glyph dressed from one shared accent then clashes with whichever level it
 // wasn't chosen for.
-function HeadingChevron({ level }: { level: 2 | 3 }) {
+//
+// `width` is the theme's --heading-marker rather than a constant, so a theme
+// can resize the glyph — or set it to 0, which drops the chevron entirely and
+// is handled by the heading rather than here.
+function HeadingChevron({ level, width }: { level: 2 | 3; width: string }) {
   return (
     <svg
       viewBox="0 0 10 14"
       aria-hidden="true"
       focusable="false"
-      // Sized in em so the glyph tracks the heading's font-size. Centering it on
-      // the first line box is what keeps it aligned when the heading wraps: the
-      // line box is CHEVRON_LINE_HEIGHT em tall, the glyph 0.72em, so half the
-      // difference centers it — independent of heading level or letter case.
+      // In-flow flex item: the glyph sits in the text column and indents the
+      // heading by its own width plus the gap. That indent is deliberate — a
+      // theme that opts into the marker is opting into the offset with it.
+      //
+      // Height tracks width at the glyph's own 10:14 aspect so resizing the
+      // marker doesn't stretch it. Centering on the first line box is what keeps
+      // it aligned when the heading wraps: the line box is CHEVRON_LINE_HEIGHT
+      // em tall, so half the leftover centers the glyph — independent of
+      // heading level or letter case.
       style={{
         flex: 'none',
-        width: '0.52em',
-        height: '0.72em',
-        marginRight: '0.42em',
-        marginTop: `calc((${CHEVRON_LINE_HEIGHT}em - 0.72em) / 2)`,
+        width,
+        height: `calc(${width} * 1.4)`,
+        marginRight: CHEVRON_GAP,
+        marginTop: `calc((${CHEVRON_LINE_HEIGHT}em - ${width} * 1.4) / 2)`,
       }}
     >
       {/* Per-level token. The shared accent is a fallback for contexts that
@@ -109,6 +139,13 @@ function HeadingChevron({ level }: { level: 2 | 3 }) {
       />
     </svg>
   );
+}
+
+// A theme turns the chevron off by setting --heading-marker to zero. Parsing
+// the number rather than string-comparing against "0" accepts every spelling a
+// theme might use ("0", "0em", "0.0px") through one check.
+function markerIsHidden(marker: string): boolean {
+  return parseFloat(marker) === 0;
 }
 
 // GitHub-style alerts: `> [!NOTE]` and friends. remark-gfm leaves them as a
@@ -181,7 +218,8 @@ function stripCalloutMarker(children: ReactNode): ReactNode | null {
 // with a spurious "-1" suffix — breaking every TOC anchor. Rewinding more often
 // cannot fix that, because a render pass is not an observable boundary. A lookup
 // has no such dependency: the same heading yields the same id however often it renders.
-function makeHeadingFactory(headingIds: Map<number, string>) {
+function makeHeadingFactory(headingIds: Map<number, string>, marker: string) {
+  const hideMarker = markerIsHidden(marker);
   const heading = function heading(level: 1 | 2 | 3 | 4 | 5 | 6) {
     return function Heading({ children, node }: { children?: ReactNode; node?: HastElement }) {
       const offset = node?.position?.start.offset;
@@ -215,11 +253,22 @@ function makeHeadingFactory(headingIds: Map<number, string>) {
       }
 
       const id = sourceId;
-      const chevronLevel = level === 2 || level === 3 ? level : null;
+      const chevronLevel = !hideMarker && (level === 2 || level === 3) ? level : null;
       return (
         <Tag
           id={id}
           data-toc={id}
+          // The chevron is a flex item, so it indents the heading text by its
+          // own width plus the gap. Kept in flow on purpose: a theme that turns
+          // the marker on is accepting that offset, and hanging the glyph in the
+          // margin instead would put it outside the column the reader's eye is
+          // tracking. Themes that don't want the indent set --heading-marker to
+          // 0 and get no glyph at all.
+          //
+          // h2's borderBottom still spans the full row, chevron included, so the
+          // rule keeps starting at the article's left edge even though the text
+          // above it does not.
+          //
           // flex-start (not center) so the chevron stays on the first line of a
           // heading that wraps to two lines instead of floating mid-block.
           style={{
@@ -229,7 +278,7 @@ function makeHeadingFactory(headingIds: Map<number, string>) {
               : {}),
           }}
         >
-          {chevronLevel && <HeadingChevron level={chevronLevel} />}
+          {chevronLevel && <HeadingChevron level={chevronLevel} width={marker} />}
           {children}
         </Tag>
       );
@@ -238,8 +287,8 @@ function makeHeadingFactory(headingIds: Map<number, string>) {
   return { heading };
 }
 
-function buildComponents(headingIds: Map<number, string>): Components {
-  const { heading } = makeHeadingFactory(headingIds);
+function buildComponents(headingIds: Map<number, string>, marker: string): Components {
+  const { heading } = makeHeadingFactory(headingIds, marker);
   const components: Components = {
     h1: heading(1),
     h2: heading(2),
@@ -608,7 +657,14 @@ function useMathPlugins(source: string): MathPlugins | null {
 }
 
 export function Article({ source, padding }: ArticleProps) {
-  const components = useMemo(() => buildComponents(buildHeadingIds(source)), [source]);
+  // Read as a value, not left to CSS: the marker decides whether the chevron
+  // element is rendered at all, and `display: none` on a themeable glyph would
+  // still cost a DOM node per heading in long documents.
+  const marker = useHeadingMarker();
+  const components = useMemo(
+    () => buildComponents(buildHeadingIds(source), marker),
+    [source, marker],
+  );
 
   // Null until (and unless) the document needs math and the chunk has arrived.
   // Before then the document renders normally with the formulas as plain text,

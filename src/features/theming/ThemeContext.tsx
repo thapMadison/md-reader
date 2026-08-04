@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { BUILTIN_THEMES, DEFAULT_THEME_ID, DEFAULT_DARK_THEME_ID } from '@/themes/builtin';
-import { THEME_TOKEN_NAMES, METRIC_CONTRACT, type ThemeTokens } from '@/themes/contract';
+import { THEME_TOKEN_NAMES, METRIC_CONTRACT, TOKEN_CONTRACT, type ThemeTokens } from '@/themes/contract';
 import type { Theme } from '@/themes/types';
 import { mergeThemeTokens } from '@/themes/merge';
 import { validateThemeFile } from '@/themes/validate';
@@ -24,6 +24,10 @@ interface ThemeContextValue {
   customThemes: CustomTheme[];
   activeThemeId: string;
   activeTheme: Theme;
+  // Post-merge tokens — the same values written to the document root. Exposed
+  // because --heading-marker has to be read back in JS, not just consumed as a
+  // CSS variable: it decides whether the chevron element is rendered at all.
+  resolvedTokens: ThemeTokens;
   fontSize: number;
   contentWidth: number;
   lineHeight: number;
@@ -40,6 +44,8 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+export const HEADING_MARKER_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--heading-marker')!.default;
 
 const FONT_SPEC = METRIC_CONTRACT.find((m) => m.name === '--fs')!;
 const WIDTH_SPEC = METRIC_CONTRACT.find((m) => m.name === '--cw')!;
@@ -206,6 +212,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     customThemes,
     activeThemeId,
     activeTheme,
+    resolvedTokens,
     fontSize,
     contentWidth,
     lineHeight,
@@ -228,4 +235,14 @@ export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext);
   if (!ctx) throw new Error('useTheme must be used within a ThemeProvider');
   return ctx;
+}
+
+// Non-throwing counterpart for the one value the renderer needs in JS rather
+// than in CSS: the chevron's width, which decides whether the glyph is drawn at
+// all. Article is mounted without a ThemeProvider in tests and would have no
+// reason to require one otherwise, so a missing provider yields the contract
+// default instead of an error.
+export function useHeadingMarker(): string {
+  const ctx = useContext(ThemeContext);
+  return ctx?.resolvedTokens['--heading-marker'] ?? HEADING_MARKER_DEFAULT;
 }

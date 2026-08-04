@@ -39,6 +39,9 @@ export const tokens: ThemeTokens = {
   '--h2-accent-soft': 'rgba(184,66,14,0.34)',
   '--h3-accent': '#1665a8',
   '--h3-accent-soft': 'rgba(22,101,168,0.34)',
+  // The chevron is this theme's signature mark, and with h2/h3 carrying
+  // different hues it is also what ties each heading to its section accent.
+  '--heading-marker': '0.52em',
   '--heading-rule': '#c9d9e8',
   '--badge-bg': '#e8eef5',
   '--table-header-bg': '#e4ecf4',

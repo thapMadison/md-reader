@@ -238,6 +238,10 @@ article tbody tr:nth-child(even) {
     --h3-accent: #0969da !important;
     --h3-accent-soft: rgba(9, 105, 218, 0.35) !important;
     --heading-rule: #d1d9e0 !important;
+    /* Kept rather than zeroed: every heading color above is flattened to
+       #1f2328 for print, so the chevron is the only remaining cue that marks an
+       h2/h3 apart from the h4-h6 below it. */
+    --heading-marker: 0.52em !important;
     --badge-bg: #f6f8fa !important;
     --table-header-bg: #f6f8fa !important;
     --table-row-alt: rgba(9, 105, 218, 0.03) !important;

@@ -3,6 +3,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Article } from './Article';
 import { parseMarkdown } from './pipeline/parse';
+import { ThemeProvider } from '@/features/theming/ThemeContext';
+import { StorageProvider } from '@/services/storage/StorageContext';
+import { createFakeStorageService } from '@/services/storage/fakeStorage';
 
 const renderMd = (source: string) => render(<Article source={source} padding="0" />);
 
@@ -221,6 +224,48 @@ describe('Article headings', () => {
   it('keeps the chevron out of the accessibility tree and preserves heading text', () => {
     renderMd('## Section title');
     expect(screen.getByRole('heading', { level: 2, name: 'Section title' })).toBeInTheDocument();
+  });
+
+  // The chevron sits in the text column rather than hanging in the margin, so
+  // it indents the heading it precedes. That indent is the intended trade for
+  // having a marker at all, and the alternative (pulling the glyph out of flow)
+  // moves it outside the column the eye tracks — so the in-flow arrangement is
+  // asserted rather than left to drift.
+  it('keeps the chevron in flow so it indents the heading text', () => {
+    const { container } = renderMd('## Two');
+
+    const h2 = container.querySelector('h2')!;
+    const svg = container.querySelector('h2 svg')! as SVGElement;
+
+    expect(h2).toHaveStyle({ display: 'flex', alignItems: 'flex-start' });
+    // The glyph takes real space in the row: sized, unshrinkable, and followed
+    // by the gap — no positioning offsets involved.
+    expect(svg.style.position).toBe('');
+    expect(svg.style.left).toBe('');
+    expect(svg).toHaveStyle({ flex: 'none', width: '0.52em', marginRight: '0.42em' });
+  });
+
+  it('omits the chevron entirely when the theme zeroes --heading-marker', async () => {
+    const storage = createFakeStorageService();
+    await storage.setPreferences({ themeId: 'github-light' });
+
+    const { container } = render(
+      <StorageProvider service={storage}>
+        <ThemeProvider>
+          <Article source="## Two\n\n### Three" padding="0" />
+        </ThemeProvider>
+      </StorageProvider>,
+    );
+
+    // Not merely hidden — the element is never created, so long documents pay
+    // nothing per heading for a glyph the theme turned off.
+    await waitFor(() => {
+      expect(container.querySelector('h2 svg')).toBeNull();
+    });
+    expect(container.querySelector('h3 svg')).toBeNull();
+    // And with no glyph the heading is a plain block again, so it carries none
+    // of the flex layout that exists only to seat the chevron.
+    expect(container.querySelector('h2')?.style.display).toBe('');
   });
 
   it('still assigns TOC ids after the chevron refactor', () => {

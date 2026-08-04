@@ -27,6 +27,10 @@ export const tokens: ThemeTokens = {
   '--h2-accent-soft': 'rgba(130,170,255,0.32)',
   '--h3-accent': '#82aaff',
   '--h3-accent-soft': 'rgba(130,170,255,0.32)',
+  // Kept: on a dark canvas the accent glyph is the cheapest way to make a
+  // heading findable when scanning, since the contrast range for text is
+  // narrower than it is on the light themes.
+  '--heading-marker': '0.52em',
   '--heading-rule': '#1d3b53',
   '--badge-bg': '#0b2942',
   '--table-header-bg': '#0b2942',

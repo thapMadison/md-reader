@@ -24,7 +24,7 @@ entirely in the browser, then stored in your local IndexedDB alongside the built
 - `tokens` — any subset of the tokens below. Everything you omit falls back to the
   base light or dark palette, then to the built-in theme closest to your `mode`.
 
-The full token reference — every color/font token, its purpose, and its default value —
+The full token reference — every color, length, and font token, its purpose, and its default —
 is generated from the single source of truth (`src/themes/contract.ts`) into
 [`contract.md`](contract.md). Regenerate it after changing the contract with:
 
@@ -52,6 +52,15 @@ and `--heading-rule` is the hairline under a level-2 heading. One chevron serves
 h3, so a theme that colors those levels differently can split it with `--h2-accent` /
 `--h2-accent-soft` and `--h3-accent` / `--h3-accent-soft`; levels left unset inherit
 `--heading-accent`, which means a theme written before these existed keeps its chevron color.
+
+The chevron is optional. `--heading-marker` is its width, and setting it to `0` removes the
+glyph entirely — not merely hides it — for themes that would rather carry hierarchy on color,
+size, and spacing alone. `github-light` and `sepia-book` ship with it off; `azure-corporate`
+and `night-owl` keep it. Note that the glyph sits in the text column, so a theme with the
+marker on indents its h2/h3 text by the marker width plus a `0.42em` gap, while h1 and h4–h6
+stay flush left. That offset is the trade for having a marker; the h2 rule is unaffected and
+still spans from the article's left edge. The accent tokens above stay meaningful either way,
+so a theme that turns the marker back on gets a correctly dressed glyph.
 GitHub-style callouts
 (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`) render as accented
 cards drawing on `--link`, `--ok`/`--ok-bg`, `--warn`/`--warn-bg`, and `--danger`/`--danger-bg`.
@@ -125,9 +134,11 @@ failure) if:
 - Any key isn't one of the known tokens. Typos and renames get a suggestion — e.g.
   `--code-background` resolves to `unknown token "--code-background" (did you mean
   --code-bg?)` — via a prefix check first, then Levenshtein distance for near-miss typos.
-- Any color token's value isn't a valid color string (checked with `isColorValue` in
-  `src/themes/schema.ts`). `--font-body` is exempt from this check since it's a font stack,
-  not a color.
+- A token's value doesn't match the type it's declared with in the contract. Each type has
+  its own predicate in `src/themes/schema.ts`: `isColorValue` for colors, `isFontStackValue`
+  for the font stacks (`--font-ui`, `--font-body`, `--font-mono`), and `isLengthValue` for
+  `--heading-marker`, which takes a bare number with an optional unit (`0`, `0.52em`) and
+  rejects `calc()` and `var()` — that value is read back in JavaScript, not only by CSS.
 
 Up to 6 errors are shown at once. Unknown keys are always dropped rather than silently
 passed through — this is the security boundary that keeps a theme file from ever injecting

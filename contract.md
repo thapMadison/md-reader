@@ -65,6 +65,12 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | `--syn-meta` | Syntax: decorators, preprocessor, shebang | `#6e7781` |
 | `--syn-lit` | Syntax: literals (true/false/null) and symbols | `#0550ae` |
 
+## Lengths
+
+| Token | Description | Default |
+| --- | --- | --- |
+| `--heading-marker` | Heading chevron width; 0 hides the chevron | `0.52em` |
+
 ## Fonts
 
 | Token | Description | Default |

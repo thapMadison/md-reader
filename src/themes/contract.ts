@@ -1,5 +1,12 @@
 export type TokenType = 'color' | 'length' | 'font-stack';
 
+// The one length token, `--heading-marker`, doubles as the chevron's on/off
+// switch: a theme sets it to `0` to drop the glyph entirely, or to an em length
+// to size it. Expressed as a length rather than a boolean because the contract
+// already carries typed lengths, and because a theme keeping the chevron may
+// still want to tune how far it indents the heading it precedes — one number
+// covers both the switch and the size.
+
 export interface TokenSpec {
   name: string;
   type: TokenType;
@@ -55,6 +62,9 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   { name: '--h2-accent-soft', type: 'color', description: 'Level-2 chevron, trailing tone', default: 'rgba(9,105,218,0.35)' },
   { name: '--h3-accent', type: 'color', description: 'Level-3 chevron, leading tone', default: '#0969da' },
   { name: '--h3-accent-soft', type: 'color', description: 'Level-3 chevron, trailing tone', default: 'rgba(9,105,218,0.35)' },
+  // Width of the h2/h3 chevron. `0` removes the glyph and the space it reserves,
+  // for themes that would rather carry hierarchy on color and size alone.
+  { name: '--heading-marker', type: 'length', description: 'Heading chevron width; 0 hides the chevron', default: '0.52em' },
   { name: '--heading-rule', type: 'color', description: 'Underline rule beneath level-2 headings', default: '#d1d9e0' },
   { name: '--badge-bg', type: 'color', description: 'Inline code and chip background', default: '#f6f8fa' },
 
@@ -113,6 +123,8 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
 export const THEME_TOKEN_NAMES = TOKEN_CONTRACT.map((t) => t.name);
 
 export const FONT_STACK_TOKEN_NAMES = TOKEN_CONTRACT.filter((t) => t.type === 'font-stack').map((t) => t.name);
+
+export const LENGTH_TOKEN_NAMES = TOKEN_CONTRACT.filter((t) => t.type === 'length').map((t) => t.name);
 
 // App-level metrics: user reading preferences, not part of a theme's palette.
 export interface MetricSpec {
