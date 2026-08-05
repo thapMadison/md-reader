@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { createFakeStorageService } from '@/services/storage/fakeStorage';
 import { StorageProvider } from '@/services/storage/StorageContext';
@@ -6,7 +7,7 @@ import { ThemeProvider } from '@/features/theming/ThemeContext';
 import { BUILTIN_THEMES } from '@/themes/builtin';
 import { SIDEBAR_FACETS } from './chromePattern';
 import { Sidebar } from './Sidebar';
-import type { LibraryFile } from '@/features/library/types';
+import type { Folder, LibraryFile } from '@/features/library/types';
 
 const file = (name: string, over: Partial<LibraryFile> = {}): LibraryFile => ({
   name,
@@ -17,13 +18,36 @@ const file = (name: string, over: Partial<LibraryFile> = {}): LibraryFile => ({
   ...over,
 });
 
-const setup = (files: LibraryFile[], isDirty: (name: string) => boolean = () => false) => {
+const folder = (id: string, name: string, order = 0): Folder => ({ id, name, order });
+
+// Every folder prop defaults to something inert, so the tests written before
+// folders existed pass unchanged — which is the signal that the flat list did
+// not regress.
+interface SetupOptions {
+  folders?: Folder[];
+  selectedFolderId?: string | null;
+  collapsedFolders?: string[];
+  mode?: 'desktop' | 'mobile';
+}
+
+const setup = (
+  files: LibraryFile[],
+  isDirty: (name: string) => boolean = () => false,
+  opts: SetupOptions = {},
+) => {
   const onClearAll = vi.fn();
+  const onCreateFolder = vi.fn(() => 'new-id');
+  const onRenameFolder = vi.fn();
+  const onUngroupFolder = vi.fn();
+  const onDeleteFolderAndFiles = vi.fn();
+  const onMoveFileToFolder = vi.fn();
+  const onSelectFolder = vi.fn();
+  const onToggleFolderCollapsed = vi.fn();
   render(
     <Sidebar
-      mode="desktop"
+      mode={opts.mode ?? 'desktop'}
       sidebarOpen
-      drawerOpen={false}
+      drawerOpen={opts.mode === 'mobile'}
       onToggleDrawer={() => {}}
       files={files}
       activeName={files[0]?.name ?? null}
@@ -36,10 +60,43 @@ const setup = (files: LibraryFile[], isDirty: (name: string) => boolean = () => 
       storageUsedBytes={1024 * 1024}
       storageQuotaBytes={10 * 1024 * 1024}
       onClearAll={onClearAll}
+      folders={opts.folders ?? []}
+      selectedFolderId={opts.selectedFolderId ?? null}
+      collapsedFolders={opts.collapsedFolders ?? []}
+      onSelectFolder={onSelectFolder}
+      onToggleFolderCollapsed={onToggleFolderCollapsed}
+      onCreateFolder={onCreateFolder}
+      onRenameFolder={onRenameFolder}
+      onUngroupFolder={onUngroupFolder}
+      onDeleteFolderAndFiles={onDeleteFolderAndFiles}
+      onMoveFileToFolder={onMoveFileToFolder}
     />,
   );
-  return { onClearAll };
+  return {
+    onClearAll,
+    onCreateFolder,
+    onRenameFolder,
+    onUngroupFolder,
+    onDeleteFolderAndFiles,
+    onMoveFileToFolder,
+    onSelectFolder,
+    onToggleFolderCollapsed,
+  };
 };
+
+// jsdom has no DataTransfer constructor, so drag tests hand-roll one. `types`
+// is snapshotted at construction the way the real object reports it, so the
+// payload has to be supplied up front.
+const dataTransfer = (data: Record<string, string>) => ({
+  types: Object.keys(data),
+  files: [] as unknown as FileList,
+  dropEffect: 'none',
+  effectAllowed: 'none',
+  setData: (type: string, value: string) => {
+    data[type] = value;
+  },
+  getData: (type: string) => data[type] ?? '',
+});
 
 // Scoped to the nav: once the dialog opens, its confirm button shares this label.
 const clickClearAll = () =>
@@ -154,6 +211,239 @@ describe('Sidebar clear-all confirmation', () => {
   });
 });
 
+// Folders are a view over the same flat library — no file moves on disk, and
+// the storage meter counts every file whether or not it is grouped. What these
+// guard is that grouping never loses a file, never reorders one, and that the
+// two ways of removing a folder stay distinguishable at the point of decision.
+describe('Sidebar folders', () => {
+  const groupOf = (name: string) => screen.getByTitle(name).closest('div')?.parentElement as HTMLElement;
+
+  it('renders ungrouped files exactly as before when no folders exist', () => {
+    setup([file('a.md'), file('b.md')]);
+
+    expect(screen.getByTitle('a.md')).toBeInTheDocument();
+    expect(screen.getByTitle('b.md')).toBeInTheDocument();
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('keeps the filename cell exactly one level inside its row', () => {
+    // Pins the shape the accent-shape tests depend on. Without this, adding a
+    // wrapper inside a row shows up as four confusing style failures elsewhere
+    // instead of one failure that names the cause.
+    setup([file('a.md', { folderId: 'f1' })], () => false, { folders: [folder('f1', 'Docs')] });
+
+    const row = groupOf('a.md');
+    expect(row.style.cursor).toBe('pointer');
+    expect(row.style.flexDirection).toBe('column');
+  });
+
+  it('shows a file under its folder rather than in the root list', () => {
+    setup([file('a.md', { folderId: 'f1' }), file('b.md')], () => false, {
+      folders: [folder('f1', 'Docs')],
+    });
+
+    // The header reports one member, so a.md is inside and b.md is not.
+    expect(screen.getByTitle('Docs — 1 file')).toBeInTheDocument();
+    expect(screen.getByTitle('b.md')).toBeInTheDocument();
+  });
+
+  it('keeps a file visible in the root list when its folder was deleted from preferences', () => {
+    // A file that is invisible in the list while still counted in the storage
+    // meter is the worst outcome available here, so a dangling folderId falls
+    // back to the ungrouped list rather than vanishing.
+    setup([file('a.md', { folderId: 'gone' })], () => false, { folders: [folder('f1', 'Docs')] });
+
+    expect(screen.getByTitle('a.md')).toBeInTheDocument();
+    expect(screen.getByTitle('Docs — 0 files')).toBeInTheDocument();
+  });
+
+  it('hides a collapsed folder’s files but still reports how many are inside', () => {
+    setup([file('a.md', { folderId: 'f1' })], () => false, {
+      folders: [folder('f1', 'Docs')],
+      collapsedFolders: ['f1'],
+    });
+
+    expect(screen.queryByTitle('a.md')).toBeNull();
+    expect(screen.getByTitle('Docs — 1 file')).toBeInTheDocument();
+  });
+
+  it('does not reorder the library when grouping', () => {
+    setup([file('a.md'), file('b.md', { folderId: 'f1' }), file('c.md'), file('d.md', { folderId: 'f1' })], () => false, {
+      folders: [folder('f1', 'Docs')],
+    });
+
+    const names = screen.getAllByTitle(/\.md$/).map((el) => el.getAttribute('title'));
+    // Folder members first (in library order), then the ungrouped list (also in
+    // library order). Grouping is a view; it must not permute anything.
+    expect(names).toEqual(['b.md', 'd.md', 'a.md', 'c.md']);
+  });
+
+  it('an empty folder still offers somewhere to drop files', () => {
+    // A folder is empty the moment it is created, so this is the first thing a
+    // user sees after clicking "New folder".
+    setup([], () => false, { folders: [folder('f1', 'Docs')] });
+
+    expect(screen.getByText('Drop files here')).toBeInTheDocument();
+  });
+
+  it('marks the selected folder, since it silently decides where new files land', () => {
+    setup([], () => false, { folders: [folder('f1', 'Docs')], selectedFolderId: 'f1' });
+
+    const header = screen.getByTitle('Docs — 0 files').parentElement as HTMLElement;
+    expect(header.style.borderLeft).toContain('var(--link)');
+  });
+
+  it('removing a folder but keeping its files does not ask for confirmation, because nothing is destroyed', () => {
+    const { onUngroupFolder } = setup([file('a.md', { folderId: 'f1' })], () => false, {
+      folders: [folder('f1', 'Docs')],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Folder actions for Docs' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Remove folder, keep files' }));
+
+    expect(onUngroupFolder).toHaveBeenCalledWith('f1');
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('deleting a folder and its files names the unsaved edits and snapshots at stake', () => {
+    const { onDeleteFolderAndFiles } = setup(
+      [
+        file('a.md', { folderId: 'f1' }),
+        file('b.md', { folderId: 'f1', kind: 'snapshot' }),
+        file('c.md'),
+      ],
+      (name) => name === 'a.md',
+      { folders: [folder('f1', 'Docs')] },
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Folder actions for Docs' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete folder and files' }));
+
+    const msg = screen.getByRole('alertdialog').textContent ?? '';
+    // Scoped to the folder: c.md is dirty-free and outside, and must not be counted.
+    expect(msg).toContain('the 2 files inside');
+    expect(msg).toContain('1 file has unsaved edits');
+    expect(msg).toContain('1 is a snapshot');
+    expect(onDeleteFolderAndFiles).not.toHaveBeenCalled();
+  });
+
+  it('deletes an empty folder without a dialog, since there is nothing to lose', () => {
+    // Asking to confirm a no-loss action is how users learn to click through
+    // the confirmation that does matter.
+    const { onDeleteFolderAndFiles } = setup([], () => false, { folders: [folder('f1', 'Docs')] });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Folder actions for Docs' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete folder and files' }));
+
+    expect(onDeleteFolderAndFiles).toHaveBeenCalledWith('f1');
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('offers moving a file to a folder without dragging, since drag events never fire on touch', () => {
+    const { onMoveFileToFolder } = setup([file('a.md'), file('b.md')], () => false, {
+      folders: [folder('f1', 'Docs')],
+      mode: 'mobile',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Move a.md to folder' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Docs' }));
+
+    expect(onMoveFileToFolder).toHaveBeenCalledWith('a.md', 'f1');
+  });
+
+  it('runs a menu item pressed with a real mouse, not just a synthetic click', async () => {
+    // Regression: the close-on-click-outside listener ran on mousedown, which
+    // fires before click. It unmounted the item between press and release, so
+    // no click was ever synthesized and every menu item silently did nothing.
+    // fireEvent.click skips mousedown entirely, so only a full pointer sequence
+    // catches this.
+    const user = userEvent.setup();
+    const { onUngroupFolder } = setup([file('a.md', { folderId: 'f1' })], () => false, {
+      folders: [folder('f1', 'Docs')],
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Folder actions for Docs' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Remove folder, keep files' }));
+
+    expect(onUngroupFolder).toHaveBeenCalledWith('f1');
+  });
+
+  it('closes the menu when the press lands outside it', async () => {
+    const user = userEvent.setup();
+    setup([file('a.md')], () => false, { folders: [folder('f1', 'Docs')] });
+
+    await user.click(screen.getByRole('button', { name: 'Folder actions for Docs' }));
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('navigation'));
+
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('renames a folder in place rather than through a blocking browser prompt', () => {
+    const { onRenameFolder } = setup([], () => false, { folders: [folder('f1', 'Docs')] });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Folder actions for Docs' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Rename' }));
+    const input = screen.getByLabelText('Folder name');
+    fireEvent.change(input, { target: { value: 'Notes' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onRenameFolder).toHaveBeenCalledWith('f1', 'Notes');
+  });
+
+  it('abandons a rename on Escape instead of committing what was typed', () => {
+    const { onRenameFolder } = setup([], () => false, { folders: [folder('f1', 'Docs')] });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Folder actions for Docs' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Rename' }));
+    const input = screen.getByLabelText('Folder name');
+    fireEvent.change(input, { target: { value: 'Notes' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+
+    expect(onRenameFolder).not.toHaveBeenCalled();
+  });
+
+  it('a folder sharing a name with a file does not confuse the two', () => {
+    setup([file('Docs', { folderId: 'f1' })], () => false, { folders: [folder('f1', 'Docs')] });
+
+    // The header's title carries a count, so it is structurally distinct from
+    // any filename and getByTitle stays unambiguous.
+    expect(screen.getByTitle('Docs')).toBeInTheDocument();
+    expect(screen.getByTitle('Docs — 1 file')).toBeInTheDocument();
+  });
+});
+
+describe('Sidebar folder drag and drop', () => {
+  it('dropping a row on a folder header files it there', () => {
+    const { onMoveFileToFolder } = setup([file('a.md')], () => false, {
+      folders: [folder('f1', 'Docs')],
+    });
+
+    const dt = dataTransfer({ 'application/x-mdreader-file': 'a.md' });
+    const header = screen.getByTitle('Docs — 0 files').parentElement as HTMLElement;
+    fireEvent.dragOver(header, { dataTransfer: dt });
+    fireEvent.drop(header, { dataTransfer: dt });
+
+    expect(onMoveFileToFolder).toHaveBeenCalledWith('a.md', 'f1');
+  });
+
+  it('a drag carrying no internal payload is ignored by the folder header', () => {
+    // An OS file drag must fall through to the window handler that opens files,
+    // not be swallowed as a regrouping gesture.
+    const { onMoveFileToFolder } = setup([file('a.md')], () => false, {
+      folders: [folder('f1', 'Docs')],
+    });
+
+    const dt = { ...dataTransfer({}), types: ['Files'] };
+    const header = screen.getByTitle('Docs — 0 files').parentElement as HTMLElement;
+    fireEvent.dragOver(header, { dataTransfer: dt });
+    fireEvent.drop(header, { dataTransfer: dt });
+
+    expect(onMoveFileToFolder).not.toHaveBeenCalled();
+  });
+});
+
 // --chrome-accent-shape is the chrome half of the angular-geometry work: a theme
 // built on diagonals states that in the sidebar by shearing the active row's
 // trailing edge. Rendered through a real ThemeProvider rather than by unit
@@ -182,6 +472,16 @@ describe('Sidebar active-row accent shape', () => {
             storageUsedBytes={0}
             storageQuotaBytes={10 * 1024 * 1024}
             onClearAll={() => {}}
+            folders={[]}
+            selectedFolderId={null}
+            collapsedFolders={[]}
+            onSelectFolder={() => {}}
+            onToggleFolderCollapsed={() => {}}
+            onCreateFolder={() => 'id'}
+            onRenameFolder={() => {}}
+            onUngroupFolder={() => {}}
+            onDeleteFolderAndFiles={() => {}}
+            onMoveFileToFolder={() => {}}
           />
         </ThemeProvider>
       </StorageProvider>,
@@ -202,6 +502,11 @@ describe('Sidebar active-row accent shape', () => {
   // Rows are found by their filename cell and walked up to the row container,
   // rather than by a test id: the shape belongs to the element that paints the
   // highlight, and pinning that relationship is part of what the test guards.
+  //
+  // This survives folder grouping because grouping wraps whole rows — the row
+  // container is still the direct parent of the header div. What would break it
+  // is a wrapper added *inside* a row, above that header. See the note on
+  // FileRow, and the invariant test below.
   const rowOf = (container: HTMLElement, name: string) =>
     within(container).getByTitle(name).closest('div')?.parentElement as HTMLElement;
 

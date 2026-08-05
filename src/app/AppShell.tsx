@@ -215,6 +215,21 @@ export function AppShell() {
               console.error('Failed to clear library', err);
             });
           }}
+          folders={library.folders}
+          selectedFolderId={library.selectedFolderId}
+          collapsedFolders={layout.collapsedFolders}
+          onSelectFolder={library.setSelectedFolderId}
+          onToggleFolderCollapsed={layout.toggleFolderCollapsed}
+          onCreateFolder={library.createFolder}
+          onRenameFolder={library.renameFolder}
+          onUngroupFolder={library.ungroupFolder}
+          // Async like clearAll above, so it takes the same terminal catch.
+          onDeleteFolderAndFiles={(id) => {
+            library.deleteFolderAndFiles(id).catch((err: unknown) => {
+              console.error('Failed to delete folder', err);
+            });
+          }}
+          onMoveFileToFolder={library.moveFileToFolder}
         />
         {layout.editing && !editorHiddenOnMobile && (
           <EditorPane

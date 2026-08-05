@@ -21,7 +21,7 @@ import {
   supportsFileSystemAccess,
   type OpenedFile,
 } from '@/services/filesystem';
-import type { LibraryFile } from './types';
+import type { Folder, LibraryFile } from './types';
 
 interface LibraryContextValue {
   files: LibraryFile[];
@@ -33,6 +33,21 @@ interface LibraryContextValue {
   openViaDrop: (dataTransfer: DataTransfer) => Promise<void>;
   closeFile: (name: string) => void;
   clearAll: () => Promise<void>;
+  folders: Folder[];
+  /** Folder newly opened files land in, or null for the ungrouped list. */
+  selectedFolderId: string | null;
+  setSelectedFolderId: (id: string | null) => void;
+  /** Creates a folder and returns its id, so the caller can select or focus it. */
+  createFolder: (name: string) => string;
+  renameFolder: (id: string, name: string) => void;
+  /** Drops the folder; its files return to the ungrouped list. */
+  ungroupFolder: (id: string) => void;
+  /** Drops the folder and closes every file inside it. Destructive. */
+  deleteFolderAndFiles: (id: string) => Promise<void>;
+  /** Moves one file. `null` returns it to the ungrouped list. */
+  moveFileToFolder: (name: string, folderId: string | null) => void;
+  /** Files in a folder, or the ungrouped ones for `null`, in library order. */
+  filesInFolder: (id: string | null) => LibraryFile[];
   grantAccess: (name: string) => Promise<void>;
   editContent: (name: string, content: string) => void;
   revertContent: (name: string) => void;
@@ -56,6 +71,8 @@ const LibraryContext = createContext<LibraryContextValue | null>(null);
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const storage = useStorage();
   const [files, setFiles] = useState<LibraryFile[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [activeName, setActiveName] = useState<string | null>(null);
   const [dismissedBanners, setDismissedBanners] = useState<Record<string, boolean>>({});
   const [storageUsedBytes, setStorageUsedBytes] = useState(0);
@@ -71,6 +88,16 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     filesRef.current = files;
   }, [files]);
+  // Same reason as filesRef: the folder callbacks below need the current list
+  // without depending on it, and without reading it inside a setState updater.
+  const foldersRef = useRef<Folder[]>(folders);
+  useEffect(() => {
+    foldersRef.current = folders;
+  }, [folders]);
+  const selectedFolderRef = useRef<string | null>(selectedFolderId);
+  useEffect(() => {
+    selectedFolderRef.current = selectedFolderId;
+  }, [selectedFolderId]);
 
   const refreshStorageEstimate = useCallback(async () => {
     const est = await storage.estimate();
@@ -83,6 +110,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     (async () => {
       const [records, prefs] = await Promise.all([storage.listFiles(), storage.getPreferences()]);
       if (cancelled) return;
+      const restoredFolders = prefs.folders ?? [];
       const restored: LibraryFile[] = [];
       for (const r of records) {
         let perm: LibraryFile['perm'] = r.kind === 'live' ? 'prompt' : 'na';
@@ -120,7 +148,17 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
           handle: r.handle,
           size: stat?.size,
           lastModified: stat?.lastModified,
+          folderId: r.folderId,
         });
+      }
+      // A file pointing at a folder that no longer exists would render nowhere —
+      // it is neither in the ungrouped list nor under any visible header — while
+      // still counting against the storage meter. Half-written preferences are
+      // enough to cause that, so membership is validated against the folder list
+      // rather than trusted.
+      const folderIds = new Set(restoredFolders.map((f) => f.id));
+      for (const f of restored) {
+        if (f.folderId && !folderIds.has(f.folderId)) f.folderId = undefined;
       }
       if (restored.length === 0) {
         try {
@@ -148,6 +186,12 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       }
 
       setFiles(restored);
+      setFolders(restoredFolders);
+      // Same validation as the membership prune above: a selection naming a
+      // folder that is gone would send new files somewhere invisible.
+      setSelectedFolderId(
+        prefs.selectedFolderId && folderIds.has(prefs.selectedFolderId) ? prefs.selectedFolderId : null,
+      );
       // Refresh the cached copy for anything that came back changed, so the
       // offline fallback does not stay pinned to first-open bytes.
       for (const r of records) {
@@ -160,6 +204,10 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
             kind: f.kind,
             handle: f.handle,
             savedAt: Date.now(),
+            // Carried through explicitly: this record is built here rather than
+            // via persistFile, so omitting the membership would silently reset
+            // every grouped live file to ungrouped on each reload.
+            folderId: f.folderId,
           })
           .catch(() => {});
       }
@@ -188,6 +236,19 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     storage.setPreferences({ activeFile: activeName }).catch(() => {});
   }, [activeName, storage]);
 
+  // The `hydrated` guard matters as much here as for activeFile above: without
+  // it the initial empty array would be written back over the stored folders
+  // before hydration had a chance to read them.
+  useEffect(() => {
+    if (!hydrated.current) return;
+    storage.setPreferences({ folders }).catch(() => {});
+  }, [folders, storage]);
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+    storage.setPreferences({ selectedFolderId }).catch(() => {});
+  }, [selectedFolderId, storage]);
+
   // A file that cannot be persisted is still usable in this session — it just
   // will not survive a reload. That distinction is worth surfacing: previously
   // the quota rejection propagated out of an un-awaited caller and the file
@@ -201,6 +262,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
           kind: f.kind,
           handle: f.handle,
           savedAt: Date.now(),
+          folderId: f.folderId,
         });
         setUnpersisted((prev) => (prev[f.name] ? { ...prev, [f.name]: false } : prev));
       } catch (err) {
@@ -244,6 +306,19 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
           .filter((f): f is LibraryFile => !!f && f.editedContent !== f.originalContent)
           .map((f) => f.name),
       );
+      // Read before the updater for the same reason as dirtyNames.
+      const target = selectedFolderRef.current ?? undefined;
+      // Where each opened name ends up, decided once and reused by both the
+      // updater and the persistence loop below so they cannot disagree.
+      //
+      // An already-filed file keeps its folder even when another one is
+      // selected: reopening is a content refresh, not a re-filing, and silently
+      // moving a file the user had put somewhere is the kind of thing they
+      // cannot undo because they never saw it happen. Only genuinely new files
+      // take the selected folder.
+      const folderFor = new Map(
+        opened.map((o) => [o.name, filesRef.current.find((f) => f.name === o.name)?.folderId ?? target]),
+      );
       setFiles((prev) => {
         const byName = new Map(prev.map((f) => [f.name, f]));
         for (const o of opened) {
@@ -258,6 +333,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
             handle: o.handle,
             size: o.size,
             lastModified: o.lastModified,
+            folderId: existing?.folderId ?? folderFor.get(o.name),
           });
         }
         return Array.from(byName.values());
@@ -272,6 +348,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
           originalContent: o.content,
           editedContent: o.content,
           handle: o.handle,
+          folderId: folderFor.get(o.name),
         });
       }
     },
@@ -341,9 +418,135 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     await storage.clearAll();
     await storage.setPreferences({ scrollPositions: {} }).catch(() => {});
     setFiles([]);
+    // Folders go with the files. Leaving them would present a sidebar full of
+    // empty groups the user never asked to keep, and "Clear all" says otherwise.
+    setFolders([]);
+    setSelectedFolderId(null);
     setActiveName(null);
     await refreshStorageEstimate();
   }, [storage, refreshStorageEstimate]);
+
+  // Re-saves files whose folder membership changed. persistFile rewrites the
+  // whole record including content, so this is one full write per moved file —
+  // acceptable for an action the user takes rarely, but it is why a bulk move is
+  // not something to invite. A storage.updateFileMeta(name, patch) would be the
+  // fix if it ever matters; it is left out to keep the StorageService interface
+  // as small as it is.
+  const persistMembership = useCallback(
+    (moved: LibraryFile[], folderId: string | undefined) => {
+      for (const f of moved) {
+        persistFile({ ...f, folderId }).catch((err: unknown) => {
+          console.error('Failed to persist folder change', err);
+        });
+      }
+    },
+    [persistFile],
+  );
+
+  // The id and order are generated here rather than inside the updater. React
+  // calls updaters twice under StrictMode, and crypto.randomUUID() there would
+  // mint a different id per call — the returned id would name a folder that the
+  // second invocation had already replaced. Deriving both up front leaves an
+  // updater that is pure and idempotent, and the guard makes a repeat call a
+  // no-op rather than a duplicate.
+  const createFolder = useCallback((name: string): string => {
+    const id = crypto.randomUUID();
+    const order = foldersRef.current.reduce((max, f) => Math.max(max, f.order), 0) + 1;
+    const trimmed = name.trim() || 'New folder';
+    setFolders((prev) => (prev.some((f) => f.id === id) ? prev : [...prev, { id, name: trimmed, order }]));
+    return id;
+  }, []);
+
+  const renameFolder = useCallback((id: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, name: trimmed } : f)));
+  }, []);
+
+  // Removes the grouping, keeps every file. Deliberately not a confirmation:
+  // nothing is destroyed, and the files are visibly still there afterwards.
+  const ungroupFolder = useCallback(
+    (id: string) => {
+      const moved = filesRef.current.filter((f) => f.folderId === id);
+      setFolders((prev) => prev.filter((f) => f.id !== id));
+      setFiles((prev) => prev.map((f) => (f.folderId === id ? { ...f, folderId: undefined } : f)));
+      setSelectedFolderId((prev) => (prev === id ? null : prev));
+      persistMembership(moved, undefined);
+    },
+    [persistMembership],
+  );
+
+  const moveFileToFolder = useCallback(
+    (name: string, folderId: string | null) => {
+      const next = folderId ?? undefined;
+      const file = filesRef.current.find((f) => f.name === name);
+      if (!file || file.folderId === next) return;
+      setFiles((prev) => prev.map((f) => (f.name === name ? { ...f, folderId: next } : f)));
+      persistMembership([file], next);
+    },
+    [persistMembership],
+  );
+
+  // Deliberately not a loop over closeFile. That would run N setActiveName
+  // updaters, each re-deriving from filesRef — which lags a render behind, since
+  // it syncs in an effect — so the active file would hop across the very files
+  // being deleted. Worse, each call read-modify-writes scrollPositions, and N of
+  // those in flight together all read the same pre-delete preferences and
+  // overwrite one another's deletions.
+  //
+  // So: one survivor chosen up front, one write of scrollPositions, one storage
+  // estimate for the batch.
+  const deleteFolderAndFiles = useCallback(
+    async (id: string) => {
+      // Derived before any updater — StrictMode invokes those twice, and the
+      // storage work below must happen exactly once per file.
+      const doomedNames = new Set(filesRef.current.filter((f) => f.folderId === id).map((f) => f.name));
+      setFolders((prev) => prev.filter((f) => f.id !== id));
+      setSelectedFolderId((prev) => (prev === id ? null : prev));
+      if (doomedNames.size === 0) return;
+
+      const survivor = filesRef.current.find((f) => !doomedNames.has(f.name))?.name ?? null;
+      setFiles((prev) => prev.filter((f) => !doomedNames.has(f.name)));
+      setActiveName((prevActive) => (prevActive && doomedNames.has(prevActive) ? survivor : prevActive));
+      setUnpersisted((prev) => {
+        const rest = { ...prev };
+        for (const name of doomedNames) delete rest[name];
+        return rest;
+      });
+
+      try {
+        const { scrollPositions } = await storage.getPreferences();
+        if (scrollPositions) {
+          const rest = { ...scrollPositions };
+          let changed = false;
+          for (const name of doomedNames) {
+            if (name in rest) {
+              delete rest[name];
+              changed = true;
+            }
+          }
+          if (changed) await storage.setPreferences({ scrollPositions: rest });
+        }
+      } catch {
+        // Preferences are best-effort; the files still go.
+      }
+
+      await Promise.all(
+        [...doomedNames].map((name) =>
+          storage.removeFile(name).catch((err: unknown) => {
+            console.error('Failed to remove file from storage', err);
+          }),
+        ),
+      );
+      await refreshStorageEstimate();
+    },
+    [storage, refreshStorageEstimate],
+  );
+
+  const filesInFolder = useCallback(
+    (id: string | null) => files.filter((f) => (f.folderId ?? null) === id),
+    [files],
+  );
 
   // The handle is read from a ref rather than inside a setFiles updater. React
   // treats updaters as pure and calls them twice under StrictMode, so the old
@@ -411,6 +614,15 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     openViaDrop,
     closeFile,
     clearAll,
+    folders,
+    selectedFolderId,
+    setSelectedFolderId,
+    createFolder,
+    renameFolder,
+    ungroupFolder,
+    deleteFolderAndFiles,
+    moveFileToFolder,
+    filesInFolder,
     grantAccess,
     editContent,
     revertContent,

@@ -1,2 +1,2 @@
 export { LibraryProvider, useLibrary } from './LibraryContext';
-export type { LibraryFile } from './types';
+export type { Folder, LibraryFile } from './types';

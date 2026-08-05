@@ -1,3 +1,19 @@
+// A user-created grouping in the sidebar. Purely virtual — it has nothing to do
+// with directories on disk, which the app cannot see: the File System Access API
+// exposes no path, only a basename (see the collision note in LibraryContext).
+//
+// Defined here rather than in features/library because the dependency direction
+// is one-way — features consume services, never the reverse — and StoredFileRecord
+// below needs to reference the membership. features/library/types.ts re-exports it,
+// mirroring how LibraryFile imports FilePermission from services/filesystem.
+export interface Folder {
+  /** Stable opaque id. Never the name: folders can be renamed and duplicated. */
+  id: string;
+  name: string;
+  /** Sort key for sidebar order. A monotonic counter, not an array index. */
+  order: number;
+}
+
 export interface StoredFileRecord {
   name: string;
   content: string;
@@ -5,6 +21,13 @@ export interface StoredFileRecord {
   /** Serialized FileSystemFileHandle, present only for kind: 'live'. */
   handle?: FileSystemFileHandle;
   savedAt: number;
+  /**
+   * Virtual-folder membership. Absent for ungrouped files, which is why it is
+   * optional rather than `string | null`: records written before folders existed
+   * read back as `undefined`, which already means "ungrouped". That is what makes
+   * this a schemaless addition needing no DB_VERSION bump or migration.
+   */
+  folderId?: string;
 }
 
 export interface StoredPreferences {
@@ -16,6 +39,11 @@ export interface StoredPreferences {
   lineHeight?: number;
   activeFile?: string | null;
   scrollPositions?: Record<string, number>;
+  folders?: Folder[];
+  /** Folder ids the user has collapsed in the sidebar. */
+  collapsedFolders?: string[];
+  /** Folder that newly opened files land in, or null for the ungrouped list. */
+  selectedFolderId?: string | null;
 }
 
 // Application-level storage ceiling, independent of whatever the browser

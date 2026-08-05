@@ -65,4 +65,28 @@ describe('StorageService (fake adapter)', () => {
       fontSize: 19,
     });
   });
+
+  it('round-trips a file’s folder membership', async () => {
+    const storage = createFakeStorageService();
+    await storage.saveFile({ name: 'a.md', content: 'x', kind: 'snapshot', savedAt: 1, folderId: 'f1' });
+    expect((await storage.getFile('a.md'))?.folderId).toBe('f1');
+  });
+
+  it('reads a record written before folders existed as ungrouped', async () => {
+    // Why folders needed no DB_VERSION bump and no migration: the store is
+    // schemaless per record, and a missing folderId already means "ungrouped".
+    const storage = createFakeStorageService();
+    await storage.saveFile({ name: 'a.md', content: 'x', kind: 'snapshot', savedAt: 1 });
+    expect((await storage.getFile('a.md'))?.folderId).toBeUndefined();
+  });
+
+  it('does not lose the folder list when an unrelated preference is written', async () => {
+    // setPreferences is a shallow merge, so every unrelated write has to leave
+    // the folder list alone — otherwise changing the font size would ungroup
+    // the entire library.
+    const storage = createFakeStorageService();
+    await storage.setPreferences({ folders: [{ id: 'f1', name: 'Docs', order: 0 }] });
+    await storage.setPreferences({ fontSize: 19 });
+    expect((await storage.getPreferences()).folders).toEqual([{ id: 'f1', name: 'Docs', order: 0 }]);
+  });
 });
