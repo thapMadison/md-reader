@@ -20,6 +20,7 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | `--chrome-muted` | Secondary text and metadata on chrome surfaces | `#59636e` |
 | `--chrome-border` | Hairlines and control outlines on chrome surfaces | `#d1d9e0` |
 | `--chrome-hl` | Hover / active row highlight on chrome surfaces | `rgba(9,105,218,0.08)` |
+| `--chrome-plane` | Tone of the diagonal plane across toolbar/sidebar; zero-alpha for no plane | `rgba(0,0,0,0)` |
 | `--fg` | Primary text color | `#1f2328` |
 | `--muted` | Secondary text, metadata, placeholders | `#59636e` |
 | `--link` | Links, active states, primary accent | `#0969da` |

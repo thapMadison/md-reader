@@ -404,6 +404,11 @@ article[data-table-style] tbody tr:last-child > * {
     --chrome-muted: #59636e !important;
     --chrome-border: #d1d9e0 !important;
     --chrome-hl: rgba(9, 105, 218, 0.08) !important;
+    /* The chrome surfaces are hidden below, so this changes nothing today — but
+       it belongs with its neighbours: every chrome token is pinned to the light
+       palette here, and a plane left on the theme's own tone would be the one
+       that isn't if a later rule ever prints a header. */
+    --chrome-plane: rgba(0, 0, 0, 0) !important;
   }
   header,
   nav,

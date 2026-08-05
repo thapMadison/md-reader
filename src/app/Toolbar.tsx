@@ -1,4 +1,5 @@
 import { ChevronDownIcon, EditIcon, HamburgerIcon, SidebarToggleIcon } from '@/components/ui/icons';
+import { TOOLBAR_FACETS, facetLayerStyle } from './chromePlane';
 import type { LayoutMode } from '@/hooks/useBreakpoint';
 
 interface ToolbarProps {
@@ -44,7 +45,12 @@ export function Toolbar({
         justifyContent: 'space-between',
         padding: `0 10px 0 ${isMobile ? '8px' : '14px'}`,
         gap: 8,
-        background: 'var(--chrome)',
+        // Fill here, planes over it as layers below — see chromePlane.ts. A
+        // theme that sets no --chrome-plane paints them transparent and is
+        // unchanged. Longhand rather than the `background` shorthand, which
+        // jsdom discards when it carries a var().
+        backgroundColor: 'var(--chrome)',
+        overflow: 'hidden',
         color: 'var(--chrome-fg)',
         borderBottom: '1px solid var(--chrome-border)',
         position: 'relative',
@@ -52,6 +58,10 @@ export function Toolbar({
         transition: 'background .25s',
       }}
     >
+      {/* Angled planes, behind every control — see the Sidebar for the rationale. */}
+      {TOOLBAR_FACETS.map((facet) => (
+        <div key={facet.polygon} data-chrome-facet style={facetLayerStyle(facet)} />
+      ))}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
         {isMobile && (
           <button

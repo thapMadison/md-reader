@@ -82,20 +82,43 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   // trailing edge into a diagonal, which is how a theme built on angled planes
   // states that geometry in the chrome.
   //
-  // Deliberately scoped to the active row rather than to the chrome fill at
-  // large. Angled planes across the sidebar background were measured and cost
-  // real legibility: the tonal edge cuts through the file list and drops
-  // --chrome-muted contrast from 6.86 to 5.16 behind the names the user is
-  // actually reading. The active row carries no such cost — it is already the
-  // element meant to draw the eye, and its label uses --chrome-fg, which
-  // measures 10.16 on the wedge. Same design language, paid for out of the one
-  // surface that was built to spend it.
+  // Scoped to the active row, and paired with --chrome-plane below rather than
+  // trying to be it. The row is the one chrome element already meant to pull the
+  // eye, and its label uses --chrome-fg (10.16 on the wedge), so a hard-edged
+  // 45-degree cut costs nothing there. The chrome fill at large cannot take the
+  // same treatment at the same strength — see --chrome-plane for what a plane
+  // across the background has to respect instead.
   {
     name: '--chrome-accent-shape',
     type: 'enum',
     description: 'Active sidebar row highlight: rounded rectangle, or diagonal wedge',
     default: 'flat',
     values: ['flat', 'wedge'],
+  },
+  // Tone of a diagonal plane laid across the chrome fill — the toolbar and the
+  // sidebar — so a theme built on angled planes can state that geometry on the
+  // surface itself rather than only on the active row.
+  //
+  // A color rather than an on/off enum, and that is the whole safety mechanism.
+  // A plane is only legible if it differs in tone from --chrome, and it is only
+  // *readable over* if it does not differ by much: the first attempt at this
+  // used a fixed lightening step and measured --chrome-muted dropping from 6.86
+  // to 5.16 behind the file names. Handing the theme the color makes the depth
+  // of the step the theme's own decision, checked against its own --chrome-muted
+  // and --chrome-fg, instead of a constant that is right for one palette and
+  // wrong for the next.
+  //
+  // Default `transparent`: a theme that says nothing gets a plane that paints
+  // nothing, so the chrome renders exactly as it did before this token existed.
+  // Expressed as an rgba() with zero alpha rather than the `transparent` keyword
+  // because the color predicate takes hex and color functions, not keywords —
+  // and because a plane fading to an *alpha-zero version of its own hue* is what
+  // avoids the grey cast a keyword `transparent` interpolation produces.
+  {
+    name: '--chrome-plane',
+    type: 'color',
+    description: 'Tone of the diagonal plane across toolbar/sidebar; zero-alpha for no plane',
+    default: 'rgba(0,0,0,0)',
   },
 
   // Text

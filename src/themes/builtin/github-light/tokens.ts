@@ -72,6 +72,8 @@ export const tokens: ThemeTokens = {
   '--chrome-border': '#d1d9e0',
   '--chrome-hl': 'rgba(9,105,218,0.08)',
   '--chrome-accent-shape': 'flat',
+  // No plane. GitHub's chrome is one flat tone, and this theme reproduces it.
+  '--chrome-plane': 'rgba(0,0,0,0)',
   '--syn-kw': '#cf222e',
   '--syn-str': '#0a3069',
   '--syn-fn': '#8250df',

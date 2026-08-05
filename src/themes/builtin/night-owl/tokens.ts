@@ -75,6 +75,8 @@ export const tokens: ThemeTokens = {
   '--chrome-border': '#1d3b53',
   '--chrome-hl': 'rgba(130,170,255,0.10)',
   '--chrome-accent-shape': 'flat',
+  // No plane — the editor theme this one follows keeps its chrome flat.
+  '--chrome-plane': 'rgba(0,0,0,0)',
   '--syn-kw': '#c792ea',
   '--syn-str': '#ecc48d',
   '--syn-fn': '#82aaff',

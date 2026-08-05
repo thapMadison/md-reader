@@ -77,6 +77,8 @@ export const tokens: ThemeTokens = {
   '--chrome-border': '#ddd0b6',
   '--chrome-hl': 'rgba(156,90,26,0.09)',
   '--chrome-accent-shape': 'flat',
+  // No plane — a paper theme has no lit surfaces to suggest.
+  '--chrome-plane': 'rgba(0,0,0,0)',
   '--syn-kw': '#a03d2e',
   '--syn-str': '#5e6e34',
   '--syn-fn': '#2d6a7a',

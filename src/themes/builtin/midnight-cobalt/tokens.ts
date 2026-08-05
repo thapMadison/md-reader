@@ -94,6 +94,8 @@ export const tokens: ThemeTokens = {
   '--chrome-border': '#1c89cd',
   '--chrome-hl': 'rgba(34,169,255,0.12)',
   '--chrome-accent-shape': 'flat',
+  // No plane — this theme's chrome is a single deep blue by design.
+  '--chrome-plane': 'rgba(0,0,0,0)',
   // Mapped from the source's CodeMirror token colors; these are checked against
   // --code-bg (#000000) rather than --bg.
   '--syn-kw': '#22a9ff',

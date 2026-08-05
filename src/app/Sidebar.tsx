@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { useChromeAccentShape } from '@/features/theming/ThemeContext';
 import { DropHintIcon, FileIcon, PlusIcon } from '@/components/ui/icons';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { SIDEBAR_FACETS, facetLayerStyle } from './chromePlane';
 import type { LayoutMode } from '@/hooks/useBreakpoint';
 import type { LibraryFile } from '@/features/library/types';
 
@@ -142,7 +143,16 @@ export function Sidebar({
           marginLeft: isMobile ? 0 : sidebarOpen ? 0 : -241,
           boxShadow: isMobile && drawerOpen ? '0 0 32px rgba(31,35,40,0.20)' : 'none',
           transition: 'margin-left .22s ease, transform .22s ease, background .25s',
-          background: 'var(--chrome)',
+          // The planes paint over this fill, not instead of it — see the facet
+          // layers below. A theme with no --chrome-plane paints them fully
+          // transparent, leaving exactly this color.
+          //
+          // background-color rather than the `background` shorthand: jsdom drops
+          // the shorthand outright when its value is a var(), so the fill would
+          // be invisible to every test that renders this component.
+          backgroundColor: 'var(--chrome)',
+          // The facet layers are absolutely positioned against this element.
+          overflow: 'hidden',
           color: 'var(--chrome-fg)',
           borderRight: '1px solid var(--chrome-border)',
           display: 'flex',
@@ -150,6 +160,14 @@ export function Sidebar({
           minHeight: 0,
         }}
       >
+        {/* The angled planes. First in the DOM so every control below paints
+            over them, and pointer-events: none so none of them swallows a click
+            meant for a file row. Rendered unconditionally — a theme with no
+            --chrome-plane makes them fully transparent, which costs one
+            composited layer and keeps the markup free of a theme branch. */}
+        {SIDEBAR_FACETS.map((facet) => (
+          <div key={facet.polygon} data-chrome-facet style={facetLayerStyle(facet)} />
+        ))}
         <div style={{ padding: '12px 12px 8px' }}>
           <button
             onClick={onOpenFileClick}

@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { createFakeStorageService } from '@/services/storage/fakeStorage';
 import { StorageProvider } from '@/services/storage/StorageContext';
 import { ThemeProvider } from '@/features/theming/ThemeContext';
+import { BUILTIN_THEMES } from '@/themes/builtin';
+import { SIDEBAR_FACETS } from './chromePlane';
 import { Sidebar } from './Sidebar';
 import type { LibraryFile } from '@/features/library/types';
 
@@ -185,8 +187,15 @@ describe('Sidebar active-row accent shape', () => {
       </StorageProvider>,
     );
     // The provider loads preferences asynchronously, so the first paint is the
-    // default theme regardless of what was seeded.
-    await waitFor(() => expect(document.documentElement.style.getPropertyValue('--bg')).not.toBe(''));
+    // default theme regardless of what was seeded. Waiting on the *seeded*
+    // theme's own --bg rather than merely on --bg being non-empty: the default
+    // theme sets --bg too, so the looser condition is satisfied by the very
+    // paint this is supposed to wait past, and a test reading the DOM instead of
+    // React state would see the default theme's tokens.
+    const expectedBg = BUILTIN_THEMES.find((t) => t.id === themeId)!.tokens['--bg'];
+    await waitFor(() =>
+      expect(document.documentElement.style.getPropertyValue('--bg')).toBe(expectedBg),
+    );
     return container;
   };
 
@@ -219,5 +228,47 @@ describe('Sidebar active-row accent shape', () => {
 
     expect(active.style.borderRadius).toBe('6px');
     expect(active.style.getPropertyValue('corner-shape')).toBe('');
+  });
+
+  // The plane is painted unconditionally and made invisible by a zero-alpha
+  // --chrome-plane, rather than being switched on and off in JS. That is worth a
+  // test precisely because it looks like a bug: the gradient is in the style
+  // attribute even for themes with no plane. What actually distinguishes them is
+  // the token, so both halves are asserted — the layer is always present, and
+  // the fill underneath it is never replaced by it.
+  it('paints the planes over the chrome fill rather than instead of it', async () => {
+    const container = await renderThemed('azure-corporate');
+    const nav = within(container).getByRole('navigation');
+
+    // background-color, not the `background` shorthand — jsdom discards the
+    // shorthand when it carries a var(), so this is the only readable assertion
+    // that the fill beneath the planes survives.
+    expect(nav.style.backgroundColor).toBe('var(--chrome)');
+    expect(nav.querySelectorAll('[data-chrome-facet]')).toHaveLength(SIDEBAR_FACETS.length);
+    expect(document.documentElement.style.getPropertyValue('--chrome-plane')).toBe('rgba(41,163,224,0.26)');
+  });
+
+  it('resolves the planes to fully transparent on themes that did not opt in', async () => {
+    const container = await renderThemed('github-light');
+
+    // Not the absence of the layers — their presence, painting nothing. The
+    // markup is deliberately theme-independent, so this is what "opted out"
+    // actually looks like in the DOM.
+    expect(
+      within(container).getByRole('navigation').querySelectorAll('[data-chrome-facet]'),
+    ).toHaveLength(SIDEBAR_FACETS.length);
+    expect(document.documentElement.style.getPropertyValue('--chrome-plane')).toBe('rgba(0,0,0,0)');
+  });
+
+  // The planes are decoration layered over the whole panel, so the one way they
+  // can break the app rather than merely look wrong is by eating clicks meant
+  // for the file rows underneath. That is a property of every layer, not of the
+  // one that happens to be on top, so all of them are checked.
+  it('never intercepts a click meant for the file list', async () => {
+    const container = await renderThemed('azure-corporate');
+
+    for (const layer of within(container).getByRole('navigation').querySelectorAll<HTMLElement>('[data-chrome-facet]')) {
+      expect(layer.style.pointerEvents).toBe('none');
+    }
   });
 });

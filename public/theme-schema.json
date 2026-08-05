@@ -112,6 +112,12 @@
             "wedge"
           ]
         },
+        "--chrome-plane": {
+          "type": "string",
+          "description": "Tone of the diagonal plane across toolbar/sidebar; zero-alpha for no plane",
+          "default": "rgba(0,0,0,0)",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+        },
         "--fg": {
           "type": "string",
           "description": "Primary text color",

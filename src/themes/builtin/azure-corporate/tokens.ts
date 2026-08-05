@@ -121,6 +121,21 @@ export const tokens: ThemeTokens = {
   // element in the sidebar meant to pull the eye, and its label sits on
   // --chrome-fg rather than the dimmer --chrome-muted the inactive rows use.
   '--chrome-accent-shape': 'wedge',
+  // The same diagonal across the chrome fill itself — the plane the reference
+  // actually cuts, where the wedge above is only its echo on one row.
+  //
+  // This theme's own azure rather than a lightening toward white. Both were
+  // measured over --chrome (#111c2e): white reaches a visible step only by
+  // desaturating toward grey, and pays more contrast per unit of step.
+  //
+  // 0.26 is the strength of the brightest layer — the sliver — with the two
+  // planes at 0.32 and 0.5 of it (see chromePlane.ts). Measured per zone over
+  // this chrome, --chrome-muted lands at 6.09 on the upper plane, 5.60 on the
+  // lower, and 4.95 where the two cross: every region a file name can occupy
+  // clears 4.5. The sliver zone reads 3.94, which is why its polygon is routed
+  // down the empty left margin below the list rather than tinted down — no
+  // alpha makes a three-layer stack readable, so the fix is geometric.
+  '--chrome-plane': 'rgba(41,163,224,0.26)',
   '--syn-kw': '#b3245f',
   '--syn-str': '#0a5c3e',
   '--syn-fn': '#7038b8',
