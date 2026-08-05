@@ -236,6 +236,42 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   },
   { name: '--heading-marker', type: 'length', description: 'Heading marker width when shown', default: '0.52em' },
   { name: '--heading-rule', type: 'color', description: 'Underline rule beneath level-2 headings', default: '#d1d9e0' },
+
+  // Heading scale, weight, and leading. Previously these were constants in
+  // Article.tsx, which meant a theme could pick a display face but not the size
+  // or weight that face was drawn for — and a condensed face set at the weight
+  // of a text face is the one thing that still read as wrong after --font-heading
+  // landed. Sizes are in em so they track --fs like --table-font-size does.
+  //
+  // Weight and line-height are unitless, which LENGTH_RE already accepts (its
+  // unit group is optional); they are `length` rather than a new numeric type
+  // because that predicate is exactly "a number, optionally united" and a
+  // separate type would duplicate it to no end.
+  { name: '--h1-size', type: 'length', description: 'Level-1 heading size, relative to article body', default: '2.1em' },
+  { name: '--h2-size', type: 'length', description: 'Level-2 heading size, relative to article body', default: '1.5em' },
+  { name: '--h3-size', type: 'length', description: 'Level-3 heading size, relative to article body', default: '1.18em' },
+  { name: '--h4-size', type: 'length', description: 'Level-4 heading size, relative to article body', default: '1.02em' },
+  { name: '--h5-size', type: 'length', description: 'Level-5 heading size, relative to article body', default: '0.92em' },
+  { name: '--h6-size', type: 'length', description: 'Level-6 heading size, relative to article body', default: '0.8em' },
+  // One weight for h1 and one for h2-h6, not six: the existing scale already
+  // ran 700/650/650/650/650/600, so the only rank the design actually draws is
+  // "the title, and everything below it".
+  { name: '--h1-weight', type: 'length', description: 'Level-1 heading font weight', default: '700' },
+  { name: '--heading-weight', type: 'length', description: 'Font weight for headings h2–h6', default: '650' },
+  { name: '--heading-line-height', type: 'length', description: 'Heading leading, unitless multiplier', default: '1.25' },
+
+  // Body type, as multipliers of the reader's own --fs and --lh rather than as
+  // absolute values. A theme drawn around a specific reading size — a book theme
+  // set at folio's 18.45px/1.82 — has to be able to say so, but --fs and --lh are
+  // user preferences with their own slider, and a theme that hardcoded px would
+  // silently overrule the reader. Multiplying keeps both: the theme states its
+  // proportion, the slider still moves the result.
+  //
+  // The base metric stays at 16px for the reason recorded on --fs below (sub-1em
+  // h5/h6 in the default scale); a theme that raises its heading scale past 1em,
+  // as sepia-book does, is exactly the case that comment leaves room for.
+  { name: '--body-size-scale', type: 'length', description: 'Body text size as a multiple of --fs', default: '1' },
+  { name: '--body-line-height-scale', type: 'length', description: 'Body leading as a multiple of --lh', default: '1' },
   { name: '--badge-bg', type: 'color', description: 'Inline code and chip background', default: '#f6f8fa' },
 
   // Tables. `--table-border` is deliberately separate from the shared --border:
@@ -309,6 +345,18 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
     name: '--font-body',
     type: 'font-stack',
     description: 'Article body text — the only token that varies per theme beyond color',
+    default: "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
+  },
+  {
+    // A literal stack, not `var(--font-body)`: every token in this contract is a
+    // value that has passed its own predicate before reaching setProperty, and a
+    // var() reference would be the one exception — unvalidatable as a font stack
+    // and resolved by the browser rather than here. Themes that want headings in
+    // the reading face repeat their --font-body value instead, which costs a line
+    // per theme and keeps the token honest.
+    name: '--font-heading',
+    type: 'font-stack',
+    description: 'Headings h1–h6 — lets a theme set a display face over its text face',
     default: "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
   },
   {

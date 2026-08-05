@@ -41,21 +41,37 @@ interface ArticleProps {
 //
 // Margins are in em, so every gap scales with the reader's --fs rather than
 // freezing at one font size.
+// Set on every level rather than once on the article, because the article is
+// also what body text inherits from — a display face belongs on the headings
+// alone. The --font-body fallback is for a user theme that predates this token;
+// built-ins all define it, and mergeThemeTokens fills it from the contract.
+const headingFont = 'var(--font-heading, var(--font-body))';
+
+// Weight for h2-h6. h6 sat at 600 against h2-h5's 650 before these tokens
+// existed, and that half-step is preserved as a fraction of the token rather
+// than as its own knob: a theme that dials headings down to folio's 500 means
+// the whole run, and a sixth-level weight that stayed put would break the ladder
+// the other five just moved.
+const H6_WEIGHT = 'calc(var(--heading-weight) - 50)';
+
 const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
   switch (level) {
     case 1:
       return {
-        fontSize: '2.1em',
-        lineHeight: 1.25,
-        fontWeight: 700,
+        fontFamily: headingFont,
+        fontSize: 'var(--h1-size)',
+        lineHeight: 'var(--heading-line-height)',
+        fontWeight: 'var(--h1-weight)' as React.CSSProperties['fontWeight'],
         letterSpacing: '-0.02em',
         margin: '0.6em 0 0.5em',
         color: 'var(--h1-fg)',
       };
     case 2:
       return {
-        fontSize: '1.5em',
-        fontWeight: 650,
+        fontFamily: headingFont,
+        fontSize: 'var(--h2-size)',
+        lineHeight: 'var(--heading-line-height)',
+        fontWeight: 'var(--heading-weight)' as React.CSSProperties['fontWeight'],
         letterSpacing: '-0.015em',
         margin: '1.8em 0 0.7em',
         paddingBottom: '0.35em',
@@ -63,21 +79,39 @@ const headingStyle = (level: 1 | 2 | 3 | 4 | 5 | 6): React.CSSProperties => {
         color: 'var(--h2-fg)',
       };
     case 3:
-      return { fontSize: '1.18em', fontWeight: 650, margin: '2em 0 0.55em', color: 'var(--h3-fg)' };
+      return {
+        fontFamily: headingFont,
+        fontSize: 'var(--h3-size)',
+        lineHeight: 'var(--heading-line-height)',
+        fontWeight: 'var(--heading-weight)' as React.CSSProperties['fontWeight'],
+        margin: '2em 0 0.55em',
+        color: 'var(--h3-fg)',
+      };
     case 4:
-      return { fontSize: '1.02em', fontWeight: 650, margin: '1.7em 0 0.45em', color: 'var(--h4-fg)' };
+      return {
+        fontFamily: headingFont,
+        fontSize: 'var(--h4-size)',
+        lineHeight: 'var(--heading-line-height)',
+        fontWeight: 'var(--heading-weight)' as React.CSSProperties['fontWeight'],
+        margin: '1.7em 0 0.45em',
+        color: 'var(--h4-fg)',
+      };
     case 5:
       return {
-        fontSize: '0.92em',
-        fontWeight: 650,
+        fontFamily: headingFont,
+        fontSize: 'var(--h5-size)',
+        lineHeight: 'var(--heading-line-height)',
+        fontWeight: 'var(--heading-weight)' as React.CSSProperties['fontWeight'],
         letterSpacing: '.01em',
         margin: '1.45em 0 0.35em',
         color: 'var(--h5-fg)',
       };
     case 6:
       return {
-        fontSize: '0.8em',
-        fontWeight: 600,
+        fontFamily: headingFont,
+        fontSize: 'var(--h6-size)',
+        lineHeight: 'var(--heading-line-height)',
+        fontWeight: H6_WEIGHT as React.CSSProperties['fontWeight'],
         color: 'var(--h6-fg)',
         textTransform: 'uppercase',
         letterSpacing: '.06em',
@@ -1029,8 +1063,11 @@ export function Article({ source, padding }: ArticleProps) {
         boxSizing: 'border-box',
         padding,
         fontFamily: 'var(--font-body)',
-        fontSize: 'var(--fs)',
-        lineHeight: 'var(--lh, 1.7)',
+        // Scaled rather than absolute so the reader's size slider still governs
+        // the result; the theme only states the proportion it was drawn at. At
+        // the default scale of 1 these resolve to plain var(--fs)/var(--lh).
+        fontSize: 'calc(var(--fs) * var(--body-size-scale))',
+        lineHeight: 'calc(var(--lh, 1.7) * var(--body-line-height-scale))',
         color: 'var(--body-fg)',
         // Break only where a break is legal (never mid-syllable), but allow an
         // unbroken run with no break opportunity — a long URL or path — to wrap

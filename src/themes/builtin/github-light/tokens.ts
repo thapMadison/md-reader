@@ -42,6 +42,21 @@ export const tokens: ThemeTokens = {
   '--heading-marker-style': 'off',
   '--heading-marker': '0.52em',
   '--heading-rule': '#d1d9e0',
+  // The pre-token heading scale, stated rather than inherited: these are the
+  // values Article.tsx hardcoded before the scale became themeable, so this
+  // theme's headings are unchanged by that move.
+  '--h1-size': '2.1em',
+  '--h2-size': '1.5em',
+  '--h3-size': '1.18em',
+  '--h4-size': '1.02em',
+  '--h5-size': '0.92em',
+  '--h6-size': '0.8em',
+  '--h1-weight': '700',
+  '--heading-weight': '650',
+  '--heading-line-height': '1.25',
+  // Unscaled: this theme reads at the base metric.
+  '--body-size-scale': '1',
+  '--body-line-height-scale': '1',
   '--badge-bg': '#f6f8fa',
   // GitHub renders the full grid with square corners; this theme mirrors that.
   '--table-style': 'grid',
@@ -99,5 +114,8 @@ export const tokens: ThemeTokens = {
   '--syn-lit': '#0550ae',
   '--font-ui': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
   '--font-body': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
+  // Matches --font-body: GitHub sets headings in the same system face as prose
+  // and separates them by size and weight alone.
+  '--font-heading': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
   '--font-mono': "ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace",
 };

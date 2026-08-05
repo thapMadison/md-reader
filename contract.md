@@ -81,6 +81,17 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | `--surface-radius` | Corner radius for article surfaces (code, quotes, images); 0 for square corners | `8px` |
 | `--chrome-pattern-opacity` | Pattern strength, 0 to 0.15; 0.05 is the reference density | `0.05` |
 | `--heading-marker` | Heading marker width when shown | `0.52em` |
+| `--h1-size` | Level-1 heading size, relative to article body | `2.1em` |
+| `--h2-size` | Level-2 heading size, relative to article body | `1.5em` |
+| `--h3-size` | Level-3 heading size, relative to article body | `1.18em` |
+| `--h4-size` | Level-4 heading size, relative to article body | `1.02em` |
+| `--h5-size` | Level-5 heading size, relative to article body | `0.92em` |
+| `--h6-size` | Level-6 heading size, relative to article body | `0.8em` |
+| `--h1-weight` | Level-1 heading font weight | `700` |
+| `--heading-weight` | Font weight for headings h2–h6 | `650` |
+| `--heading-line-height` | Heading leading, unitless multiplier | `1.25` |
+| `--body-size-scale` | Body text size as a multiple of --fs | `1` |
+| `--body-line-height-scale` | Body leading as a multiple of --lh | `1` |
 | `--table-radius` | Table outer corner radius; 0 for square corners | `8px` |
 | `--table-border-width` | Table cell grid line thickness; 0 removes the grid | `1px` |
 | `--table-cell-pad-y` | Table cell padding, vertical | `9px` |
@@ -106,6 +117,7 @@ Tokens with a closed set of accepted values. Anything outside the listed values 
 | --- | --- | --- |
 | `--font-ui` | Toolbar, sidebar, and other chrome UI text | `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif` |
 | `--font-body` | Article body text — the only token that varies per theme beyond color | `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif` |
+| `--font-heading` | Headings h1–h6 — lets a theme set a display face over its text face | `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif` |
 | `--font-mono` | Code, source editor, and monospace UI labels | `ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace` |
 
 ## Metrics (app-level, not theme-level)

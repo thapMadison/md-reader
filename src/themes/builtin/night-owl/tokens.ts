@@ -41,6 +41,21 @@ export const tokens: ThemeTokens = {
   '--heading-marker-style': 'chevron',
   '--heading-marker': '0.52em',
   '--heading-rule': '#1d3b53',
+  // The pre-token heading scale, stated rather than inherited: these are the
+  // values Article.tsx hardcoded before the scale became themeable, so this
+  // theme's headings are unchanged by that move.
+  '--h1-size': '2.1em',
+  '--h2-size': '1.5em',
+  '--h3-size': '1.18em',
+  '--h4-size': '1.02em',
+  '--h5-size': '0.92em',
+  '--h6-size': '0.8em',
+  '--h1-weight': '700',
+  '--heading-weight': '650',
+  '--heading-line-height': '1.25',
+  // Unscaled: this theme reads at the base metric.
+  '--body-size-scale': '1',
+  '--body-line-height-scale': '1',
   '--badge-bg': '#0b2942',
   // Row rules only: on a dark canvas a full lattice of light rules reads as a
   // brighter object than the text it contains, which is the opposite of what a
@@ -101,5 +116,8 @@ export const tokens: ThemeTokens = {
   '--syn-lit': '#ff5874',
   '--font-ui': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
   '--font-body': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
+  // Matches --font-body: an editor theme, where headings are structure rather
+  // than typography and a display face would be out of register.
+  '--font-heading': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
   '--font-mono': "ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace",
 };

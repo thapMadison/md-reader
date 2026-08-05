@@ -24,3 +24,5 @@ AGENTS.md
 *.njsproj
 *.sln
 *.sw?
+
+ai-code-review-checklist.md
