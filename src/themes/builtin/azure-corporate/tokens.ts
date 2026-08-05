@@ -128,13 +128,18 @@ export const tokens: ThemeTokens = {
   // measured over --chrome (#111c2e): white reaches a visible step only by
   // desaturating toward grey, and pays more contrast per unit of step.
   //
-  // 0.26 is the strength of the brightest layer — the sliver — with the two
-  // planes at 0.32 and 0.5 of it (see chromePlane.ts). Measured per zone over
-  // this chrome, --chrome-muted lands at 6.09 on the upper plane, 5.60 on the
-  // lower, and 4.95 where the two cross: every region a file name can occupy
-  // clears 4.5. The sliver zone reads 3.94, which is why its polygon is routed
-  // down the empty left margin below the list rather than tinted down — no
-  // alpha makes a three-layer stack readable, so the fix is geometric.
+  // This token is the ceiling for the whole stack, not any one layer: every facet
+  // takes a fraction of it (see chromePlane.ts), the shadows by tinting with it
+  // and the highlights by painting white through a mask cut from it. So 0.26 is
+  // what the strongest fold reaches, how deep the folds go stays this theme's
+  // decision rather than a shared constant, and setting it to zero alpha — as the
+  // other four themes do — turns the geometry off completely.
+  //
+  // Contrast is protected by where the facets are, not by how faint they are:
+  // every vertex sits at 76% of the panel height or lower, clear of the file list.
+  // chromePlane.test.ts enforces that, because layers compound — two crossing
+  // planes leave --chrome-muted at 4.82 and three at 3.12, and no alpha rescues
+  // the third. The fix for a zone that reads too dark is to move it, not dim it.
   '--chrome-plane': 'rgba(41,163,224,0.26)',
   '--syn-kw': '#b3245f',
   '--syn-str': '#0a5c3e',
