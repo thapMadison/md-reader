@@ -24,8 +24,11 @@ import type { CSSProperties } from 'react';
 //
 // The structure follows the reference artwork's own markup, which builds its
 // canvas from four flat facets: large wedges anchored to the corners, a couple of
-// them darkening and a couple lightening, plus one narrow full-height sliver. Two
-// details there are load-bearing and were arrived at only by reading it:
+// them darkening and a couple lightening, plus one narrow full-height sliver. The
+// sidebar here keeps the wedges and drops the sliver — it is the one element that
+// has to cross the panel top to bottom, and there is no route for it that misses
+// the file names; the toolbar, having no column of text to protect, keeps it. Two
+// details in the reference are load-bearing and were arrived at only by reading it:
 //
 //   * Facets carry *different hues*, not one tint at several alphas — a darker
 //     blue for the shadow planes, white for the highlights. A single hue at three
@@ -78,17 +81,40 @@ interface Facet {
 //
 // The wedges below therefore take their mass from the bottom two corners and
 // meet low, leaving the upper panel — where the names are — on flat --chrome.
+// Measured: every file name sits on bare chrome at 6.86, the full contrast the
+// theme's own colors give, because no facet reaches the column at all rather than
+// because the facets there are faint. The storage line at the very bottom is the
+// one exception and is documented on the highlight facet below.
 export const SIDEBAR_FACETS: readonly Facet[] = [
   // Large wedge rising from the bottom-left corner: the main shaded face.
-  { tone: 'shadow', strength: 0.5, polygon: 'polygon(0% 66%, 100% 98%, 100% 100%, 0% 100%)' },
+  { tone: 'shadow', strength: 0.5, polygon: 'polygon(0% 56%, 100% 98%, 100% 100%, 0% 100%)' },
   // Counter-wedge from the bottom-right, crossing the first. The overlap is what
   // produces a third tone without a third layer, as it does in the reference.
-  { tone: 'shadow', strength: 0.75, polygon: 'polygon(100% 78%, 100% 100%, 18% 100%)' },
+  //
+  // Stops at 92% rather than running to the bottom edge, which keeps the heaviest
+  // facet — 0.75, the darkest of the three — off the storage line at ~94%. That
+  // line is --chrome-muted on whatever the planes leave under it, and with this
+  // wedge reaching the floor it measured 2.55, well under 4.5.
+  { tone: 'shadow', strength: 0.75, polygon: 'polygon(100% 78%, 100% 92%, 18% 92%)' },
   // Lit face, catching the left flank above the crossing.
-  { tone: 'highlight', strength: 0.42, polygon: 'polygon(0% 80%, 46% 100%, 12% 100%, 0% 94%)' },
-  // The sliver. Narrow, and routed through the lower left where it crosses at
-  // most one wedge — never the overlap.
-  { tone: 'highlight', strength: 0.62, polygon: 'polygon(10% 100%, 100% 76%, 10% 0%, 10% 100%)' },
+  //
+  // This one and the large wedge at the top of the list both run to the bottom
+  // edge, so the storage line is not on bare chrome the way the file names are.
+  // Measured on azure-corporate (the only theme with a non-zero --chrome-plane),
+  // by how many facets cover a point rather than by where they do: 6.86 on bare
+  // chrome, 5.62 under the large wedge alone, 4.02 where this lit face crosses it.
+  //
+  // That last figure is below 4.5 and is a deliberate trade — the storage line is
+  // a secondary readout rather than content, and pulling the crossing off it would
+  // cost the lit face the corner it needs to read as a fold. The trailing vertex
+  // sits at 92% rather than at the floor, which trims the crossing back off the
+  // panel's very edge; it narrows where the two layers meet without changing what
+  // the meeting measures.
+  //
+  // The 'holds the storage line' test in chromePlane.test.ts pins all three depths
+  // and requires each to be uniform, so a fourth layer, a deeper strength, or a
+  // wedge extended past 92% fails loudly rather than drifting down unnoticed.
+  { tone: 'highlight', strength: 0.42, polygon: 'polygon(0% 80%, 46% 100%, 12% 100%, 0% 92%)' },
 ];
 
 // Toolbar: 48px tall and full width, so its facets are near-vertical shears

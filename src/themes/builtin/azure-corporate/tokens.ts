@@ -135,11 +135,16 @@ export const tokens: ThemeTokens = {
   // decision rather than a shared constant, and setting it to zero alpha — as the
   // other four themes do — turns the geometry off completely.
   //
-  // Contrast is protected by where the facets are, not by how faint they are:
-  // every vertex sits at 76% of the panel height or lower, clear of the file list.
-  // chromePlane.test.ts enforces that, because layers compound — two crossing
-  // planes leave --chrome-muted at 4.82 and three at 3.12, and no alpha rescues
-  // the third. The fix for a zone that reads too dark is to move it, not dim it.
+  // Contrast is protected by where the facets are, not by how faint they are, and
+  // chromePlane.test.ts enforces it in both directions: no facet may cover the
+  // file-name column at all, which is why every name here measures 6.86 — the full
+  // contrast of --chrome-muted on bare --chrome. The storage line at the bottom is
+  // the one place the planes do cross text, pinned at 4.02 where two layers meet.
+  //
+  // Stated as geometry because layers compound and alpha cannot undo it: two
+  // crossing planes leave --chrome-muted at 4.82 and three at 3.12, and dimming
+  // does not rescue the third (0.13 still only reaches 3.94). The fix for a zone
+  // that reads too dark is to move it, not to dim it.
   '--chrome-plane': 'rgba(41,163,224,0.26)',
   '--syn-kw': '#b3245f',
   '--syn-str': '#0a5c3e',
