@@ -274,3 +274,51 @@ export function useChromeAccentShape(): string {
   const ctx = useContext(ThemeContext);
   return ctx?.resolvedTokens['--chrome-accent-shape'] ?? CHROME_ACCENT_SHAPE_DEFAULT;
 }
+
+export const CHROME_PATTERN_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--chrome-pattern')!.default;
+export const CHROME_PATTERN_INK_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--chrome-pattern-ink')!.default;
+const CHROME_PATTERN_OPACITY_DEFAULT = TOKEN_CONTRACT.find(
+  (t) => t.name === '--chrome-pattern-opacity',
+)!.default;
+
+// The density every pattern's geometry is drawn at. A theme's own opacity is
+// expressed as a multiple of this rather than as an absolute alpha, so one token
+// scales motifs whose layers carry a dozen different alphas between them.
+export const PATTERN_REFERENCE_OPACITY = Number(CHROME_PATTERN_OPACITY_DEFAULT);
+
+// The ceiling, and it is a legibility rule rather than a syntax one — which is
+// why it is enforced here and not in the length predicate. Past this the densest
+// motifs start cutting through --chrome-muted; the spec's own wording is that no
+// theme may make a pattern cross its text.
+const PATTERN_OPACITY_MAX = 0.15;
+
+export interface ChromePattern {
+  pattern: string;
+  ink: 'light' | 'dark';
+  // Multiplier applied to each layer's own alpha, 0..3. Already clamped.
+  opacityScale: number;
+}
+
+// The three pattern tokens, resolved together because no consumer wants one
+// without the others — and clamped and parsed here so the arithmetic lives in
+// one place rather than in each of the two panels that render a pattern.
+//
+// Non-throwing like the hooks above: Sidebar and Toolbar both render in tests
+// without a ThemeProvider, where the contract defaults are the right answer.
+export function useChromePattern(): ChromePattern {
+  const ctx = useContext(ThemeContext);
+  const tokens = ctx?.resolvedTokens;
+  const raw = Number(tokens?.['--chrome-pattern-opacity'] ?? CHROME_PATTERN_OPACITY_DEFAULT);
+  // NaN survives every comparison, so it has to be excluded before the clamp
+  // rather than by it — an unparseable value falls back to the reference density
+  // instead of silently zeroing the pattern.
+  const opacity = Number.isFinite(raw)
+    ? Math.min(PATTERN_OPACITY_MAX, Math.max(0, raw))
+    : PATTERN_REFERENCE_OPACITY;
+
+  return {
+    pattern: tokens?.['--chrome-pattern'] ?? CHROME_PATTERN_DEFAULT,
+    ink: tokens?.['--chrome-pattern-ink'] === 'dark' ? 'dark' : 'light',
+    opacityScale: opacity / PATTERN_REFERENCE_OPACITY,
+  };
+}

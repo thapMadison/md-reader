@@ -404,11 +404,7 @@ article[data-table-style] tbody tr:last-child > * {
     --chrome-muted: #59636e !important;
     --chrome-border: #d1d9e0 !important;
     --chrome-hl: rgba(9, 105, 218, 0.08) !important;
-    /* The chrome surfaces are hidden below, so this changes nothing today — but
-       it belongs with its neighbours: every chrome token is pinned to the light
-       palette here, and a plane left on the theme's own tone would be the one
-       that isn't if a later rule ever prints a header. */
-    --chrome-plane: rgba(0, 0, 0, 0) !important;
+    --chrome-pattern: none !important;
   }
   header,
   nav,
@@ -419,6 +415,14 @@ article[data-table-style] tbody tr:last-child > * {
   input {
     display: none !important;
   }
+  /* Belt and braces alongside the hidden panels above: every pattern layer lives
+     inside a header or a nav, so this is redundant today. It is here because the
+     failure it prevents is silent — a pattern layer that outlived its panel
+     would print as a band of texture across the page, and nothing about adding
+     an overlay elsewhere would prompt anyone to check the print rules. */
+  [data-chrome-pattern] {
+    display: none !important;
+  }
   #root,
   #root > div {
     height: auto !important;
@@ -427,6 +431,9 @@ article[data-table-style] tbody tr:last-child > * {
   main {
     display: flex !important;
     overflow: visible !important;
+    /* notched shifts the reading column clear of the sidebar's cut edge. In
+       print there is no sidebar, so the inset would be a stray margin. */
+    padding-left: 0 !important;
   }
   article {
     max-width: 100% !important;

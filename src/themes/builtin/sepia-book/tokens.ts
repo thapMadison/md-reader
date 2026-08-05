@@ -77,8 +77,19 @@ export const tokens: ThemeTokens = {
   '--chrome-border': '#ddd0b6',
   '--chrome-hl': 'rgba(156,90,26,0.09)',
   '--chrome-accent-shape': 'flat',
-  // No plane — a paper theme has no lit surfaces to suggest.
-  '--chrome-plane': 'rgba(0,0,0,0)',
+  // Grain, for the same reason the plane is absent: this theme is paper, and
+  // paper has tooth. It is the one motif with no geometry at all — no direction,
+  // no repeat — which is what keeps it from reading as a printed pattern *on*
+  // the stock rather than as the stock itself.
+  '--chrome-pattern': 'grain',
+  // The reference density. Grain already runs lighter in the dark-ink direction
+  // (see GrainLayer), so the correction for this theme's paper is made in the
+  // renderer rather than by pulling this number down.
+  '--chrome-pattern-opacity': '0.05',
+  // Black ink over a warm light chrome. The renderer also runs grain lighter in
+  // this direction (see GrainLayer): full-range noise reads heavier as black on
+  // paper than as white on a dark panel.
+  '--chrome-pattern-ink': 'dark',
   '--syn-kw': '#a03d2e',
   '--syn-str': '#5e6e34',
   '--syn-fn': '#2d6a7a',

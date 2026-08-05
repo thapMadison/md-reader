@@ -112,11 +112,38 @@
             "wedge"
           ]
         },
-        "--chrome-plane": {
+        "--chrome-pattern": {
           "type": "string",
-          "description": "Tone of the diagonal plane across toolbar/sidebar; zero-alpha for no plane",
-          "default": "rgba(0,0,0,0)",
-          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|(rgb|rgba|hsl|hsla|oklch)\\(.*\\))$"
+          "description": "Decorative pattern on toolbar and sidebar",
+          "default": "none",
+          "enum": [
+            "none",
+            "chevron",
+            "rulework",
+            "aura",
+            "grain",
+            "halftone",
+            "notched",
+            "unprinted",
+            "figureground",
+            "databend",
+            "facet"
+          ]
+        },
+        "--chrome-pattern-opacity": {
+          "type": "string",
+          "description": "Pattern strength, 0 to 0.15; 0.05 is the reference density",
+          "default": "0.05",
+          "pattern": "^-?(\\d+\\.?\\d*|\\.\\d+)(em|rem|px|ch|ex)?$"
+        },
+        "--chrome-pattern-ink": {
+          "type": "string",
+          "description": "Pattern ink: white (for dark chrome) or black (for light chrome)",
+          "default": "light",
+          "enum": [
+            "light",
+            "dark"
+          ]
         },
         "--fg": {
           "type": "string",

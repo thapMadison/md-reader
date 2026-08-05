@@ -65,3 +65,4 @@ function applyAccentInheritance(merged: ThemeTokens, applied: Set<string>): void
     }
   }
 }
+

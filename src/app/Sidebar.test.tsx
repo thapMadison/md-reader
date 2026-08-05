@@ -4,7 +4,7 @@ import { createFakeStorageService } from '@/services/storage/fakeStorage';
 import { StorageProvider } from '@/services/storage/StorageContext';
 import { ThemeProvider } from '@/features/theming/ThemeContext';
 import { BUILTIN_THEMES } from '@/themes/builtin';
-import { SIDEBAR_FACETS } from './chromePlane';
+import { SIDEBAR_FACETS } from './chromePattern';
 import { Sidebar } from './Sidebar';
 import type { LibraryFile } from '@/features/library/types';
 
@@ -230,14 +230,19 @@ describe('Sidebar active-row accent shape', () => {
     expect(active.style.getPropertyValue('corner-shape')).toBe('');
   });
 
-  // The plane is painted unconditionally and made invisible by a zero-alpha
-  // --chrome-plane, rather than being switched on and off in JS. That is worth a
-  // test precisely because it looks like a bug: the gradient is in the style
-  // attribute even for themes with no plane. What actually distinguishes them is
-  // the token, so both halves are asserted — the layer is always present, and
-  // the fill underneath it is never replaced by it.
-  it('paints the planes over the chrome fill rather than instead of it', async () => {
-    const container = await renderThemed('azure-corporate');
+  // Whichever built-in currently asks for the planes, found by its token rather
+  // than named here. A built-in's pattern is a design choice its author is free
+  // to change — an earlier version of these tests hardcoded azure-corporate, and
+  // switching that theme to `notched` turned one test red and quietly made the
+  // pointer-events test below vacuous by leaving it nothing to iterate.
+  const facetThemeId = BUILTIN_THEMES.find((t) => t.tokens['--chrome-pattern'] === 'facet')?.id;
+
+  // The planes are one pattern among several now, so which themes paint them is
+  // a decision made in JS rather than by a zero-alpha color. Both halves are
+  // asserted — the layers are there, and the fill underneath is not replaced by
+  // them.
+  it.runIf(facetThemeId)('paints the planes over the chrome fill rather than instead of it', async () => {
+    const container = await renderThemed(facetThemeId!);
     const nav = within(container).getByRole('navigation');
 
     // background-color, not the `background` shorthand — jsdom discards the
@@ -245,29 +250,34 @@ describe('Sidebar active-row accent shape', () => {
     // that the fill beneath the planes survives.
     expect(nav.style.backgroundColor).toBe('var(--chrome)');
     expect(nav.querySelectorAll('[data-chrome-facet]')).toHaveLength(SIDEBAR_FACETS.length);
-    expect(document.documentElement.style.getPropertyValue('--chrome-plane')).toBe('rgba(41,163,224,0.26)');
   });
 
-  it('resolves the planes to fully transparent on themes that did not opt in', async () => {
+  // The inverse of the test above, and the reason facets moved behind
+  // --chrome-pattern: a theme that does not ask for them gets no facet markup at
+  // all, rather than nine layers painting transparent gradients. github-light
+  // asks for `none`, so the panel is bare.
+  it('paints no planes at all on a theme that did not opt in', async () => {
     const container = await renderThemed('github-light');
 
-    // Not the absence of the layers — their presence, painting nothing. The
-    // markup is deliberately theme-independent, so this is what "opted out"
-    // actually looks like in the DOM.
     expect(
       within(container).getByRole('navigation').querySelectorAll('[data-chrome-facet]'),
-    ).toHaveLength(SIDEBAR_FACETS.length);
-    expect(document.documentElement.style.getPropertyValue('--chrome-plane')).toBe('rgba(0,0,0,0)');
+    ).toHaveLength(0);
+    expect(document.documentElement.style.getPropertyValue('--chrome-pattern')).toBe('none');
   });
 
   // The planes are decoration layered over the whole panel, so the one way they
   // can break the app rather than merely look wrong is by eating clicks meant
   // for the file rows underneath. That is a property of every layer, not of the
-  // one that happens to be on top, so all of them are checked.
-  it('never intercepts a click meant for the file list', async () => {
-    const container = await renderThemed('azure-corporate');
+  // one that happens to be on top, so all of them are checked — and the count is
+  // asserted first, so this cannot pass by having found none.
+  it.runIf(facetThemeId)('never intercepts a click meant for the file list', async () => {
+    const container = await renderThemed(facetThemeId!);
+    const layers = within(container)
+      .getByRole('navigation')
+      .querySelectorAll<HTMLElement>('[data-chrome-facet]');
 
-    for (const layer of within(container).getByRole('navigation').querySelectorAll<HTMLElement>('[data-chrome-facet]')) {
+    expect(layers).toHaveLength(SIDEBAR_FACETS.length);
+    for (const layer of layers) {
       expect(layer.style.pointerEvents).toBe('none');
     }
   });

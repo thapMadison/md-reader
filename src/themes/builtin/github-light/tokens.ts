@@ -72,8 +72,19 @@ export const tokens: ThemeTokens = {
   '--chrome-border': '#d1d9e0',
   '--chrome-hl': 'rgba(9,105,218,0.08)',
   '--chrome-accent-shape': 'flat',
-  // No plane. GitHub's chrome is one flat tone, and this theme reproduces it.
-  '--chrome-plane': 'rgba(0,0,0,0)',
+  // No pattern either, and for the same reason: the chrome this theme copies is
+  // undecorated, and a texture on it would be this theme failing at its one job.
+  '--chrome-pattern': 'none',
+  // The reference density, stated even though nothing draws it — for the same
+  // reason the ink below is: a custom light theme inherits this number, and the
+  // authored strength of every motif is calibrated to it.
+  '--chrome-pattern-opacity': '0.05',
+  // Set even though nothing draws it, because this is the base *light* palette:
+  // a custom light theme that names a pattern but no ink inherits this value,
+  // and black ink is the right default over a light chrome. Leaving it unset
+  // would hand those themes white ink on a white panel — an invisible pattern,
+  // which reads as a broken one.
+  '--chrome-pattern-ink': 'dark',
   '--syn-kw': '#cf222e',
   '--syn-str': '#0a3069',
   '--syn-fn': '#8250df',

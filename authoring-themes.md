@@ -43,6 +43,49 @@ A theme can pair a dark `--chrome` with light `--chrome-*` values (or vice versa
 reading canvas). Omitting the `--chrome-*` set falls back to the base palette, which by
 default matches the canvas tokens.
 
+### Chrome patterns
+
+The toolbar and sidebar can carry a decorative pattern. The reading canvas never does — those
+two panels are chrome, which the eye looks past, and a texture behind body text is a different
+and much worse proposition than one behind a toolbar.
+
+Three tokens control it. `--chrome-pattern` picks the motif:
+
+| Value | What it draws |
+| --- | --- |
+| `none` | Undecorated chrome. The default. |
+| `chevron` | 45° chevrons piling toward the floor of the sidebar; a matching hatch on the toolbar. |
+| `rulework` | No texture at all — one gradient rule along the sidebar's right edge and the toolbar's bottom, accented for the sidebar's width. |
+| `aura` | A soft light source at the shared corner, tinted with `--link`, spilling across both panels. |
+| `grain` | Isotropic film noise. No direction and no repeat, which is what makes it read as the surface rather than as something printed on it. |
+| `halftone` | A printer's density ramp: dots growing toward the bottom of the sidebar and toward the toolbar's right. |
+| `facet` | The diagonal planes: black shadow faces, white highlight faces. |
+| `notched` | **Structural.** Cuts repeating notches out of the sidebar's right edge. |
+| `unprinted` | **Structural.** Empties the chrome to transparent and redraws every edge and control as a dashed construction line. |
+| `figureground` | **Structural.** Swaps figure and ground: the sidebar takes the page background and `--chrome` shrinks into two angled masses. |
+| `databend` | **Structural.** Scanlines and slipped bands, as if the signal had come apart. |
+
+The four structural values restyle the panels themselves rather than overlaying them, so they
+fall back to `none` in the mobile drawer — each depends on something the drawer does not have
+(a fixed panel height, or a solid chrome to sit beside rather than float over the article).
+Every pattern is also forced to `none` when printing.
+
+`--chrome-pattern-ink` is `light` for white ink or `dark` for black, and it has to match the
+chrome the pattern sits on rather than the theme's overall mode. This is the one setting that
+fails invisibly: white ink at 5% over a near-white chrome does not read as subtle, it reads as
+the pattern having failed to load. `azure-corporate` is the case that makes the distinction
+necessary — a light theme whose chrome is near-black, so it takes `light` ink.
+
+`--chrome-pattern-opacity` is the strength, a bare number from `0` to `0.15`. **`0.05` is the
+reference density**: every motif's internal alphas — `facet` included — are authored at that
+value, and the token scales them from there, so `0.1` is twice the calibrated weight and `0.15`
+is the ceiling. Values outside the range are clamped rather than rejected.
+
+The geometry of every pattern is fixed by the app; the tokens choose *which* motif and *how
+strong*, never where its lines fall. Patterns are kept clear of text by their own construction
+— masks that fade out before the file list, dot fields banded away from the filename — so a
+theme cannot place a pattern through the words on either panel.
+
 Blockquotes, code blocks, headings, and callouts have their own accent tokens, so a theme can
 restyle them without dragging `--link` along. `--quote-accent` draws the blockquote's left bar
 and `--quote-fg` its body text; `--code-header-bg` and `--code-header-fg` style the strip above
@@ -202,10 +245,11 @@ failure) if:
   its own predicate in `src/themes/schema.ts`: `isColorValue` for colors, `isFontStackValue`
   for the font stacks (`--font-ui`, `--font-body`, `--font-mono`), `isLengthValue` for the
   lengths (`--heading-marker`, `--table-radius`, `--table-border-width`, the cell paddings,
-  `--table-font-size`), which take a bare number with an optional unit (`0`, `0.52em`) and
-  reject `calc()` and `var()`, and `isEnumValue` for the option tokens
-  (`--heading-marker-style`, `--table-style`), which must be one of the values listed for
-  them in `contract.md` — an unlisted value is rejected and names the accepted set.
+  `--table-font-size`, `--chrome-pattern-opacity`), which take a bare number with an optional
+  unit (`0`, `0.52em`) and reject `calc()` and `var()`, and `isEnumValue` for the option
+  tokens (`--heading-marker-style`, `--table-style`, `--chrome-pattern`,
+  `--chrome-pattern-ink`, and the rest), which must be one of the values listed for them in
+  `contract.md` — an unlisted value is rejected and names the accepted set.
 
 Up to 6 errors are shown at once. Unknown keys are always dropped rather than silently
 passed through — this is the security boundary that keeps a theme file from ever injecting

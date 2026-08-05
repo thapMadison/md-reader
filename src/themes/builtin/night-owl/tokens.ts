@@ -75,8 +75,18 @@ export const tokens: ThemeTokens = {
   '--chrome-border': '#1d3b53',
   '--chrome-hl': 'rgba(130,170,255,0.10)',
   '--chrome-accent-shape': 'flat',
-  // No plane — the editor theme this one follows keeps its chrome flat.
-  '--chrome-plane': 'rgba(0,0,0,0)',
+  // Chevrons, drifting to the floor of the sidebar. The motif suits a theme
+  // named for a night bird better than a texture does, and this palette has the
+  // headroom for it: the chrome is deep enough that white ink at the reference
+  // density reads without coming anywhere near the file names.
+  '--chrome-pattern': 'chevron',
+  // The reference density. Also what every custom dark theme inherits, since
+  // this is the base dark palette.
+  '--chrome-pattern-opacity': '0.05',
+  // White ink, and this is also the value every custom *dark* theme inherits —
+  // night-owl is the base dark palette, so a theme that names no ink of its own
+  // gets the one that suits a dark chrome.
+  '--chrome-pattern-ink': 'light',
   '--syn-kw': '#c792ea',
   '--syn-str': '#ecc48d',
   '--syn-fn': '#82aaff',

@@ -124,28 +124,25 @@ export const tokens: ThemeTokens = {
   // The same diagonal across the chrome fill itself — the plane the reference
   // actually cuts, where the wedge above is only its echo on one row.
   //
-  // This theme's own azure rather than a lightening toward white. Both were
-  // measured over --chrome (#111c2e): white reaches a visible step only by
-  // desaturating toward grey, and pays more contrast per unit of step.
-  //
-  // This token is the ceiling for the whole stack, not any one layer: every facet
-  // takes a fraction of it (see chromePlane.ts), the shadows by tinting with it
-  // and the highlights by painting white through a mask cut from it. So 0.26 is
-  // what the strongest fold reaches, how deep the folds go stays this theme's
-  // decision rather than a shared constant, and setting it to zero alpha — as the
-  // other four themes do — turns the geometry off completely.
-  //
+  // `facet` and not `chevron`, despite chevrons being the reference design's
+  // pick for this theme: the planes are already this theme's diagonal geometry,
+  // stated at the scale of the whole panel and measured against its own text
+  // (see the facet section of chromePattern.tsx). A second motif over them would be two
+  // decorations competing at different frequencies, and the planes are the one
+  // with the contrast figures behind it.
+  '--chrome-pattern': 'facet',
   // Contrast is protected by where the facets are, not by how faint they are, and
-  // chromePlane.test.ts enforces it in both directions: no facet may cover the
+  // chromePattern.test.tsx enforces it geometrically: no facet may cover the
   // file-name column at all, which is why every name here measures 6.86 — the full
-  // contrast of --chrome-muted on bare --chrome. The storage line at the bottom is
-  // the one place the planes do cross text, pinned at 4.02 where two layers meet.
-  //
-  // Stated as geometry because layers compound and alpha cannot undo it: two
-  // crossing planes leave --chrome-muted at 4.82 and three at 3.12, and dimming
-  // does not rescue the third (0.13 still only reaches 3.94). The fix for a zone
-  // that reads too dark is to move it, not to dim it.
-  '--chrome-plane': 'rgba(41,163,224,0.26)',
+  // contrast of --chrome-muted on bare --chrome, at this reference density. The
+  // storage line at the bottom is the one place the planes do cross text, pinned
+  // at 5.22 where two layers meet — still comfortably clear of 4.5, since a black
+  // shadow face only ever moves the ground away from --chrome-muted's blue.
+  '--chrome-pattern-opacity': '0.05',
+  // A light theme with a near-black chrome — which is exactly why the ink is a
+  // token rather than something derived from `mode`. The article is light; the
+  // chrome the pattern sits on is not.
+  '--chrome-pattern-ink': 'light',
   '--syn-kw': '#b3245f',
   '--syn-str': '#0a5c3e',
   '--syn-fn': '#7038b8',

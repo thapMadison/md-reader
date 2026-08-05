@@ -145,4 +145,12 @@ describe('mergeThemeTokens', () => {
       }
     });
   });
+
+  // --chrome-plane, the color token facets used to read on their own, is gone —
+  // a custom theme now asks for the planes the same way it asks for any other
+  // motif, by naming --chrome-pattern: 'facet' with no color to also supply.
+  it('drops an unknown --chrome-plane key rather than reviving it', () => {
+    const merged = mergeThemeTokens('light', { '--chrome-plane': 'rgba(41,163,224,0.26)' } as never);
+    expect((merged as Record<string, unknown>)['--chrome-plane']).toBeUndefined();
+  });
 });

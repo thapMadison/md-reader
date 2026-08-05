@@ -1,5 +1,15 @@
 import { ChevronDownIcon, EditIcon, HamburgerIcon, SidebarToggleIcon } from '@/components/ui/icons';
-import { TOOLBAR_FACETS, facetLayerStyle } from './chromePlane';
+import {
+  DATABEND_LOGO,
+  DATABEND_WORDMARK,
+  FIGUREGROUND_LOGO_TAB,
+  FIGUREGROUND_TOOLBAR,
+  NOTCHED_TOOLBAR,
+  ToolbarPatternLayer,
+  effectivePattern,
+  unprintedPanelStyle,
+} from './chromePattern';
+import { useChromePattern } from '@/features/theming/ThemeContext';
 import type { LayoutMode } from '@/hooks/useBreakpoint';
 
 interface ToolbarProps {
@@ -35,6 +45,11 @@ export function Toolbar({
   onToggleSidebar,
 }: ToolbarProps) {
   const isMobile = mode === 'mobile';
+  const chromePattern = useChromePattern();
+  // The mobile gate is applied once, here, and every branch below reads the
+  // result — so a structural motif cannot be switched off for the overlay and
+  // left on for the styling it also drives.
+  const pattern = effectivePattern(chromePattern.pattern, mode);
 
   return (
     <header
@@ -45,10 +60,10 @@ export function Toolbar({
         justifyContent: 'space-between',
         padding: `0 10px 0 ${isMobile ? '8px' : '14px'}`,
         gap: 8,
-        // Fill here, planes over it as layers below — see chromePlane.ts. A
-        // theme that sets no --chrome-plane paints them transparent and is
-        // unchanged. Longhand rather than the `background` shorthand, which
-        // jsdom discards when it carries a var().
+        // Fill here, pattern over it as layers below — see chromePattern.tsx. A
+        // theme that names no --chrome-pattern renders nothing and is unchanged.
+        // Longhand rather than the `background` shorthand, which jsdom discards
+        // when it carries a var().
         backgroundColor: 'var(--chrome)',
         overflow: 'hidden',
         color: 'var(--chrome-fg)',
@@ -56,13 +71,31 @@ export function Toolbar({
         position: 'relative',
         zIndex: 30,
         transition: 'background .25s',
+        // Three motifs restyle the bar itself rather than drawing over it, so
+        // they override the base above instead of arriving as a layer.
+        ...(pattern === 'unprinted' ? unprintedPanelStyle(chromePattern.ink, 'bottom') : null),
+        ...(pattern === 'figureground' ? FIGUREGROUND_TOOLBAR : null),
+        // The notch is cut out of the bar's own silhouette, which means it also
+        // cuts the overflow:hidden box above — the pattern layers stay inside it
+        // either way, since they are children of this element.
+        ...(pattern === 'notched' ? NOTCHED_TOOLBAR : null),
       }}
     >
-      {/* Angled planes, behind every control — see the Sidebar for the rationale. */}
-      {TOOLBAR_FACETS.map((facet) => (
-        <div key={facet.polygon} data-chrome-facet style={facetLayerStyle(facet)} />
-      ))}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+      {/* The pattern, behind every control — see the Sidebar for the rationale. */}
+      <ToolbarPatternLayer {...chromePattern} mode={mode} />
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          minWidth: 0,
+          // figureground shrinks the chrome color into this cluster: the logo
+          // and filename ride a sheared dark tab while the rest of the bar takes
+          // the page background.
+          ...(pattern === 'figureground' ? FIGUREGROUND_LOGO_TAB : null),
+          position: 'relative',
+        }}
+      >
         {isMobile && (
           <button
             onClick={onToggleDrawer}
@@ -99,12 +132,29 @@ export function Toolbar({
             fontWeight: 700,
             fontFamily: 'var(--font-mono)',
             letterSpacing: '-0.5px',
+            ...(pattern === 'databend' ? DATABEND_LOGO : null),
+            ...(pattern === 'unprinted'
+              ? { background: 'transparent', color: 'var(--link)', border: '1.2px dashed var(--link)' }
+              : null),
           }}
         >
           M↓
         </div>
         {!isMobile && (
-          <span style={{ flex: 'none', fontSize: 13.5, fontWeight: 600, letterSpacing: '-0.1px' }}>MDReader</span>
+          <span
+            style={{
+              flex: 'none',
+              fontSize: 13.5,
+              fontWeight: 600,
+              letterSpacing: '-0.1px',
+              // The glitch reaches the wordmark as a shadow only: the glyphs
+              // stay put and stay readable, and the red/cyan ghosts sit behind
+              // them. Decoration on real text has to work this way round.
+              ...(pattern === 'databend' ? DATABEND_WORDMARK : null),
+            }}
+          >
+            MDReader
+          </span>
         )}
         <span
           style={{

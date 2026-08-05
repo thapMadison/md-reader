@@ -1,6 +1,8 @@
 import type { LayoutMode } from '@/hooks/useBreakpoint';
 import { Article } from '@/features/reader/Article';
 import { LoadingSkeleton } from '@/features/reader/LoadingSkeleton';
+import { useChromePattern } from '@/features/theming/ThemeContext';
+import { NOTCH_CONTENT_INSET, effectivePattern } from './chromePattern';
 import type { LibraryFile } from '@/features/library/types';
 
 interface ContentAreaProps {
@@ -46,12 +48,19 @@ export function ContentArea({
   onDismissBanner,
   onOpenFileClick,
 }: ContentAreaProps) {
+  const chromePattern = useChromePattern();
   const hasFile = !!activeFile;
   const source = activeFile?.editedContent ?? '';
   const isEmptyFile = hasFile && source.trim() === '';
   const showLoading = hasFile && !isEmptyFile && !contentReady;
   const showArticle = hasFile && !isEmptyFile && contentReady;
   const pad = articlePadding(mode);
+  // The notched sidebar's bites cut 20px into its own width, so the deepest
+  // point of each notch sits that much closer to the reading column than a
+  // straight edge would. Text set against it reads as touching the cut, so the
+  // whole pane shifts clear — applied here rather than on the flex row in
+  // AppShell, where it would have moved the sidebar along with the content.
+  const notched = effectivePattern(chromePattern.pattern, mode) === 'notched';
 
   return (
     <main
@@ -66,6 +75,7 @@ export function ContentArea({
         overflowY: 'auto',
         background: 'var(--bg)',
         transition: 'background .25s',
+        ...(notched ? { paddingLeft: NOTCH_CONTENT_INSET } : null),
       }}
     >
       {showPermBanner && (

@@ -1,8 +1,20 @@
 import { useState, type CSSProperties } from 'react';
-import { useChromeAccentShape } from '@/features/theming/ThemeContext';
+import { useChromeAccentShape, useChromePattern } from '@/features/theming/ThemeContext';
 import { DropHintIcon, FileIcon, PlusIcon } from '@/components/ui/icons';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { SIDEBAR_FACETS, facetLayerStyle } from './chromePlane';
+import {
+  DATABEND_ACTIVE_ROW,
+  FIGUREGROUND_LIST_OFFSET,
+  FIGUREGROUND_SIDEBAR,
+  NOTCHED_SIDEBAR,
+  NotchClipDefs,
+  SidebarPatternLayer,
+  UNPRINTED_BUTTON,
+  UNPRINTED_TEXT_ROW,
+  effectivePattern,
+  unprintedPanelStyle,
+  unprintedSidebarNote,
+} from './chromePattern';
 import type { LayoutMode } from '@/hooks/useBreakpoint';
 import type { LibraryFile } from '@/features/library/types';
 
@@ -115,6 +127,11 @@ export function Sidebar({
 }: SidebarProps) {
   const [confirmClear, setConfirmClear] = useState(false);
   const rowShape = useChromeAccentShape() === 'wedge' ? WEDGE_ROW : FLAT_ROW;
+  const chromePattern = useChromePattern();
+  // Resolved once so the overlay and every style branch below agree on whether a
+  // structural motif is active — on the mobile drawer they all read `none`.
+  const pattern = effectivePattern(chromePattern.pattern, mode);
+  const unprinted = pattern === 'unprinted';
   const isMobile = mode === 'mobile';
   const pct = storageQuotaBytes > 0 ? Math.min(100, Math.round((storageUsedBytes / storageQuotaBytes) * 100)) : 0;
   const over = storageUsedBytes > storageQuotaBytes;
@@ -143,31 +160,36 @@ export function Sidebar({
           marginLeft: isMobile ? 0 : sidebarOpen ? 0 : -241,
           boxShadow: isMobile && drawerOpen ? '0 0 32px rgba(31,35,40,0.20)' : 'none',
           transition: 'margin-left .22s ease, transform .22s ease, background .25s',
-          // The planes paint over this fill, not instead of it — see the facet
-          // layers below. A theme with no --chrome-plane paints them fully
-          // transparent, leaving exactly this color.
+          // The pattern paints over this fill, not instead of it — see the layer
+          // below. A theme naming no --chrome-pattern renders nothing over it,
+          // leaving exactly this color.
           //
           // background-color rather than the `background` shorthand: jsdom drops
           // the shorthand outright when its value is a var(), so the fill would
           // be invisible to every test that renders this component.
           backgroundColor: 'var(--chrome)',
-          // The facet layers are absolutely positioned against this element.
+          // The pattern layers are absolutely positioned against this element.
           overflow: 'hidden',
           color: 'var(--chrome-fg)',
           borderRight: '1px solid var(--chrome-border)',
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
+          // The three motifs that restate the panel itself rather than drawing
+          // on it. Each overrides the fill or the silhouette set above; all
+          // three resolve to `none` on the mobile drawer, so none of them can
+          // apply here while its overlay is gated off.
+          ...(unprinted ? unprintedPanelStyle(chromePattern.ink, 'right') : null),
+          ...(pattern === 'figureground' ? FIGUREGROUND_SIDEBAR : null),
+          ...(pattern === 'notched' ? NOTCHED_SIDEBAR : null),
         }}
       >
-        {/* The angled planes. First in the DOM so every control below paints
-            over them, and pointer-events: none so none of them swallows a click
-            meant for a file row. Rendered unconditionally — a theme with no
-            --chrome-plane makes them fully transparent, which costs one
-            composited layer and keeps the markup free of a theme branch. */}
-        {SIDEBAR_FACETS.map((facet) => (
-          <div key={facet.polygon} data-chrome-facet style={facetLayerStyle(facet)} />
-        ))}
+        {/* The pattern. First in the DOM so every control below paints over it,
+            and pointer-events: none so none of its layers swallows a click meant
+            for a file row. */}
+        <SidebarPatternLayer {...chromePattern} mode={mode} />
+        {pattern === 'notched' && <NotchClipDefs />}
+        {unprinted && <div style={unprintedSidebarNote(chromePattern.ink)}>w: 240px · chrome: none</div>}
         <div style={{ padding: '12px 12px 8px' }}>
           <button
             onClick={onOpenFileClick}
@@ -186,16 +208,48 @@ export function Sidebar({
               alignItems: 'center',
               justifyContent: 'center',
               gap: 7,
+              position: 'relative',
+              ...(unprinted ? UNPRINTED_BUTTON : null),
             }}
           >
             <PlusIcon />
             Open file
           </button>
         </div>
-        <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--chrome-muted)', textTransform: 'uppercase', letterSpacing: '.07em', padding: '8px 16px 4px' }}>
+        <div
+          style={{
+            fontSize: 10.5,
+            fontWeight: 600,
+            color: 'var(--chrome-muted)',
+            textTransform: 'uppercase',
+            letterSpacing: '.07em',
+            padding: '8px 16px 4px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            position: 'relative',
+          }}
+        >
           Files
+          {/* rulework carries its whole personality in line work, so the section
+              label continues as a rule to the panel edge rather than sitting on
+              its own. Nothing else draws it. */}
+          {pattern === 'rulework' && (
+            <span aria-hidden="true" style={{ flex: 1, height: 1, background: 'var(--chrome-border)' }} />
+          )}
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '2px 8px',
+            position: 'relative',
+            // figureground's upper mass slants down across the top of the panel,
+            // reaching 154px at the left edge. Without this the first row sits
+            // on that diagonal — a mistake the spec records having made once.
+            ...(pattern === 'figureground' ? { marginTop: FIGUREGROUND_LIST_OFFSET } : null),
+          }}
+        >
           {files.map((f) => {
             const active = f.name === activeName;
             const denied = f.perm === 'denied';
@@ -216,12 +270,25 @@ export function Sidebar({
                   cursor: 'pointer',
                   background: active ? 'var(--chrome-hl)' : 'transparent',
                   marginBottom: 1,
+                  position: 'relative',
                   // Only the active row takes the theme's accent shape. An
                   // inactive row is transparent, so a cut corner there would be
                   // invisible geometry that still has to be maintained — and the
                   // wedge means "this is the one you are reading", which is
                   // exactly what the active state already says.
                   ...(active ? rowShape : FLAT_ROW),
+                  // Every row gets a solid fill under unprinted: the diagonal
+                  // guides run the height of the panel, and a name sitting on a
+                  // construction line is unreadable. The rows are what the motif
+                  // leaves "printed".
+                  ...(unprinted ? UNPRINTED_TEXT_ROW : null),
+                  ...(unprinted && active ? { border: '1px dashed var(--link)' } : null),
+                  // rulework marks the active file with a rule rather than a
+                  // shape, which is the whole idea of the motif.
+                  ...(pattern === 'rulework' && active ? { borderLeft: '2px solid var(--link)' } : null),
+                  // databend displaces the trailing edge, as if the row had been
+                  // caught by one of the tears crossing the panel.
+                  ...(pattern === 'databend' && active ? DATABEND_ACTIVE_ROW : null),
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -342,7 +409,20 @@ export function Sidebar({
             );
           })}
         </div>
-        <div style={{ borderTop: '1px solid var(--chrome-border)', padding: '10px 16px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div
+          style={{
+            borderTop: '1px solid var(--chrome-border)',
+            padding: '10px 16px 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            position: 'relative',
+            // Same reason as the file rows: the guides cross this block too, and
+            // the storage readout is small enough that a diagonal through it
+            // costs legibility outright.
+            ...(unprinted ? { ...UNPRINTED_TEXT_ROW, borderTop: '1px dashed var(--link)' } : null),
+          }}
+        >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <span style={{ fontSize: 11, color: over || warn ? 'var(--danger)' : 'var(--chrome-muted)', fontWeight: over || warn ? 600 : 400 }}>

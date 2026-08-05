@@ -20,7 +20,6 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | `--chrome-muted` | Secondary text and metadata on chrome surfaces | `#59636e` |
 | `--chrome-border` | Hairlines and control outlines on chrome surfaces | `#d1d9e0` |
 | `--chrome-hl` | Hover / active row highlight on chrome surfaces | `rgba(9,105,218,0.08)` |
-| `--chrome-plane` | Tone of the diagonal plane across toolbar/sidebar; zero-alpha for no plane | `rgba(0,0,0,0)` |
 | `--fg` | Primary text color | `#1f2328` |
 | `--muted` | Secondary text, metadata, placeholders | `#59636e` |
 | `--link` | Links, active states, primary accent | `#0969da` |
@@ -80,6 +79,7 @@ tokens below — anything omitted falls back to the base light or dark palette.
 | Token | Description | Default |
 | --- | --- | --- |
 | `--surface-radius` | Corner radius for article surfaces (code, quotes, images); 0 for square corners | `8px` |
+| `--chrome-pattern-opacity` | Pattern strength, 0 to 0.15; 0.05 is the reference density | `0.05` |
 | `--heading-marker` | Heading marker width when shown | `0.52em` |
 | `--table-radius` | Table outer corner radius; 0 for square corners | `8px` |
 | `--table-border-width` | Table cell grid line thickness; 0 removes the grid | `1px` |
@@ -95,6 +95,8 @@ Tokens with a closed set of accepted values. Anything outside the listed values 
 | --- | --- | --- | --- |
 | `--surface-corner` | Shape of article surface corners: rounded, or beveled (cut at 45°) | `round` · `bevel` | `round` |
 | `--chrome-accent-shape` | Active sidebar row highlight: rounded rectangle, or diagonal wedge | `flat` · `wedge` | `flat` |
+| `--chrome-pattern` | Decorative pattern on toolbar and sidebar | `none` · `chevron` · `rulework` · `aura` · `grain` · `halftone` · `notched` · `unprinted` · `figureground` · `databend` · `facet` | `none` |
+| `--chrome-pattern-ink` | Pattern ink: white (for dark chrome) or black (for light chrome) | `light` · `dark` | `light` |
 | `--heading-marker-style` | Heading marker glyphs: chevron family, diagonal wedge family, or hidden | `chevron` · `wedge` · `off` | `chevron` |
 | `--table-style` | Table rule style: full grid, row rules only, or header rule only | `grid` · `horizontal` · `minimal` | `grid` |
 

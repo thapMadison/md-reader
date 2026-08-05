@@ -94,8 +94,15 @@ export const tokens: ThemeTokens = {
   '--chrome-border': '#1c89cd',
   '--chrome-hl': 'rgba(34,169,255,0.12)',
   '--chrome-accent-shape': 'flat',
-  // No plane — this theme's chrome is a single deep blue by design.
-  '--chrome-plane': 'rgba(0,0,0,0)',
+  // No pattern, for the same reason. The deep blue is the whole statement.
+  '--chrome-pattern': 'none',
+  // The reference density, for the same reason as the ink: so trying a pattern
+  // on in this theme starts from the calibrated strength.
+  '--chrome-pattern-opacity': '0.05',
+  // Named anyway, so switching the pattern on while trying this theme out gives
+  // white ink over its dark chrome rather than needing a second edit to be
+  // legible at all.
+  '--chrome-pattern-ink': 'light',
   // Mapped from the source's CodeMirror token colors; these are checked against
   // --code-bg (#000000) rather than --bg.
   '--syn-kw': '#22a9ff',

@@ -82,12 +82,13 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
   // trailing edge into a diagonal, which is how a theme built on angled planes
   // states that geometry in the chrome.
   //
-  // Scoped to the active row, and paired with --chrome-plane below rather than
-  // trying to be it. The row is the one chrome element already meant to pull the
-  // eye, and its label uses --chrome-fg (10.16 on the wedge), so a hard-edged
-  // 45-degree cut costs nothing there. The chrome fill at large cannot take the
-  // same treatment at the same strength — see --chrome-plane for what a plane
-  // across the background has to respect instead.
+  // Scoped to the active row, and paired with the `facet` value of
+  // --chrome-pattern below rather than trying to be it. The row is the one
+  // chrome element already meant to pull the eye, and its label uses --chrome-fg
+  // (10.16 on the wedge), so a hard-edged 45-degree cut costs nothing there. The
+  // chrome fill at large cannot take the same treatment at the same strength —
+  // see the facet section of chromePattern.tsx for what a plane across the
+  // background has to respect instead.
   {
     name: '--chrome-accent-shape',
     type: 'enum',
@@ -95,30 +96,81 @@ export const TOKEN_CONTRACT: readonly TokenSpec[] = [
     default: 'flat',
     values: ['flat', 'wedge'],
   },
-  // Tone of a diagonal plane laid across the chrome fill — the toolbar and the
-  // sidebar — so a theme built on angled planes can state that geometry on the
-  // surface itself rather than only on the active row.
+  // Which decorative pattern the toolbar and sidebar carry. One enum rather than
+  // a flag per motif: the patterns are alternatives, not layers, and several of
+  // them restructure the panel (see below) in ways that cannot coexist.
   //
-  // A color rather than an on/off enum, and that is the whole safety mechanism.
-  // A plane is only legible if it differs in tone from --chrome, and it is only
-  // *readable over* if it does not differ by much: the first attempt at this
-  // used a fixed lightening step and measured --chrome-muted dropping from 6.86
-  // to 5.16 behind the file names. Handing the theme the color makes the depth
-  // of the step the theme's own decision, checked against its own --chrome-muted
-  // and --chrome-fg, instead of a constant that is right for one palette and
-  // wrong for the next.
+  // `facet` is the diagonal-plane treatment, folded in as one value among the
+  // rest so every chrome decoration is selected and scaled the same way: a black
+  // shadow face and a white highlight face, both through --chrome-pattern-opacity
+  // like every other motif's alphas. It used to read a second token,
+  // --chrome-plane, for its own color and depth; that token is gone; a custom
+  // theme now gets the planes from this one enum with no color to also supply.
   //
-  // Default `transparent`: a theme that says nothing gets a plane that paints
-  // nothing, so the chrome renders exactly as it did before this token existed.
-  // Expressed as an rgba() with zero alpha rather than the `transparent` keyword
-  // because the color predicate takes hex and color functions, not keywords —
-  // and because a plane fading to an *alpha-zero version of its own hue* is what
-  // avoids the grey cast a keyword `transparent` interpolation produces.
+  // The last four values are structural rather than overlaid. `notched` clips the
+  // panel silhouette, `unprinted` makes the chrome transparent and draws it in
+  // dashed rule, `figureground` swaps the sidebar fill for the page background
+  // and shrinks --chrome into two angled masses, and `databend` tears decorative
+  // bands across the panel. All four depend on the panel's own height or fill, so
+  // they are disabled on the mobile drawer where neither is what the desktop
+  // layout assumes — the gate lives in chromePattern.tsx.
   {
-    name: '--chrome-plane',
-    type: 'color',
-    description: 'Tone of the diagonal plane across toolbar/sidebar; zero-alpha for no plane',
-    default: 'rgba(0,0,0,0)',
+    name: '--chrome-pattern',
+    type: 'enum',
+    description: 'Decorative pattern on toolbar and sidebar',
+    default: 'none',
+    values: [
+      'none',
+      'chevron',
+      'rulework',
+      'aura',
+      'grain',
+      'halftone',
+      'notched',
+      'unprinted',
+      'figureground',
+      'databend',
+      'facet',
+    ],
+  },
+  // Master strength for the pattern above, as a bare number. 0.05 is the density
+  // every pattern's geometry was drawn at, so it acts as the neutral point: the
+  // renderer divides by it and scales the layer's opacity by the result, which
+  // means 0.1 is "twice the reference" rather than an alpha anyone has to
+  // recompute per motif.
+  //
+  // Clamped to 0–0.15 where it is read (useChromePattern), not here — a length
+  // token's predicate checks syntax and has no notion of range, and the ceiling
+  // is a legibility rule rather than a validity one. 0.15 is where the densest
+  // pattern starts cutting through --chrome-muted; no theme may cross it.
+  //
+  // Every pattern reads this the same way now, `facet` included — see
+  // chromePattern.tsx for why its two faces are a fixed black/white rather than
+  // a themed hue.
+  {
+    name: '--chrome-pattern-opacity',
+    type: 'length',
+    description: 'Pattern strength, 0 to 0.15; 0.05 is the reference density',
+    default: '0.05',
+  },
+  // Which direction the pattern's ink runs. `light` paints white — for chrome
+  // dark enough to take it — and `dark` paints black, for a light chrome.
+  //
+  // Not derivable from the theme's `mode`, which is the reason this is a token at
+  // all: azure-corporate is a light theme with a near-black chrome, so its
+  // patterns need white ink while its article stays light. What decides is the
+  // luminance of --chrome, and only the theme author knows it.
+  //
+  // The base palettes set opposite values (github-light: dark, night-owl: light)
+  // so a custom theme that names neither inherits the one matching its mode,
+  // which is right far more often than a single global default would be. White
+  // ink on a light chrome is the failure this exists to prevent.
+  {
+    name: '--chrome-pattern-ink',
+    type: 'enum',
+    description: 'Pattern ink: white (for dark chrome) or black (for light chrome)',
+    default: 'light',
+    values: ['light', 'dark'],
   },
 
   // Text
