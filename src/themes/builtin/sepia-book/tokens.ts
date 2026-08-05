@@ -85,7 +85,7 @@ export const tokens: ThemeTokens = {
   // The reference density. Grain already runs lighter in the dark-ink direction
   // (see GrainLayer), so the correction for this theme's paper is made in the
   // renderer rather than by pulling this number down.
-  '--chrome-pattern-opacity': '0.05',
+  '--chrome-pattern-opacity': '0.06',
   // Black ink over a warm light chrome. The renderer also runs grain lighter in
   // this direction (see GrainLayer): full-range noise reads heavier as black on
   // paper than as white on a dark panel.
