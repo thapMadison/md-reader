@@ -151,7 +151,7 @@ export const tokens: ThemeTokens = {
   // file-name column at all, which is why every name here measures 6.86 — the full
   // contrast of --chrome-muted on bare --chrome, at this reference density. The
   // storage line at the bottom is the one place the planes do cross text, pinned
-  // at 5.22 where two layers meet — still comfortably clear of 4.5, since a black
+  // at 4.97 where two layers meet — still comfortably clear of 4.5, since a black
   // shadow face only ever moves the ground away from --chrome-muted's blue.
   '--chrome-pattern-opacity': '0.05',
   // A light theme with a near-black chrome — which is exactly why the ink is a

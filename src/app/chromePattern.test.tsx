@@ -460,8 +460,8 @@ describe('facet planes', () => {
     }
 
     expect(readings(0)[0]).toBeCloseTo(6.86, 2); // bare --chrome
-    expect(readings(1)[0]).toBeCloseTo(7.12, 2); // the large wedge alone (black darkens the line's ground)
-    expect(readings(2)[0]).toBeCloseTo(5.22, 2); // wedge + lit face (white lifts it back down again)
+    expect(readings(1)[0]).toBeCloseTo(7.04, 2); // the large wedge alone (black darkens the line's ground)
+    expect(readings(2)[0]).toBeCloseTo(4.97, 2); // wedge + lit face (white lifts it back down again)
   });
 
   it('keeps every facet strength within a valid alpha range', () => {

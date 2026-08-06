@@ -486,7 +486,7 @@ export const SIDEBAR_FACETS: readonly Facet[] = [
   // This one and the large wedge at the top of the list both run to the bottom
   // edge, so the storage line is not on bare chrome the way the file names are.
   // Measured at the reference density (opacityScale = 1) on azure-corporate: 6.86
-  // on bare chrome, 7.12 under the large wedge alone, 5.22 where this lit face
+  // on bare chrome, 7.04 under the large wedge alone, 4.97 where this lit face
   // crosses it — see 'holds the storage line' in chromePattern.test.tsx. All
   // three clear 4.5; the black shadow only ever darkens the ground *away* from
   // --chrome-muted's blue, so stacking facets here cannot repeat the failure the
