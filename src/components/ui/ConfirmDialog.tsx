@@ -1,9 +1,28 @@
 import { useEffect, useRef } from 'react';
 
+/**
+ * One consequence of going ahead. `severe` marks the ones that destroy
+ * something the user cannot get back by repeating the action — those get the
+ * danger colour and a filled marker.
+ */
+export interface Consequence {
+  text: string;
+  severe?: boolean;
+}
+
 interface ConfirmDialogProps {
   title: string;
-  /** Body copy. Say what will be destroyed and whether it can be undone. */
-  message: string;
+  /**
+   * Body copy. Say what will be destroyed and whether it can be undone.
+   *
+   * A plain string renders as one paragraph. An array renders as a list, one
+   * consequence per line — which is the point: run three of them together and
+   * they read at one weight, so the sentence about permanent deletion lands with
+   * the same force as the one about closing a tab, and gets skimmed past. The
+   * list makes each one a separate thing the eye has to stop on, and lets the
+   * severe ones be coloured.
+   */
+  message: string | Consequence[];
   confirmLabel: string;
   cancelLabel?: string;
   /** Styles the confirm button as destructive. */
@@ -100,9 +119,70 @@ export function ConfirmDialog({
         <h2 id="confirm-title" style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700 }}>
           {title}
         </h2>
-        <p id="confirm-message" style={{ margin: '0 0 14px', fontSize: 12.5, lineHeight: 1.5, color: 'var(--muted)' }}>
-          {message}
-        </p>
+        {typeof message === 'string' ? (
+          <p id="confirm-message" style={{ margin: '0 0 14px', fontSize: 12.5, lineHeight: 1.5, color: 'var(--muted)' }}>
+            {message}
+          </p>
+        ) : (
+          <ul
+            id="confirm-message"
+            // `aria-describedby` points here, and a screen reader reads the whole
+            // subtree — so the list is announced in full, in order, exactly as the
+            // paragraph was. Nothing decorative is a text node, so the markers
+            // below cannot leak into that announcement.
+            style={{ margin: '0 0 14px', padding: 0, listStyle: 'none', display: 'grid', gap: 6 }}
+          >
+            {message.map((c) => (
+              <li
+                key={c.text}
+                style={{
+                  fontSize: 12.5,
+                  lineHeight: 1.45,
+                  color: c.severe ? 'var(--danger)' : 'var(--muted)',
+                  // Hanging indent: the marker sits in its own column so wrapped
+                  // lines align under the text rather than under the dot.
+                  display: 'grid',
+                  gridTemplateColumns: '10px 1fr',
+                  gap: 7,
+                  alignItems: 'baseline',
+                  ...(c.severe
+                    ? {
+                        fontWeight: 600,
+                        background: 'var(--danger-bg)',
+                        borderRadius: 5,
+                        padding: '5px 7px',
+                        // Pulled back by the padding so the marker column still
+                        // lines up with the unhighlighted rows above and below.
+                        margin: '0 -7px',
+                      }
+                    : {}),
+                }}
+              >
+                {/* Drawn, not written. A text-node bullet would join the item's
+                    textContent and be announced as part of the sentence. */}
+                <span
+                  aria-hidden="true"
+                  data-marker={c.severe ? 'severe' : 'plain'}
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    // Filled for severe, hollow for the rest, so the two are
+                    // distinguishable without relying on colour alone.
+                    background: c.severe ? 'currentColor' : 'transparent',
+                    border: c.severe ? 'none' : '1px solid currentColor',
+                    opacity: c.severe ? 1 : 0.5,
+                    // Nudged up onto the text's optical centre; baseline
+                    // alignment would otherwise sit it on the line itself.
+                    transform: 'translateY(-1px)',
+                    justifySelf: 'center',
+                  }}
+                />
+                <span>{c.text}</span>
+              </li>
+            ))}
+          </ul>
+        )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button
             ref={cancelRef}

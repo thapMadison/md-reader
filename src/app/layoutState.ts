@@ -6,7 +6,12 @@ export interface DragState {
   onDrop: (dataTransfer: DataTransfer) => void;
 }
 
-export function useLayoutState() {
+/**
+ * @param onSave Invoked by Ctrl/Cmd+S. Passed in rather than reached for
+ *   directly: this hook owns UI chrome state and knows nothing about the
+ *   library, and saving is the library's business.
+ */
+export function useLayoutState(onSave?: () => void) {
   const storage = useStorage();
   const [sidebarOpen, setSidebarOpenState] = useState(true);
   const sidebarLoaded = useRef(false);
@@ -72,6 +77,14 @@ export function useLayoutState() {
     setMobileTab('source');
   }, []);
 
+  // Held in a ref so the listener below is bound once. `onSave` closes over the
+  // active file and is a fresh function every render; in the dependency array it
+  // would tear down and re-add the handler on every keystroke.
+  const onSaveRef = useRef(onSave);
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
@@ -86,6 +99,12 @@ export function useLayoutState() {
       if ((e.metaKey || e.ctrlKey) && k === 'k') {
         e.preventDefault();
         togglePopover();
+      }
+      if ((e.metaKey || e.ctrlKey) && k === 's') {
+        // Matters more than the three above: Ctrl+S is a real browser shortcut,
+        // so without this the "Save page as…" dialog opens over the app.
+        e.preventDefault();
+        onSaveRef.current?.();
       }
     };
     window.addEventListener('keydown', onKey);

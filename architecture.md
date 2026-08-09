@@ -1,8 +1,13 @@
 # Architecture
 
-MDReader is a single-page React app with no backend. All state — open files, theme
-preferences, scroll positions — lives in the browser (IndexedDB + in-memory), and rendering
-is a pure function of that state.
+MDReader is a single-page React app. All state — open files, theme preferences, scroll
+positions — lives in the browser (IndexedDB + in-memory), and rendering is a pure function
+of that state.
+
+There is one server-side component, and it is deliberately kept off the data path: a
+Cloudflare Worker (`workers/gist-auth/`) that exchanges an OAuth `code` for a GitHub token.
+Everything else, including all gist traffic, goes straight from the browser to
+`api.github.com`. See [GitHub sync](#github-sync).
 
 ## Layers
 
@@ -14,11 +19,15 @@ src/
     theming/      Theme provider, DOM application, picker popover
     reader/       Markdown rendering pipeline + components (code, mermaid, images)
     toc/          Heading extraction, scrollspy, scroll restoration
+    sync/         Push/pull state machine, sync pill, conflict banner
   services/
     storage/      IndexedDB-backed persistence, behind an interface (+ in-memory fake)
     filesystem/   File System Access API + <input>/drag-drop fallback
+    gist/         GitHub Gist API + OAuth, behind an interface (+ in-memory fake)
   themes/         Token contract, built-in theme palettes, validation/merge for imports
   hooks/          Cross-cutting hooks (viewport breakpoint)
+workers/
+  gist-auth/      Cloudflare Worker: OAuth code → token exchange. The only server.
 ```
 
 Dependency direction is one-way: `app` consumes `features`, `features` consume `services`
@@ -26,14 +35,19 @@ and `themes`, nothing below reaches back up into `app`.
 
 ## Composition root
 
-`App.tsx` nests three context providers, outermost to innermost:
+`App.tsx` nests five context providers, outermost to innermost:
 
 ```
-StorageProvider → ThemeProvider → LibraryProvider → AppShell
+StorageProvider → ThemeProvider → LibraryProvider → GistAuthProvider → SyncProvider → AppShell
 ```
 
 `ThemeProvider` and `LibraryProvider` both call `useStorage()` internally (to persist theme
-choice and open-file state respectively), so `StorageProvider` must be outermost. `AppShell`
+choice and open-file state respectively), so `StorageProvider` must be outermost.
+`SyncProvider` sits *inside* `LibraryProvider` because it reads `useLibrary()`; the reverse
+never happens, which is what keeps the dependency one-way. It is a separate context rather
+than more of `LibraryContext` for a concrete reason: `LibraryContext` rebuilds its value
+object every render, so every consumer re-renders on each keystroke — folding a gist poll
+into that would re-render the editor on network timing. `AppShell`
 is the only component that reads from all three contexts directly — it derives every prop
 passed to the presentational shell components (`Toolbar`, `Sidebar`, `EditorPane`,
 `ContentArea`, `TocRail`, `ThemePopover`, `SubBar`) from that combined state. The shell
@@ -166,13 +180,186 @@ cosmetic delay.
   File System Access API isn't supported, e.g. Firefox/Safari). No handle exists; the
   content is a one-time copy with no path back to the original file.
 
-Either way, in-app edits (`LibraryContext.editContent`) only ever mutate `editedContent` in
-memory — `originalContent` (and the file on disk) is never written to. "Revert" simply
-resets `editedContent` back to `originalContent`.
+A file authored in the app (`LibraryContext.createFile`, reached from the + beside the
+sidebar's Files header — one menu for both things the list can gain) is a
+snapshot by the same definition — no handle exists, and none ever will, because there is no
+disk file to point one at. Its bytes live in IndexedDB and, if the user opts in, in a gist;
+that is the whole of its existence. It is created with a seeded `# Title`, not empty, so
+`originalContent` is something Revert can meaningfully return to for the life of the file.
+
+Names are the constraint on creating one. Files are keyed on bare basename, and nothing in
+the library asks before reusing a key, so `createFile` resolves a clash to `Notes 2.md`
+before writing the record rather than replacing what is there — creating a blank document
+must never be a way to destroy a real one. The name it settled on is what it returns, and
+the row that appears carries it, so a resolved clash is visible rather than silent.
+
+Either way, in-app edits (`LibraryContext.editContent`) only ever touch `editedContent`;
+`originalContent` — and the file on disk — is never written to. "Revert" simply resets
+`editedContent` back to `originalContent`.
+
+`editedContent` **is** persisted to IndexedDB, on a 1s debounce plus a flush on
+`visibilitychange`/`pagehide` and on switching files. That is a safety net against losing
+typing to a closed tab, not a sync mechanism: it writes locally and never touches the
+network. Writing per keystroke instead of debouncing would rewrite the whole record —
+content included — for every character.
+
+`contentUpdatedAt` sits beside it and bumps only when the content actually changes.
+`savedAt` cannot serve that purpose: it is rewritten on every persist, including the
+write-back pass during hydration, so it means "last touched", not "last changed".
 
 `services/storage` is a small interface (`StorageService`) with one IndexedDB-backed
 implementation (`idbStorage.ts`) and one in-memory fake (`fakeStorage.ts`) used in tests —
 nothing outside `services/storage` imports `idb` directly.
+
+## GitHub sync
+
+The point of the feature: open a file on the laptop, read it on the phone, without loading
+it twice. Each synced document gets its own **secret gist**.
+
+`services/gist` mirrors the `services/storage` shape — an interface (`GistService`) with one
+`fetch`-backed implementation (`githubGist.ts`) and one in-memory fake (`fakeGist.ts`).
+`features/sync` holds the state machine on top.
+
+Sync is opt-in per file and orthogonal to how the file was opened. A `snapshot` file lacks a
+*disk* handle, not a *cloud* one — pushing its content to a gist needs no handle at all,
+which is exactly what makes laptop → gist → iPhone work on Safari and iOS.
+
+### The one backend, and why it exists
+
+GitHub's Device Flow cannot run from a browser: `github.com/login/oauth/access_token` sends
+no CORS headers and does not answer preflight. `api.github.com` **does** send
+`Access-Control-Allow-Origin: *`, so the entire Gist API is reachable client-side — only the
+token exchange is not.
+
+Hence `workers/gist-auth/`: one `POST /token` endpoint holding the client secret. It is not
+on the data path and never sees a gist. If it goes down, existing users keep working
+(GitHub tokens do not expire); only new sign-ins break.
+
+Its origin allowlist is an **exact string match, never `*` and never a suffix test** — this
+endpoint mints tokens, so a wildcard would let any page on the web borrow the OAuth App as
+its own exchange service.
+
+### Comparing versions: hashes, not clocks
+
+`contentUpdatedAt` is the user's clock and a gist's `updated_at` is GitHub's. **They are
+never compared to each other** — a few minutes of clock skew would silently invert the
+answer. Instead:
+
+```ts
+const localChanged  = record.syncedContentHash !== contentHash(current);
+const remoteChanged = remoteMeta.updatedAt > (record.remoteUpdatedAt ?? 0);
+```
+
+`remoteUpdatedAt` is a *watermark* of the last reconciled remote state, only ever compared
+against another GitHub timestamp. `syncedContentHash` (FNV-1a, `hash.ts`) makes "did this
+change locally" a fact rather than a guess, so re-saving identical content does not offer a
+pointless push.
+
+Those two booleans give the whole state machine — `idle` / `local-ahead` / `remote-ahead` /
+`conflict`. A conflict is **never** auto-resolved; the banner offers keep-mine, take-theirs,
+or keep-both (pulled in as a new `name (from GitHub).md`, which destroys nothing).
+
+One trap worth knowing: `stateOf` returns `idle` before the first `listGists` lands, because
+an empty remote list makes `remoteChanged` false. `idle` therefore cannot be used as a
+"the list has arrived" signal — `listed` exists for that.
+
+### Push and pull are both user-driven
+
+**Push has exactly one trigger: Sync (Ctrl/Cmd+S).** Not for rate limits — 5000 req/hour
+against a few dozen is under 1% — but because every `PATCH` creates a gist revision.
+Auto-pushing would turn version history, one of the reasons to pick Gist, into a keystroke
+log.
+
+**Pull happens when the user opens a file**, and on nothing else. A focus listener was built
+and removed: it needs a throttle so alt-tabbing does not fire a request per switch, and any
+window wide enough to do that also swallows the one return that mattered ("I just edited
+the gist on github.com") — showing stale state at exactly the moment the user came back to
+check. Reload and switching files both route through the same effect, so refreshing is
+already in the user's hands.
+
+The open-file effect must depend on **which file is active**, not on its sync state: typing
+is what moves a file from `idle` to `local-ahead`, so depending on state means one request
+per character.
+
+### Two write paths into one record
+
+`persistFile` (content) reads a record and writes it **whole**; `patchSync` (metadata)
+touches only the sync fields. Run concurrently, `persistFile` can read the metadata before
+`patchSync` writes and land after it, rewinding the hash and watermark while the content
+moves forward. Nothing looks wrong until a reload, when the hash describes content that no
+longer exists, `localChanged` goes true, and a conflict the user already resolved comes
+back — real data loss, not a cosmetic glitch.
+
+So a pull writes content and metadata in **one** `saveFile` (`applyExternalContent`), and a
+folder move writes through the narrow `setFolder` rather than rebuilding the record. Push
+stays on `patchSync` because it never touches content. Tests for this must **remount**:
+asserting in-session state passes while the record on disk is already wrong.
+
+### Sharp edges in the Gist API
+
+- **`truncated: true` is a hard error, never content.** GitHub clips above 1MB and returns a
+  *partial* string. Writing that over the user's complete copy is silent corruption, and the
+  next push would send the truncation back as the new truth.
+- **`MAX_SYNC_FILE_BYTES` is 1MB**, measured in UTF-8 bytes via `TextEncoder` — `.length`
+  under-counts CJK and emoji three- to four-fold. Above it a file still opens and reads
+  normally; it just cannot be sync-enabled. The reader gives out before the API does:
+  `react-markdown` on a 10MB document locks the tab, and the phone is the device this
+  feature exists for.
+- **A delete naming a file the gist does not have is a 422, and it fails the whole
+  request** — content included. Folder metadata used to travel as a second file, so every
+  ungrouped file asked to delete one that was usually not there, and the rejection took the
+  content down with it. Now the app writes exactly one file per gist and there is no delete
+  to send.
+- **gist.github.com titles a gist after its alphabetically first file.** A dotfile beside
+  the document therefore *becomes* the gist's name in the user's list — the reason folder
+  metadata moved out of `.mdreader.json` and into the description. A backup feature must
+  never look, on the service, like it stored something other than what the app says it did.
+- **Files are bound by `gistId`, never by name.** Library files are keyed on bare basename,
+  so two `README.md`s already collide locally; with sync, name-binding would let one
+  machine's README overwrite another's gist. A file without a `gistId` always creates a new
+  gist — a duplicate is recoverable, an overwrite is not.
+- **Secret is unlisted, not private.** GitHub has no private tier. Anyone with the URL can
+  read it, with no way to revoke one person short of deleting the gist. The UI says so in
+  those words, because "secret" reads as "private".
+- **StrictMode invokes updaters twice**, so every value must be derived *before* the
+  `setState` updater. A `createGist()` inside one creates two gists.
+
+### Folder membership rides in the gist description
+
+A gist is a flat bag of files with no room for library-wide structure, and each document has
+its own gist — so anything the library knows that GitHub does not has to travel with the
+file. The description carries it: `[mdreader] Notes.md {"folderId":"…","folderName":"Work"}`,
+written in the **same `PATCH`** as the content — no second write to fail on its own, no
+second conflict engine — and leaving the gist holding exactly one file, the document.
+
+Both fields, not just the id. `folderId` comes from `crypto.randomUUID()` on whichever
+device first made the folder, so reconciliation tries id first, then a case-insensitive name
+match (keeping the local id), then creates the folder with the remote id. Convergence with
+no central registry.
+
+The description is rewritten whole on every push, so **an absent tag means ungrouped** and a
+pull moves the file out. That is the only way "I took this out of a folder" reaches the other
+devices. It reads as a statement rather than as silence precisely because the app writes the
+field every time — the earlier sidecar file could not make that claim, since a gist that
+never had one was indistinguishable from a file that had left its folder.
+
+Read back by scanning for the first `{` the rest of the string parses from, not by splitting
+on a separator: file names and folder names may both contain braces, and they share the
+field. A tag that will not parse is treated as no tag — the document still opens, ungrouped.
+
+### The token
+
+Stored in its own IndexedDB object store (`auth`, added in `DB_VERSION` 2), **not** in
+preferences: `clearAll()` empties that store, so the sidebar's "Clear all" button would sign
+the user out.
+
+It is readable by any XSS on this origin, which promotes `pipeline/sanitize.ts` from a
+theming boundary to the thing standing between untrusted markdown and a GitHub credential.
+That is the security consequence of enabling `rehypeRaw`, and it is why the sanitizer is not
+optional. The token is scoped to `gist` alone, so even a leak cannot reach repositories.
+
+The client secret lives only in the Worker, set via `wrangler secret put`, and never enters
+source control or the client.
 
 ## Responsive layout
 

@@ -1,10 +1,16 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Theme } from '@/themes/types';
+import { useAnchoredPosition } from '@/components/ui/useAnchoredPosition';
 import { useTheme } from './ThemeContext';
-import type { LayoutMode } from '@/hooks/useBreakpoint';
 
 interface ThemePopoverProps {
-  mode: LayoutMode;
+  /**
+   * The control this popover hangs from — the toolbar's ⋯ button, or whatever
+   * opened it. Measured rather than guessed at: the offsets this used to carry
+   * described one particular arrangement of toolbar buttons and stopped being
+   * true the moment that arrangement changed.
+   */
+  anchor: HTMLElement | null;
   onClose: () => void;
 }
 
@@ -22,7 +28,7 @@ function downloadJson(filename: string, data: unknown) {
   URL.revokeObjectURL(url);
 }
 
-export function ThemePopover({ mode, onClose }: ThemePopoverProps) {
+export function ThemePopover({ anchor, onClose }: ThemePopoverProps) {
   const {
     themes,
     customThemes,
@@ -37,6 +43,19 @@ export function ThemePopover({ mode, onClose }: ThemePopoverProps) {
     exportTheme,
   } = useTheme();
   const themeInputRef = useRef<HTMLInputElement>(null);
+  const pos = useAnchoredPosition(anchor, true);
+
+  // Escape closes, matching the ⋯ menu and the sidebar's row menus.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   const handleThemePicked: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const file = e.target.files?.[0];
@@ -63,15 +82,20 @@ export function ThemePopover({ mode, onClose }: ThemePopoverProps) {
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 39 }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 39 }} />
       <div
         style={{
-          position: 'absolute',
-          top: 54,
-          right: mode === 'mobile' ? 8 : 52,
+          position: 'fixed',
+          top: pos?.top ?? 0,
+          right: pos?.right ?? 8,
           zIndex: 40,
           width: 268,
-          maxHeight: 460,
+          // Whatever room is actually below the trigger, capped at the height
+          // this panel wants. The old flat 460 could run off a short viewport.
+          maxHeight: Math.min(460, pos?.maxHeight ?? 460),
+          // Hidden until measured, so it cannot paint one frame at the wrong
+          // place and jump.
+          visibility: pos ? 'visible' : 'hidden',
           display: 'flex',
           flexDirection: 'column',
           background: 'var(--bg)',
@@ -81,7 +105,11 @@ export function ThemePopover({ mode, onClose }: ThemePopoverProps) {
           animation: 'popIn .14s ease-out',
         }}
       >
-        <div style={{ flex: 1, minHeight: 0, maxHeight: 300, overflowY: 'auto', padding: 6 }}>
+        {/* Flexes instead of carrying its own cap: the panel above now sizes to
+            the room under the trigger, and a fixed 300 here would either waste
+            that room or overflow it. The footer and any error block are
+            `flex: none`, so this is what gives. */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 6 }}>
           <div
             style={{
               fontSize: 11,

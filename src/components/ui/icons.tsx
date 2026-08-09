@@ -22,6 +22,16 @@ export function ChevronDownIcon() {
   );
 }
 
+export function MoreIcon() {
+  return (
+    <svg width="14" height="4" viewBox="0 0 14 4" style={{ flex: 'none' }}>
+      <circle cx="2" cy="2" r="1.4" fill="currentColor" />
+      <circle cx="7" cy="2" r="1.4" fill="currentColor" />
+      <circle cx="12" cy="2" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function SidebarToggleIcon() {
   return (
     <svg width="15" height="13" viewBox="0 0 15 13">
@@ -77,6 +87,56 @@ export function EmptyDocIcon() {
     <svg width="34" height="40" viewBox="0 0 12 14" style={{ color: 'var(--border)' }}>
       <path d="M1.5 1h6L11 4.5V13H1.5V1z" stroke="currentColor" fill="none" strokeLinejoin="round" />
       <path d="M7.5 1v3.5H11" stroke="currentColor" fill="none" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// The cloud body every sync icon is drawn on, so the four variants read as one
+// glyph in four moods rather than four unrelated marks. Only the mark inside
+// changes; the silhouette never does.
+const CLOUD_PATH = 'M4 11.5a2.6 2.6 0 01.3-5.2 3.5 3.5 0 016.7-.8 2.4 2.4 0 01.4 4.8';
+
+/**
+ * Sync state as one 14px glyph, replacing the word-pills that used to stack
+ * under each filename.
+ *
+ * `mark` picks what sits inside the cloud, and the four are deliberately
+ * different *shapes* rather than the same shape in different colors — the
+ * sidebar is the one place in this app where a red/green pair would be the only
+ * thing distinguishing "backed up" from "failed", and that pair is exactly what
+ * a red-green colorblind user cannot separate. Color is carried by
+ * `currentColor` from the caller and stays a second channel, never the only one.
+ */
+export function CloudIcon({ mark }: { mark: 'check' | 'up' | 'down' | 'alert' }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 15 15" style={{ flex: 'none' }}>
+      <path d={CLOUD_PATH} stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      {mark === 'check' && (
+        <path d="M5 10.6l1.8 1.8 3.4-3.6" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      )}
+      {mark === 'up' && (
+        <path d="M7.6 13.4V8.6M5.7 10.4l1.9-1.9 1.9 1.9" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      )}
+      {mark === 'down' && (
+        <path d="M7.6 8.6v4.8M5.7 11.5l1.9 1.9 1.9-1.9" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      )}
+      {mark === 'alert' && (
+        <path d="M7.6 8.4v2.9M7.6 13.3v.1" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+      )}
+    </svg>
+  );
+}
+
+/**
+ * Storage is full: the file is open now and will not survive a reload. A filled
+ * triangle rather than an outline — it is the only badge here that describes
+ * data actively about to be lost, and it should not read as a peer of the rest.
+ */
+export function NotSavedIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" style={{ flex: 'none' }}>
+      <path d="M6.5 1.4l5.3 9.4H1.2L6.5 1.4z" fill="currentColor" />
+      <path d="M6.5 5v2.6M6.5 9.1v.1" stroke="var(--chrome)" strokeWidth="1.3" strokeLinecap="round" />
     </svg>
   );
 }

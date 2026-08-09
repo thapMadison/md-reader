@@ -28,16 +28,26 @@ function fakeDb(overrides: Record<string, unknown> = {}) {
     ...overrides,
   };
   const abort = vi.fn();
+  // Counts reads that went through a transaction's store rather than straight
+  // off the db handle. The two are indistinguishable in their results — same
+  // data, same shape — and differ only in whether a concurrent writer can
+  // interleave between the read and the write, so nothing but the route itself
+  // can be asserted on.
+  const storeGet = vi.fn((key: string) => db.get(key));
   return {
     ...db,
     abort,
+    storeGet,
     transaction: vi.fn(() => ({
       // The store's put takes no store-name argument, unlike db.put; dropping it
-      // here keeps the underlying mock's call record uniform.
+      // here keeps the underlying mock's call record uniform. The out-of-line
+      // key is kept, since a keyed store is the only way preferences are written
+      // and a double that swallowed it could not tell a right key from a wrong one.
       objectStore: () => ({
-        get: (key: string) => db.get(key),
+        get: storeGet,
         getAll: () => db.getAll(),
-        put: (record: unknown) => db.put(record),
+        put: (record: unknown, key?: IDBValidKey) =>
+          key === undefined ? db.put(record) : db.put(record, key),
       }),
       done: Promise.resolve(),
       abort,
@@ -238,10 +248,34 @@ describe('idbStorage availability', () => {
 
     const service = createIdbStorageService();
     await service.setPreferences({ themeId: 'new' });
-    expect(put).toHaveBeenCalledWith(
-      'preferences',
-      { themeId: 'new', fontSize: 16 },
-      'preferences',
-    );
+    expect(put).toHaveBeenCalledWith({ themeId: 'new', fontSize: 16 }, 'preferences');
+  });
+
+  // Preferences are one record shared by unrelated writers — theme, scroll
+  // positions, folders — so every write is a patch over whatever else is in
+  // there. Reading outside the transaction lets two concurrent patches both
+  // start from the same snapshot, and the later write puts back a copy that
+  // never saw the earlier one. With folder sync that is a folder created by one
+  // pull vanishing when a second pull writes back a `folders` array it read
+  // before that folder existed.
+  //
+  // The mocked `idb` cannot prove atomicity — only a real IndexedDB could. What
+  // it can prove is the property atomicity is bought with: that the read goes
+  // through the same transaction as the write, not through a bare `db.get`.
+  it('reads preferences inside the transaction it writes in', async () => {
+    const db = fakeDb({ get: vi.fn().mockResolvedValue({ fontSize: 16 }) });
+    openDB.mockResolvedValue(db);
+
+    const service = createIdbStorageService();
+    await service.setPreferences({ themeId: 'new' });
+
+    expect(db.transaction).toHaveBeenCalledWith('preferences', 'readwrite');
+    // One transaction, not one to read and another to write — two would reopen
+    // the same race the transaction is there to close.
+    expect(db.transaction).toHaveBeenCalledTimes(1);
+    // The read itself came off the transaction's store. Opening a transaction
+    // and then reading around it through the db handle would leave the gap
+    // exactly where it was, while looking correct from the outside.
+    expect(db.storeGet).toHaveBeenCalledWith('preferences');
   });
 });

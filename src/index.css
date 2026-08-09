@@ -63,6 +63,48 @@ body {
   }
 }
 
+/* The sync control asking to be noticed, three times and then never again.
+   A halo rather than a color change, because the color already carries the
+   state — this only aims the eye at it in the moment it becomes true. Finite on
+   purpose: a control that pulses forever stops being a signal and becomes
+   wallpaper the user learns to ignore. */
+@keyframes syncNudge {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--chrome-hl, rgba(9, 105, 218, 0.08));
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--chrome-hl, rgba(9, 105, 218, 0.08));
+  }
+}
+
+/* Hover feedback for the chrome's icon buttons and the ⋯ menu's rows.
+   Stylesheet rules rather than inline styles for the reason given further down
+   this file: an inline style cannot express a pseudo-class at all. `!important`
+   is what makes them win — the elements set their resting `background` inline,
+   and an inline declaration outranks a stylesheet rule at any specificity.
+
+   `data-chrome-btn` is set only while a button is in its ghost state; the Edit
+   button drops the attribute once it is filled with --link, so hover cannot
+   wash an active control back to transparent. */
+[data-chrome-btn]:hover {
+  background: var(--chrome-hl, rgba(9, 105, 218, 0.08)) !important;
+}
+[data-menu-row]:hover {
+  background: var(--hl, rgba(9, 105, 218, 0.08)) !important;
+}
+
+/* Decoration that moves is opt-out for anyone who has asked the OS for less of
+   it. The states above stay legible without motion: each one is a different
+   label, glyph and color, and the pulse is only ever a second channel. */
+@media (prefers-reduced-motion: reduce) {
+  [data-sync-nudge],
+  [style*='popIn'],
+  [style*='shimmer'] {
+    animation: none !important;
+  }
+}
+
 /* Focus ring — shared spec: 2px var(--link), offset 2px (inset -2px in textarea).
    :focus-visible alone (rather than an element allowlist) also covers elements
    Chromium makes implicitly focusable without a tabindex attribute, such as

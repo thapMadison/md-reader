@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { useLayoutState } from './layoutState';
+import { useSaveFile } from '@/features/sync/useSaveFile';
+import { useOptionalSync } from '@/features/sync/SyncContext';
 import { useLibrary } from '@/features/library';
 import { useTheme } from '@/features/theming/ThemeContext';
 import { useScrollSpy } from '@/features/toc/useScrollSpy';
@@ -18,12 +20,33 @@ import { DragOverlay } from './DragOverlay';
 
 export function AppShell() {
   const mode = useBreakpoint();
-  const layout = useLayoutState();
   const library = useLibrary();
+  // Declared before useLayoutState, which takes `save` for its Ctrl/Cmd+S
+  // binding. The same hook backs the toolbar button, so the keyboard and the
+  // click cannot drift apart.
+  const { save } = useSaveFile();
+  const layout = useLayoutState(save);
   const theme = useTheme();
+  // Optional, like the sidebar's own sync lookups: a tree assembled without the
+  // gist providers must still open and read files. Absent means nothing is on
+  // GitHub, so every close is the plain local one.
+  const sync = useOptionalSync();
 
   const contentRef = useRef<HTMLElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // The element the theme popover hangs from. Held here because the popover and
+  // the control that opened it live in different subtrees. State rather than a
+  // ref: the popover's position is derived from this node, so it has to be read
+  // during render, and a ref read that way is a render-time side effect.
+  const [themeAnchor, setThemeAnchor] = useState<HTMLElement | null>(null);
+  const openThemes = useCallback(
+    (anchor: HTMLElement) => {
+      setThemeAnchor(anchor);
+      layout.setPopoverOpen(true);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [layout.setPopoverOpen],
+  );
 
   const { active, activeName } = library;
   const source = active?.editedContent ?? '';
@@ -31,6 +54,36 @@ export function AppShell() {
   const contentReady = useDeferredRender(activeName, source);
   const scrollSpy = useScrollSpy(contentRef, source, contentReady);
   const { recordScroll } = useScrollRestoration(contentRef, activeName);
+
+  /**
+   * Removes files locally *and* deletes their GitHub copies, which is what the
+   * confirmations promise.
+   *
+   * The remote delete goes first, deliberately. The gist id lives on the local
+   * record, so removing the file first would throw away the only pointer to the
+   * thing being deleted — the copy would survive on the account with nothing
+   * left to reach it by. Doing it in this order costs a moment of delay before
+   * the row disappears and makes the failure case recoverable instead.
+   *
+   * A failure leaves the local file alone. The user asked for one action, not
+   * two, and half-completing it silently is worse than not starting: the row is
+   * still there, still says what it is, and the delete can be tried again.
+   */
+  const closeAndDeleteRemotes = useCallback(
+    async (names: string[], removeLocally: () => void | Promise<void>) => {
+      const failed = sync ? await sync.deleteRemotes(names) : [];
+      if (failed.length > 0) {
+        // Kept local so the files are still visible and still deletable. This
+        // reports rather than resolves: there is no per-file error surface in
+        // the sidebar for a file that no longer exists, and inventing one for
+        // an offline delete is more machinery than the case earns.
+        console.error('Kept locally — could not delete from GitHub:', failed.join(', '));
+        return;
+      }
+      await removeLocally();
+    },
+    [sync],
+  );
 
   const onScroll: React.UIEventHandler<HTMLElement> = useCallback(
     (e) => {
@@ -91,6 +144,31 @@ export function AppShell() {
     }
   }, [library]);
 
+  /**
+   * A new document opens straight into the editor.
+   *
+   * It has no content yet, so the reader has nothing to show and every route to
+   * giving it some runs through the editor — leaving the user on an empty
+   * preview would make the file they just asked for look like it failed to
+   * open. The panes are switched before the await so the editor is already
+   * there when the file lands, rather than appearing a beat later.
+   *
+   * `setMobileTab` is what makes this work on a phone, where the editor and the
+   * reader are tabs of the same space rather than two panes side by side.
+   */
+  const createFile = useCallback(
+    (name: string) => {
+      layout.setEditing(true);
+      layout.setMobileTab('source');
+      layout.setDrawerOpen(false);
+      library.createFile(name).catch((err: unknown) => {
+        console.error('Failed to create file', err);
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [library.createFile, layout.setEditing, layout.setMobileTab, layout.setDrawerOpen],
+  );
+
   const handleFileInputChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       library.openViaInput(e.target.files).catch((err: unknown) => {
@@ -104,7 +182,10 @@ export function AppShell() {
   const showSnapshotPill = !!active && (active.kind === 'snapshot' || active.perm === 'denied');
   const snapshotDenied = active?.perm === 'denied';
   const snapshotLabel = snapshotDenied ? 'access denied' : 'snapshot';
-  const themeDot = theme.activeTheme.tokens['--bg'];
+  // The same four-swatch shorthand the theme picker uses for every entry, so
+  // the ⋯ panel's theme row and the list it opens describe a theme the same way.
+  const t = theme.activeTheme.tokens;
+  const themeDots = [t['--bg'], t['--fg'], t['--link'], t['--code-bg']];
 
   const isMobile = mode === 'mobile';
   const hasFile = !!active;
@@ -155,17 +236,17 @@ export function AppShell() {
       <Toolbar
         mode={mode}
         activeFileName={active?.name ?? null}
+        onOpenThemes={openThemes}
         dirty={dirty}
         showSnapshotPill={showSnapshotPill}
         snapshotLabel={snapshotLabel}
         snapshotDenied={!!snapshotDenied}
         editing={layout.editing}
         themeName={theme.activeTheme.name}
-        themeDot={themeDot}
+        themeDots={themeDots}
         sidebarOpen={layout.sidebarOpen}
         onToggleDrawer={layout.toggleDrawer}
         onToggleEdit={layout.toggleEdit}
-        onTogglePopover={layout.togglePopover}
         onToggleSidebar={layout.toggleSidebar}
       />
       <ProgressBar progress={scrollSpy.progress} loading={hasFile && !contentReady} />
@@ -201,17 +282,24 @@ export function AppShell() {
             library.setActiveName(name);
             layout.setDrawerOpen(false);
           }}
-          onCloseFile={library.closeFile}
+          onGitHub={sync ? sync.leavesRemoteBehind : () => false}
+          onCloseFile={(name) => {
+            void closeAndDeleteRemotes([name], () => library.closeFile(name));
+          }}
           onGrantAccess={(name) => {
             library.grantAccess(name).catch((err: unknown) => {
               console.error('Failed to grant access', err);
             });
           }}
           onOpenFileClick={openFileInput}
+          onNewFile={createFile}
           storageUsedBytes={library.storageUsedBytes}
           storageQuotaBytes={library.storageQuotaBytes}
           onClearAll={() => {
-            library.clearAll().catch((err: unknown) => {
+            closeAndDeleteRemotes(
+              library.files.map((f) => f.name),
+              () => library.clearAll(),
+            ).catch((err: unknown) => {
               console.error('Failed to clear library', err);
             });
           }}
@@ -223,9 +311,14 @@ export function AppShell() {
           onCreateFolder={library.createFolder}
           onRenameFolder={library.renameFolder}
           onUngroupFolder={library.ungroupFolder}
-          // Async like clearAll above, so it takes the same terminal catch.
+          // Async like clearAll above, so it takes the same terminal catch. The
+          // member names are read here, before anything is removed — inside
+          // `deleteFolderAndFiles` the folder is already gone.
           onDeleteFolderAndFiles={(id) => {
-            library.deleteFolderAndFiles(id).catch((err: unknown) => {
+            closeAndDeleteRemotes(
+              library.files.filter((f) => f.folderId === id).map((f) => f.name),
+              () => library.deleteFolderAndFiles(id),
+            ).catch((err: unknown) => {
               console.error('Failed to delete folder', err);
             });
           }}
@@ -269,7 +362,15 @@ export function AppShell() {
         {mode === 'desktop' && hasFile && !layout.editing && (
           <TocRail toc={scrollSpy.toc} activeId={scrollSpy.activeId} onSelect={scrollSpy.goTo} />
         )}
-        {layout.popoverOpen && <ThemePopover mode={mode} onClose={layout.closePopover} />}
+        {layout.popoverOpen && (
+          <ThemePopover
+            // ⌘K opens without going through `openThemes`, so there may be no
+            // stored anchor. The ⋯ button is where the theme control now lives,
+            // so the popover lands under it either way.
+            anchor={themeAnchor ?? document.querySelector<HTMLElement>('[data-theme-anchor]')}
+            onClose={layout.closePopover}
+          />
+        )}
         {layout.dragging && <DragOverlay />}
       </div>
       <input

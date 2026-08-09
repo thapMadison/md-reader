@@ -3,6 +3,7 @@ import { Article } from '@/features/reader/Article';
 import { LoadingSkeleton } from '@/features/reader/LoadingSkeleton';
 import { useChromePattern } from '@/features/theming/ThemeContext';
 import { NOTCH_CONTENT_INSET, effectivePattern } from './chromePattern';
+import { ConflictBanner } from '@/features/sync/ConflictBanner';
 import type { LibraryFile } from '@/features/library/types';
 
 interface ContentAreaProps {
@@ -78,6 +79,11 @@ export function ContentArea({
         ...(notched ? { paddingLeft: NOTCH_CONTENT_INSET } : null),
       }}
     >
+      {/* Above the permission banner: a conflict is about work that already
+          exists on both sides, where the access prompt is about a file the user
+          can re-grant at any time. It renders itself away when there is no
+          conflict, so no gate is needed here. */}
+      {activeFile && <ConflictBanner name={activeFile.name} />}
       {showPermBanner && (
         <div
           style={{

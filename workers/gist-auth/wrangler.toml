@@ -1,0 +1,31 @@
+name = "md-reader-gist-auth"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# No KV, no D1, no Durable Objects, and no `[observability]` logging block —
+# deliberately. This Worker handles an OAuth code and the token it exchanges
+# for, and neither should ever come to rest anywhere. Adding storage here means
+# adding a place a token can leak from.
+
+[vars]
+# Public half of the OAuth App credential pair. Safe in source control: the
+# client id is sent to the browser during the redirect anyway. Its partner,
+# GITHUB_CLIENT_SECRET, is set with `wrangler secret put` and never appears here.
+GITHUB_CLIENT_ID = "Ov23li8awhxQHa7uGWwl"
+
+# Comma-separated exact origins allowed to call this Worker. Never "*": this
+# endpoint turns a code into a token, so a wildcard lets any page on the web
+# borrow your OAuth App as its own token-exchange service.
+#
+# localhost is listed for `npm run dev`, and stays — a deliberate call, not an
+# oversight left over from setup.
+#
+# What it costs: anything running on this machine at :5173 can call the
+# exchange. What it does not cost: a token. The endpoint only trades a valid
+# OAuth `code` for one, and a code reaches the browser solely through this
+# OAuth App's own callback — so an attacker already needs to have driven the
+# user through a real GitHub sign-in. Against that, dropping it would mean
+# every sync change had to be built and deployed before it could be tried once.
+#
+# Revisit if this app ever stops being a single-owner project.
+ALLOWED_ORIGINS = "https://md-reader.thapora.com,http://localhost:5173"

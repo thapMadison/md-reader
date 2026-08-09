@@ -2,16 +2,22 @@ import { openDB, type IDBPDatabase } from 'idb';
 import type {
   StorageEstimate,
   StorageService,
+  StoredAuth,
   StoredFileRecord,
   StoredPreferences,
 } from './types';
 import { MAX_STORAGE_BYTES, StorageQuotaExceededError } from './types';
 
 const DB_NAME = 'mdreader';
-const DB_VERSION = 1;
+// 2 adds the `auth` store. The bump is required because a new object store can
+// only be created inside an upgrade transaction — unlike the optional fields on
+// StoredFileRecord, which need no migration.
+const DB_VERSION = 2;
 const FILES_STORE = 'files';
 const PREFS_STORE = 'preferences';
 const PREFS_KEY = 'preferences';
+const AUTH_STORE = 'auth';
+const AUTH_KEY = 'github';
 
 // How long to wait for the database to open before giving up.
 //
@@ -51,6 +57,12 @@ function openMdReaderDb(): Promise<IDBPDatabase> {
       }
       if (!db.objectStoreNames.contains(PREFS_STORE)) {
         db.createObjectStore(PREFS_STORE);
+      }
+      // Its own store, not a key in preferences: clearAll() empties that one,
+      // so the sidebar's "Clear all" would sign the user out as a side effect
+      // of deleting their files.
+      if (!db.objectStoreNames.contains(AUTH_STORE)) {
+        db.createObjectStore(AUTH_STORE);
       }
     },
     // Another tab is holding the previous version open, so the upgrade cannot
@@ -144,10 +156,48 @@ export function createIdbStorageService(): StorageService {
       await db.delete(FILES_STORE, name);
     },
 
+    // Clears the library, deliberately not AUTH_STORE. "Clear all" is about the
+    // user's documents; silently signing them out as well would be a second,
+    // unrequested action behind one button.
     async clearAll() {
       const db = await dbPromise;
       await db.clear(FILES_STORE);
       await db.clear(PREFS_STORE);
+    },
+
+    async patchSync(name, patch) {
+      const db = await dbPromise;
+      const tx = db.transaction(FILES_STORE, 'readwrite');
+      const store = tx.objectStore(FILES_STORE);
+      const existing = (await store.get(name)) as StoredFileRecord | undefined;
+      // The file was closed while the request was in flight. Writing would
+      // resurrect it — with only sync fields and no content, which is worse
+      // than not writing at all.
+      if (!existing) {
+        await tx.done;
+        return;
+      }
+      // No quota check: these fields are a handful of short strings and numbers
+      // against a 100MB budget, and `content` is untouched. Refusing to record
+      // a completed push because the library is full would leave the local copy
+      // permanently disagreeing with the gist.
+      await store.put({ ...existing, ...patch });
+      await tx.done;
+    },
+
+    async setFolder(name, folderId) {
+      const db = await dbPromise;
+      const tx = db.transaction(FILES_STORE, 'readwrite');
+      const store = tx.objectStore(FILES_STORE);
+      const existing = (await store.get(name)) as StoredFileRecord | undefined;
+      if (!existing) {
+        await tx.done;
+        return;
+      }
+      // No quota check, as in patchSync: `content` is untouched and a folder id
+      // is a few dozen bytes against a 100MB budget.
+      await store.put({ ...existing, folderId });
+      await tx.done;
     },
 
     // Reports against the app's own cap, not navigator.storage.estimate(). That
@@ -166,15 +216,40 @@ export function createIdbStorageService(): StorageService {
       return (await db.get(PREFS_STORE, PREFS_KEY)) ?? {};
     },
 
+    // Read and write in one transaction, the same shape as patchSync above.
+    // Preferences are a single record holding unrelated things — theme, scroll
+    // positions, folders — so every writer patches the same object. Reading
+    // outside a transaction lets two concurrent patches both start from the
+    // same snapshot, and the second write silently drops the first: a folder
+    // created by one pull disappears when another pull writes back a
+    // `folders` array it read before that folder existed.
     async setPreferences(patch) {
       const db = await dbPromise;
-      const current = (await db.get(PREFS_STORE, PREFS_KEY)) ?? {};
+      const tx = db.transaction(PREFS_STORE, 'readwrite');
+      const store = tx.objectStore(PREFS_STORE);
       try {
-        await db.put(PREFS_STORE, { ...current, ...patch }, PREFS_KEY);
+        const current = ((await store.get(PREFS_KEY)) as StoredPreferences | undefined) ?? {};
+        await store.put({ ...current, ...patch }, PREFS_KEY);
+        await tx.done;
       } catch (err) {
         if (isQuotaError(err)) throw new StorageQuotaExceededError();
         throw err;
       }
+    },
+
+    async getAuth(): Promise<StoredAuth | undefined> {
+      const db = await dbPromise;
+      return db.get(AUTH_STORE, AUTH_KEY);
+    },
+
+    async setAuth(auth) {
+      const db = await dbPromise;
+      await db.put(AUTH_STORE, auth, AUTH_KEY);
+    },
+
+    async clearAuth() {
+      const db = await dbPromise;
+      await db.delete(AUTH_STORE, AUTH_KEY);
     },
   };
 }

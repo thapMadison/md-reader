@@ -1,6 +1,7 @@
 import type {
   StorageEstimate,
   StorageService,
+  StoredAuth,
   StoredFileRecord,
   StoredPreferences,
 } from './types';
@@ -22,6 +23,7 @@ const contentBytes = (content: string): number => encoder.encode(content).length
 export function createFakeStorageService(options: FakeStorageOptions = {}): StorageService {
   const files = new Map<string, StoredFileRecord>();
   let preferences: StoredPreferences = {};
+  let auth: StoredAuth | undefined;
   const quotaBytes = options.quotaBytes ?? MAX_STORAGE_BYTES;
 
   function usedBytes(): number {
@@ -50,9 +52,26 @@ export function createFakeStorageService(options: FakeStorageOptions = {}): Stor
       files.delete(name);
     },
 
+    // Mirrors the idb adapter: `auth` deliberately survives, so a test that
+    // clears the library and then expects the user to still be signed in is
+    // exercising the real behaviour.
     async clearAll() {
       files.clear();
       preferences = {};
+    },
+
+    async patchSync(name, patch) {
+      const existing = files.get(name);
+      // No-op when the file is gone, matching idb: a file closed mid-request
+      // must not be resurrected as a content-less husk.
+      if (!existing) return;
+      files.set(name, { ...existing, ...patch });
+    },
+
+    async setFolder(name, folderId) {
+      const existing = files.get(name);
+      if (!existing) return;
+      files.set(name, { ...existing, folderId });
     },
 
     async estimate(): Promise<StorageEstimate> {
@@ -65,6 +84,18 @@ export function createFakeStorageService(options: FakeStorageOptions = {}): Stor
 
     async setPreferences(patch) {
       preferences = { ...preferences, ...patch };
+    },
+
+    async getAuth() {
+      return auth;
+    },
+
+    async setAuth(next) {
+      auth = next;
+    },
+
+    async clearAuth() {
+      auth = undefined;
     },
   };
 }

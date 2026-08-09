@@ -1,4 +1,6 @@
-import { ChevronDownIcon, EditIcon, HamburgerIcon, SidebarToggleIcon } from '@/components/ui/icons';
+import { EditIcon, HamburgerIcon, SidebarToggleIcon } from '@/components/ui/icons';
+import { SaveButton } from '@/features/sync/SaveButton';
+import { OverflowMenu } from './OverflowMenu';
 import {
   DATABEND_LOGO,
   DATABEND_WORDMARK,
@@ -21,11 +23,13 @@ interface ToolbarProps {
   snapshotDenied: boolean;
   editing: boolean;
   themeName: string;
-  themeDot: string;
+  /** The active theme's four sample colors, for the ⋯ panel's theme row. */
+  themeDots: string[];
   sidebarOpen: boolean;
   onToggleDrawer: () => void;
   onToggleEdit: () => void;
-  onTogglePopover: () => void;
+  /** Opens the theme popover under the element that requested it. */
+  onOpenThemes: (anchor: HTMLElement) => void;
   onToggleSidebar: () => void;
 }
 
@@ -38,10 +42,10 @@ export function Toolbar({
   snapshotDenied,
   editing,
   themeName,
-  themeDot,
+  themeDots,
   onToggleDrawer,
   onToggleEdit,
-  onTogglePopover,
+  onOpenThemes,
   onToggleSidebar,
 }: ToolbarProps) {
   const isMobile = mode === 'mobile';
@@ -100,6 +104,7 @@ export function Toolbar({
           <button
             onClick={onToggleDrawer}
             title="Files"
+            data-chrome-btn=""
             style={{
               flex: 'none',
               width: 30,
@@ -200,11 +205,22 @@ export function Toolbar({
             {snapshotLabel}
           </span>
         )}
+        {/* Sync sits here, with the name of the file it acts on. It pushes the
+            active document and nothing else, which is a claim the right-hand
+            cluster could not make for it — over there, among Edit and the theme
+            and the sidebar toggle, it read as "sync everything". */}
+        {activeFileName && <SaveButton compact={isMobile} />}
       </div>
+      {/* Three controls, down from five. What is left is what gets used while
+          reading — Edit and the sidebar toggle — plus one ⋯ for the settings
+          that are glanced at and rarely changed. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 'none' }}>
         <button
           onClick={onToggleEdit}
           title="Toggle editor (⌘E)"
+          // Ghost only. Filled with --link the button already reads as pressed,
+          // and the hover wash in index.css would fade it back towards the bar.
+          {...(editing ? null : { 'data-chrome-btn': '' })}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -224,43 +240,17 @@ export function Toolbar({
           <EditIcon />
           {!isMobile && <span>{editing ? 'Editing' : 'Edit'}</span>}
         </button>
-        <div style={{ width: 1, height: 20, background: 'var(--chrome-border)', margin: '0 1px' }} />
-        <button
-          onClick={onTogglePopover}
-          title="Switch theme (⌘K)"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 7,
-            height: 30,
-            padding: isMobile ? '0 8px' : '0 10px',
-            border: '1px solid var(--chrome-border)',
-            borderRadius: 7,
-            background: 'transparent',
-            color: 'var(--chrome-fg)',
-            fontSize: 12.5,
-            fontFamily: 'var(--font-ui)',
-            cursor: 'pointer',
-          }}
-        >
-          <span
-            style={{
-              flex: 'none',
-              width: 12,
-              height: 12,
-              borderRadius: '50%',
-              background: themeDot,
-              border: '1px solid var(--chrome-border)',
-              display: 'inline-block',
-            }}
-          />
-          {!isMobile && <span>{themeName}</span>}
-          {!isMobile && <ChevronDownIcon />}
-        </button>
+        <OverflowMenu
+          themeName={themeName}
+          themeDots={themeDots}
+          onOpenThemes={onOpenThemes}
+          showLabel={!isMobile}
+        />
         {!isMobile && (
           <button
             onClick={onToggleSidebar}
             title="Toggle sidebar (⌘\)"
+            data-chrome-btn=""
             style={{
               width: 30,
               height: 30,

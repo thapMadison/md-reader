@@ -530,3 +530,289 @@ describe('virtual folders', () => {
     expect(screen.getByTestId('folders').textContent?.split(',')).toHaveLength(1);
   });
 });
+
+describe('unsaved edits survive a reload', () => {
+  // A probe that can type and switch files, over a real provider. The edits are
+  // driven through editContent because that is the only path the editor uses.
+  function EditProbe() {
+    const { active, activeName, setActiveName, editContent, files, isDirty } = useLibrary();
+    return (
+      <div>
+        <button onClick={() => active && editContent(active.name, 'TYPED')}>type</button>
+        <button onClick={() => setActiveName(files.find((f) => f.name !== activeName)?.name ?? null)}>
+          switch
+        </button>
+        <div data-testid="active">{activeName ?? ''}</div>
+        <div data-testid="edited">{active?.editedContent ?? ''}</div>
+        <div data-testid="original">{active?.originalContent ?? ''}</div>
+        <div data-testid="dirty">{String(!!activeName && isDirty(activeName))}</div>
+      </div>
+    );
+  }
+
+  const renderEdit = (storage: StorageService) =>
+    render(
+      <StorageProvider service={storage}>
+        <LibraryProvider>
+          <EditProbe />
+        </LibraryProvider>
+      </StorageProvider>,
+    );
+
+  it('restores an edit that was never explicitly saved', async () => {
+    // The gap this phase closes: before, editContent only set state, so a
+    // reload silently discarded everything typed since the file was opened.
+    const storage = createFakeStorageService();
+    await storage.saveFile({
+      name: 'a.md',
+      content: 'from disk',
+      editedContent: 'WHAT I TYPED LAST TIME',
+      kind: 'snapshot',
+      savedAt: 1,
+    });
+
+    renderEdit(storage);
+
+    await waitFor(() => expect(screen.getByTestId('edited')).toHaveTextContent('WHAT I TYPED LAST TIME'));
+    // Both sides are kept apart: the original is still there to revert to.
+    expect(screen.getByTestId('original')).toHaveTextContent('from disk');
+    expect(screen.getByTestId('dirty')).toHaveTextContent('true');
+  });
+
+  it('does not resurrect an edit that was reverted before the reload', async () => {
+    // A clean file stores no editedContent at all, so the absent field has to
+    // read back as "clean" rather than as an empty edit.
+    const storage = createFakeStorageService();
+    await storage.saveFile({ name: 'a.md', content: 'from disk', kind: 'snapshot', savedAt: 1 });
+
+    renderEdit(storage);
+
+    await waitFor(() => expect(screen.getByTestId('edited')).toHaveTextContent('from disk'));
+    expect(screen.getByTestId('dirty')).toHaveTextContent('false');
+  });
+
+  it('writes the edit to storage after the debounce', async () => {
+    const storage = createFakeStorageService();
+    await storage.saveFile({ name: 'a.md', content: 'from disk', kind: 'snapshot', savedAt: 1 });
+
+    renderEdit(storage);
+    await waitFor(() => expect(screen.getByTestId('active')).toHaveTextContent('a.md'));
+    await userEvent.setup().click(screen.getByText('type'));
+
+    await waitFor(async () => expect((await storage.getFile('a.md'))?.editedContent).toBe('TYPED'), {
+      timeout: 3000,
+    });
+  });
+
+  it('flushes the pending edit when the tab is hidden', async () => {
+    // The safety net for the debounce. Without it, anything typed in the last
+    // second before a tab is backgrounded or closed is gone — and on mobile,
+    // being backgrounded is the ordinary way an app is left.
+    const storage = createFakeStorageService();
+    await storage.saveFile({ name: 'a.md', content: 'from disk', kind: 'snapshot', savedAt: 1 });
+
+    renderEdit(storage);
+    await waitFor(() => expect(screen.getByTestId('active')).toHaveTextContent('a.md'));
+    await userEvent.setup().click(screen.getByText('type'));
+
+    // Before the debounce could have fired.
+    expect((await storage.getFile('a.md'))?.editedContent).toBeUndefined();
+
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    await waitFor(async () => expect((await storage.getFile('a.md'))?.editedContent).toBe('TYPED'));
+  });
+
+  it('flushes the pending edit when the user switches files', async () => {
+    const storage = createFakeStorageService();
+    await storage.saveFile({ name: 'a.md', content: 'A', kind: 'snapshot', savedAt: 1 });
+    await storage.saveFile({ name: 'b.md', content: 'B', kind: 'snapshot', savedAt: 2 });
+
+    renderEdit(storage);
+    await waitFor(() => expect(screen.getByTestId('active')).toHaveTextContent('a.md'));
+    const user = userEvent.setup();
+    await user.click(screen.getByText('type'));
+    await user.click(screen.getByText('switch'));
+
+    await waitFor(async () => expect((await storage.getFile('a.md'))?.editedContent).toBe('TYPED'));
+  });
+});
+
+describe('contentUpdatedAt tracks content, not touches', () => {
+  it('does not move when a persist rewrites the record with identical content', async () => {
+    // The reason this field exists rather than reusing savedAt, which every
+    // persist rewrites. Typing and then reverting ends with the same bytes on
+    // both sides: the record is written again, but nothing about the content
+    // changed, so the version marker must stay put. If it moved, the file would
+    // look newer than the gist and offer to push over a remote copy that is
+    // in fact identical.
+    const storage = createFakeStorageService();
+    await storage.saveFile({
+      name: 'a.md',
+      content: 'same bytes',
+      kind: 'snapshot',
+      savedAt: 1,
+      contentUpdatedAt: 111,
+    });
+
+    function RevertProbe() {
+      const { active, editContent, revertContent } = useLibrary();
+      return (
+        <div>
+          <button onClick={() => active && editContent(active.name, 'scratch')}>type</button>
+          <button onClick={() => active && revertContent(active.name)}>revert</button>
+          <div data-testid="edited">{active?.editedContent ?? ''}</div>
+        </div>
+      );
+    }
+
+    render(
+      <StorageProvider service={storage}>
+        <LibraryProvider>
+          <RevertProbe />
+        </LibraryProvider>
+      </StorageProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('edited')).toHaveTextContent('same bytes'));
+    const user = userEvent.setup();
+    await user.click(screen.getByText('type'));
+    await user.click(screen.getByText('revert'));
+
+    // The debounced write lands with content unchanged from what was stored.
+    await waitFor(async () => expect((await storage.getFile('a.md'))?.savedAt).not.toBe(1), {
+      timeout: 3000,
+    });
+    expect((await storage.getFile('a.md'))?.contentUpdatedAt).toBe(111);
+  });
+
+  it('moves when the file actually changed on disk', async () => {
+    const storage = createFakeStorageService();
+    const disk = { text: 'DIFFERENT bytes' };
+    await storage.saveFile({
+      name: 'a.md',
+      content: 'old bytes',
+      kind: 'live',
+      handle: fakeHandle('a.md', disk),
+      savedAt: 1,
+      contentUpdatedAt: 111,
+    });
+
+    renderLibrary(storage);
+    await waitFor(() => expect(screen.getByTestId('original')).toHaveTextContent('DIFFERENT bytes'));
+
+    await waitFor(async () => {
+      const r = await storage.getFile('a.md');
+      expect(r?.content).toBe('DIFFERENT bytes');
+    });
+  });
+});
+
+describe("createFile", () => {
+  // Drives creation from inside the provider and reports enough of the
+  // resulting library to tell a new row from a replaced one.
+  function CreateProbe({ name }: { name: string }) {
+    const { active, createFile, files } = useLibrary();
+    return (
+      <div>
+        <button onClick={() => void createFile(name)}>create</button>
+        <div data-testid="names">{files.map((f) => f.name).join(",")}</div>
+        <div data-testid="active">{active?.name ?? ""}</div>
+        <div data-testid="edited">{active?.editedContent ?? ""}</div>
+      </div>
+    );
+  }
+
+  const renderCreate = (storage: StorageService, name: string, strict = false) => {
+    const tree = (
+      <StorageProvider service={storage}>
+        <LibraryProvider>
+          <CreateProbe name={name} />
+        </LibraryProvider>
+      </StorageProvider>
+    );
+    return render(strict ? <StrictMode>{tree}</StrictMode> : tree);
+  };
+
+  const seed = async (storage: StorageService, name: string) => {
+    await storage.saveFile({ name, content: "existing", kind: "snapshot", savedAt: 1 });
+  };
+
+  it("writes the new document to storage, so it survives a reload", async () => {
+    const storage = createFakeStorageService();
+    await seed(storage, "a.md");
+
+    renderCreate(storage, "Meeting notes");
+    await waitFor(() => expect(screen.getByTestId("names")).toHaveTextContent("a.md"));
+    await userEvent.setup().click(screen.getByText("create"));
+
+    await waitFor(async () =>
+      expect((await storage.getFile("Meeting notes.md"))?.content).toContain("# Meeting notes"),
+    );
+    expect((await storage.getFile("Meeting notes.md"))?.kind).toBe("snapshot");
+  });
+
+  it("activates the new file, since the point of creating one is to write in it", async () => {
+    const storage = createFakeStorageService();
+    await seed(storage, "a.md");
+
+    renderCreate(storage, "notes.md");
+    await waitFor(() => expect(screen.getByTestId("names")).toHaveTextContent("a.md"));
+    await userEvent.setup().click(screen.getByText("create"));
+
+    await waitFor(() => expect(screen.getByTestId("active")).toHaveTextContent("notes.md"));
+  });
+
+  // Files are keyed by name and nothing asks before reusing one, so a clash has
+  // to become a second file. Replacing the existing record would destroy a real
+  // document to make room for a blank one.
+  it("never overwrites a file that already has the name", async () => {
+    const storage = createFakeStorageService();
+    await seed(storage, "notes.md");
+
+    renderCreate(storage, "notes.md");
+    await waitFor(() => expect(screen.getByTestId("names")).toHaveTextContent("notes.md"));
+    await userEvent.setup().click(screen.getByText("create"));
+
+    await waitFor(() => expect(screen.getByTestId("names")).toHaveTextContent("notes.md,notes 2.md"));
+    expect((await storage.getFile("notes.md"))?.content).toBe("existing");
+  });
+
+  it("names an unnamed file rather than creating one with no name at all", async () => {
+    const storage = createFakeStorageService();
+    await seed(storage, "a.md");
+
+    renderCreate(storage, "   ");
+    await waitFor(() => expect(screen.getByTestId("names")).toHaveTextContent("a.md"));
+    await userEvent.setup().click(screen.getByText("create"));
+
+    await waitFor(() => expect(screen.getByTestId("names")).toHaveTextContent("Untitled.md"));
+  });
+
+  // StrictMode invokes updaters twice. A name searched for or an id minted
+  // inside one would differ between the two passes, leaving a duplicate row.
+  it("adds exactly one file under StrictMode, which invokes updaters twice", async () => {
+    const storage = createFakeStorageService();
+    await seed(storage, "a.md");
+
+    renderCreate(storage, "notes.md", true);
+    await waitFor(() => expect(screen.getByTestId("names")).toHaveTextContent("a.md"));
+    await userEvent.setup().click(screen.getByText("create"));
+
+    await waitFor(() => expect(screen.getByTestId("active")).toHaveTextContent("notes.md"));
+    expect(screen.getByTestId("names").textContent).toBe("a.md,notes.md");
+  });
+
+  it("starts clean, so the new file is not born offering to revert itself to nothing", async () => {
+    const storage = createFakeStorageService();
+    await seed(storage, "a.md");
+
+    renderCreate(storage, "notes.md");
+    await waitFor(() => expect(screen.getByTestId("names")).toHaveTextContent("a.md"));
+    await userEvent.setup().click(screen.getByText("create"));
+
+    await waitFor(() => expect(screen.getByTestId("edited")).toHaveTextContent("# notes"));
+    expect((await storage.getFile("notes.md"))?.editedContent).toBeUndefined();
+  });
+});
