@@ -45,7 +45,12 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-export const HEADING_MARKER_STYLE_DEFAULT = TOKEN_CONTRACT.find(
+// The contract's own defaults, looked up rather than restated. Every one of
+// these backs a non-throwing hook below, which is the only thing that reads them
+// — they are deliberately not exported: a consumer wanting a token's default
+// should call the hook, so the fallback stays in one place instead of being
+// re-implemented at each call site.
+const HEADING_MARKER_STYLE_DEFAULT = TOKEN_CONTRACT.find(
   (t) => t.name === '--heading-marker-style',
 )!.default;
 
@@ -165,8 +170,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const importTheme = useCallback(
     (raw: unknown) => {
       const result = validateThemeFile(raw);
-      if (result.errors.length > 0) {
-        setImportErrors(result.errors.slice(0, 6));
+      // `!result.name` is not redundant with the error check, and it is not
+      // defensive padding either: it is what narrows `name` to a string for the
+      // theme below. It used to be a `!` assertion resting on the validator
+      // rejecting every nameless file, and that assumption was wrong — a truthy
+      // non-string name passed validation and arrived here as `undefined`,
+      // producing a theme persisted under a blank label. The validator has been
+      // fixed, so this branch should now be unreachable; testing it here is what
+      // keeps a future change over there from silently reopening the hole.
+      if (result.errors.length > 0 || !result.name) {
+        setImportErrors(
+          result.errors.length > 0 ? result.errors.slice(0, 6) : ['name: required, got nothing'],
+        );
         return;
       }
       const mode = result.mode ?? 'light';
@@ -175,7 +190,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const tokens = mergeThemeTokens(mode, base.tokens, result.tokens);
       const theme: CustomTheme = {
         id: `imported-${Date.now()}`,
-        name: result.name!,
+        name: result.name,
         mode,
         badge: mode === 'dark' ? 'Dark' : 'Light',
         tokens,
@@ -250,7 +265,7 @@ export function useHeadingMarkerStyle(): string {
   return ctx?.resolvedTokens['--heading-marker-style'] ?? HEADING_MARKER_STYLE_DEFAULT;
 }
 
-export const TABLE_STYLE_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--table-style')!.default;
+const TABLE_STYLE_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--table-style')!.default;
 
 // Read in JS for a different reason than the marker above: not to decide what to
 // render, but because a CSS selector cannot branch on a custom property's value.
@@ -260,7 +275,7 @@ export function useTableStyle(): string {
   return ctx?.resolvedTokens['--table-style'] ?? TABLE_STYLE_DEFAULT;
 }
 
-export const CHROME_ACCENT_SHAPE_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--chrome-accent-shape')!.default;
+const CHROME_ACCENT_SHAPE_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--chrome-accent-shape')!.default;
 
 // Read in JS for the same reason as useTableStyle: the two shapes differ in
 // their per-corner radii, not only in one property, so the choice cannot be
@@ -275,8 +290,8 @@ export function useChromeAccentShape(): string {
   return ctx?.resolvedTokens['--chrome-accent-shape'] ?? CHROME_ACCENT_SHAPE_DEFAULT;
 }
 
-export const CHROME_PATTERN_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--chrome-pattern')!.default;
-export const CHROME_PATTERN_INK_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--chrome-pattern-ink')!.default;
+const CHROME_PATTERN_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--chrome-pattern')!.default;
+const CHROME_PATTERN_INK_DEFAULT = TOKEN_CONTRACT.find((t) => t.name === '--chrome-pattern-ink')!.default;
 const CHROME_PATTERN_OPACITY_DEFAULT = TOKEN_CONTRACT.find(
   (t) => t.name === '--chrome-pattern-opacity',
 )!.default;
@@ -284,7 +299,7 @@ const CHROME_PATTERN_OPACITY_DEFAULT = TOKEN_CONTRACT.find(
 // The density every pattern's geometry is drawn at. A theme's own opacity is
 // expressed as a multiple of this rather than as an absolute alpha, so one token
 // scales motifs whose layers carry a dozen different alphas between them.
-export const PATTERN_REFERENCE_OPACITY = Number(CHROME_PATTERN_OPACITY_DEFAULT);
+const PATTERN_REFERENCE_OPACITY = Number(CHROME_PATTERN_OPACITY_DEFAULT);
 
 // The ceiling, and it is a legibility rule rather than a syntax one — which is
 // why it is enforced here and not in the length predicate. Past this the densest
@@ -318,7 +333,13 @@ export function useChromePattern(): ChromePattern {
 
   return {
     pattern: tokens?.['--chrome-pattern'] ?? CHROME_PATTERN_DEFAULT,
-    ink: tokens?.['--chrome-pattern-ink'] === 'dark' ? 'dark' : 'light',
+    // Through the contract default rather than straight to `'light'`. The two
+    // agree today, and that agreement was the problem: the literal was the same
+    // decision written a second time, so flipping the contract's default would
+    // have changed every themed panel and quietly left the no-provider path on
+    // the old value. The `=== 'dark'` narrowing stays — it is what turns an
+    // arbitrary token string into the union, and the default is a string too.
+    ink: (tokens?.['--chrome-pattern-ink'] ?? CHROME_PATTERN_INK_DEFAULT) === 'dark' ? 'dark' : 'light',
     opacityScale: opacity / PATTERN_REFERENCE_OPACITY,
   };
 }

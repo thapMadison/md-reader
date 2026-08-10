@@ -10,8 +10,9 @@ import {
 } from 'react';
 import { useStorage } from '@/services/storage/StorageContext';
 import { createGithubGistService } from './githubGist';
+import { AUTH_EXPIRED_EVENT } from './authExpired';
 import { beginSignIn, consumeCallback, exchangeCode, type OAuthConfig } from './oauth';
-import { GistAuthError, type GistService, type GistUser } from './types';
+import { type GistService, type GistUser } from './types';
 
 export type AuthStatus = 'loading' | 'signed-out' | 'signing-in' | 'signed-in';
 
@@ -160,8 +161,8 @@ export function GistAuthProvider({
   // -out transition is centralised here and reached by dispatching this event.
   useEffect(() => {
     const onExpired = () => void signOut();
-    window.addEventListener('mdreader:auth-expired', onExpired);
-    return () => window.removeEventListener('mdreader:auth-expired', onExpired);
+    window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
   }, [signOut]);
 
   const value = useMemo<GistAuthValue>(
@@ -196,11 +197,4 @@ export function useGistAuth(): GistAuthValue {
  */
 export function useOptionalGistAuth(): GistAuthValue | null {
   return useContext(GistAuthContext);
-}
-
-/** Signals that the stored token was rejected, so the app can sign out once, centrally. */
-export function reportAuthExpired(err: unknown): void {
-  if (err instanceof GistAuthError) {
-    window.dispatchEvent(new Event('mdreader:auth-expired'));
-  }
 }

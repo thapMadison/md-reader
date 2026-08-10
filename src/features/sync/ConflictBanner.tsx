@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { keepBothName, useOptionalSync, type ConflictResolution } from './SyncContext';
+import { useOptionalSync, type ConflictResolution } from './SyncContext';
+import { keepBothName } from './syncRules';
 
 /**
  * Shown over a document that changed both here and on GitHub.

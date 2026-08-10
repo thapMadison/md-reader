@@ -1,7 +1,8 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SyncProvider, keepBothName, useSync } from './SyncContext';
+import { SyncProvider, useSync } from './SyncContext';
+import { keepBothName } from './syncRules';
 import { ConflictBanner } from './ConflictBanner';
 import { LibraryProvider, useLibrary } from '@/features/library/LibraryContext';
 import { GistAuthProvider } from '@/services/gist/GistContext';

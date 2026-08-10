@@ -1,19 +1,9 @@
 import { supportsFileSystemAccess, type OpenedFile } from './types';
+import { MD_ACCEPT, isMarkdownFileName } from './extensions';
 
-// One list, used by the picker's filter and by the snapshot path's extension
-// check. They disagreed before: the picker offered .md/.markdown while the
-// <input> fallback also accepted .txt, so the same file was openable by one
-// route and silently dropped by the other.
-export const MD_EXTENSIONS = ['.md', '.markdown', '.txt'] as const;
-
-const MD_ACCEPT = { 'text/markdown': [...MD_EXTENSIONS] };
-
-const MD_EXTENSION_RE = new RegExp(`(${MD_EXTENSIONS.map((e) => `\\${e}`).join('|')})$`, 'i');
-
-async function readHandle(handle: FileSystemFileHandle): Promise<string> {
-  const file = await handle.getFile();
-  return file.text();
-}
+// Re-exported so existing importers keep working; the list itself now lives in
+// `extensions.ts`, which the gist service reads too.
+export { MD_EXTENSIONS } from './extensions';
 
 /**
  * Identity details for a live file, read fresh from disk.
@@ -88,7 +78,7 @@ export async function pickFilesLive(): Promise<OpenedFile[]> {
 export async function readFileListSettled(
   fileList: FileList | File[],
 ): Promise<{ files: OpenedFile[]; failed: string[] }> {
-  const candidates = Array.from(fileList).filter((f) => MD_EXTENSION_RE.test(f.name));
+  const candidates = Array.from(fileList).filter((f) => isMarkdownFileName(f.name));
   const results = await Promise.allSettled(
     candidates.map(
       (f) =>
@@ -121,5 +111,6 @@ export async function requestHandlePermission(handle: FileSystemFileHandle): Pro
 }
 
 export async function rereadHandle(handle: FileSystemFileHandle): Promise<string> {
-  return readHandle(handle);
+  const file = await handle.getFile();
+  return file.text();
 }

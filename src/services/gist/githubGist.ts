@@ -1,3 +1,4 @@
+import { isMarkdownFileName } from '@/services/filesystem/extensions';
 import {
   FileTooLargeToSyncError,
   GistApiError,
@@ -24,8 +25,41 @@ const MAX_PAGES = 50;
 
 const encoder = new TextEncoder();
 
-/** Marks a gist as belonging to this app, so listGists can ignore unrelated ones. */
+/** Prefix this app writes on every gist description it creates. */
 const DESCRIPTION_TAG = '[mdreader]';
+
+/**
+ * Whether this app wrote the gist, by its description prefix.
+ *
+ * The escape hatch in `keepsInListing` below, and it is not optional. The file
+ * picker deliberately applies no extension check to what the user chooses
+ * (`openFiles.ts`), so a synced document may legitimately be named `README`,
+ * `notes.mdx`, or anything else. Judging those by extension alone would drop
+ * them from the listing — and an absent gist is not read as "hidden" anywhere
+ * downstream, it is read as **deleted**: `stateOf` answers `gone`, and
+ * `enableSync` sees a dead binding and creates a *second* gist for a file that
+ * already had one. Filtering the listing must never be able to fabricate that.
+ */
+function isAppGist(gist: GistJson): boolean {
+  return (gist.description ?? '').startsWith(DESCRIPTION_TAG);
+}
+
+/**
+ * Whether a gist belongs in the library listing.
+ *
+ * Two ways in. Anything this app wrote stays, whatever it is called — see
+ * `isAppGist`. Everything else has to look like markdown by name, which is all
+ * the evidence `GET /gists` offers: it carries no content and no MIME type.
+ *
+ * The point is the account that is not a documents account. Gist is where people
+ * keep shell one-liners, dotfiles and CI configs, and every one of those used to
+ * be listed under "On GitHub" and openable as a document. The filter is about
+ * that noise, not about safety — a foreign `.md` is still someone's own gist and
+ * still opens.
+ */
+function keepsInListing(gist: GistJson, file: GistFileJson): boolean {
+  return isAppGist(gist) || isMarkdownFileName(file.filename);
+}
 
 interface GistFileJson {
   filename: string;
@@ -210,11 +244,13 @@ export function createGithubGistService(token: string): GistService {
         const json = (await res.json()) as GistJson[];
         for (const g of json) {
           const file = primaryFile(g);
-          if (file) out.push(toMeta(g, file));
+          if (file && keepsInListing(g, file)) out.push(toMeta(g, file));
         }
-        // A short page means the last page. Checked against the requested size
-        // rather than reading the Link header, which is a parse away and says
-        // the same thing here.
+        // A short page means the last page — measured against what GitHub sent,
+        // never against `out.length`. The filter above can leave a full page
+        // contributing nothing, and a "did we collect fewer than PER_PAGE?" test
+        // would call that the end of the list and silently stop paginating with
+        // documents still unread.
         if (json.length < PER_PAGE) break;
       }
       return out;

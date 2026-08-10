@@ -146,7 +146,13 @@ export interface GistService {
   getUser(): Promise<GistUser>;
 
   /**
-   * Every gist owned by the user, metadata only.
+   * The user's markdown gists, metadata only.
+   *
+   * Not every gist on the account. Gist is also where people keep shell
+   * one-liners and dotfiles, and those are filtered out by filename — with one
+   * exception that matters: anything this app wrote is kept whatever it is
+   * called, because a gist missing from this list reads as *deleted* further up
+   * (see `keepsInListing` in githubGist.ts).
    *
    * Paginates internally: GitHub returns 30 per page, and a user with more
    * documents than that would otherwise see their library silently cut off at

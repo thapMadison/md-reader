@@ -2,7 +2,7 @@ import type { LayoutMode } from '@/hooks/useBreakpoint';
 import { Article } from '@/features/reader/Article';
 import { LoadingSkeleton } from '@/features/reader/LoadingSkeleton';
 import { useChromePattern } from '@/features/theming/ThemeContext';
-import { NOTCH_CONTENT_INSET, effectivePattern } from './chromePattern';
+import { NOTCH_CONTENT_INSET, effectivePattern } from './chromePatternStyles';
 import { ConflictBanner } from '@/features/sync/ConflictBanner';
 import type { LibraryFile } from '@/features/library/types';
 

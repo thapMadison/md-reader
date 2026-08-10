@@ -5,7 +5,7 @@ import { createFakeStorageService } from '@/services/storage/fakeStorage';
 import { StorageProvider } from '@/services/storage/StorageContext';
 import { ThemeProvider } from '@/features/theming/ThemeContext';
 import { BUILTIN_THEMES } from '@/themes/builtin';
-import { SIDEBAR_FACETS } from './chromePattern';
+import { SIDEBAR_FACETS } from './chromePatternStyles';
 import { Sidebar } from './Sidebar';
 import type { Folder, LibraryFile } from '@/features/library/types';
 

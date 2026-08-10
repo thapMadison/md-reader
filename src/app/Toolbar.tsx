@@ -1,16 +1,16 @@
 import { EditIcon, HamburgerIcon, SidebarToggleIcon } from '@/components/ui/icons';
 import { SaveButton } from '@/features/sync/SaveButton';
 import { OverflowMenu } from './OverflowMenu';
+import { ToolbarPatternLayer } from './chromePattern';
 import {
   DATABEND_LOGO,
   DATABEND_WORDMARK,
   FIGUREGROUND_LOGO_TAB,
   FIGUREGROUND_TOOLBAR,
   NOTCHED_TOOLBAR,
-  ToolbarPatternLayer,
   effectivePattern,
   unprintedPanelStyle,
-} from './chromePattern';
+} from './chromePatternStyles';
 import { useChromePattern } from '@/features/theming/ThemeContext';
 import type { LayoutMode } from '@/hooks/useBreakpoint';
 

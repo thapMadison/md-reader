@@ -8,19 +8,18 @@ import {
   PlusIcon,
 } from '@/components/ui/icons';
 import { ConfirmDialog, type Consequence } from '@/components/ui/ConfirmDialog';
+import { NotchClipDefs, SidebarPatternLayer } from './chromePattern';
 import {
   DATABEND_ACTIVE_ROW,
   FIGUREGROUND_LIST_OFFSET,
   FIGUREGROUND_SIDEBAR,
   NOTCHED_SIDEBAR,
-  NotchClipDefs,
-  SidebarPatternLayer,
   UNPRINTED_BUTTON,
   UNPRINTED_TEXT_ROW,
   effectivePattern,
   unprintedPanelStyle,
   unprintedSidebarNote,
-} from './chromePattern';
+} from './chromePatternStyles';
 import { INTERNAL_DRAG_TYPE } from './dragTypes';
 import { FIRST_SYNC_WARNING, SyncStatusIcon, useSyncMenuActions } from '@/features/sync/syncStatus';
 import { RemoteFileList } from '@/features/sync/RemoteFileList';

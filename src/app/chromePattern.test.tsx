@@ -1,17 +1,15 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ENUM_TOKEN_VALUES } from '@/themes/contract';
+import { NotchClipDefs, SidebarPatternLayer, ToolbarPatternLayer } from './chromePattern';
 import {
   NOTCHED_TOOLBAR,
-  NotchClipDefs,
   SIDEBAR_FACETS,
-  SidebarPatternLayer,
   TOOLBAR_FACETS,
-  ToolbarPatternLayer,
   effectivePattern,
   facetLayerStyle,
   isStructuralPattern,
-} from './chromePattern';
+} from './chromePatternStyles';
 import { tokens as azure } from '@/themes/builtin/azure-corporate/tokens';
 import type { LayoutMode } from '@/hooks/useBreakpoint';
 

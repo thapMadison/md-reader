@@ -105,6 +105,41 @@ describe('validateThemeFile', () => {
     expect(result.errors).toContain('name: required, got nothing');
   });
 
+  // A truthiness check alone passed all of these, while the string test on the
+  // way out still returned `undefined` — so the import site, which reads an
+  // empty `errors` as a promise that `name` is present, built a theme with no
+  // name and persisted it under a blank label.
+  it.each([42, true, { a: 1 }, ['x']])('rejects a truthy non-string name: %s', (name) => {
+    const result = validateThemeFile({ name, tokens: { '--bg': '#fff' } });
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.name).toBeUndefined();
+  });
+
+  it('rejects a whitespace-only name', () => {
+    const result = validateThemeFile({ name: '   ', tokens: { '--bg': '#fff' } });
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  // The invariant the import site actually depends on, stated once: no errors
+  // means `name` is a usable string.
+  it('never reports zero errors without a usable name', () => {
+    for (const name of [undefined, null, '', '  ', 0, 42, true, {}, []] as unknown[]) {
+      const result = validateThemeFile({ name, tokens: { '--bg': '#fff' } });
+      expect(result.errors.length === 0 && result.name === undefined).toBe(false);
+    }
+  });
+
+  it('reports an unrecognised mode rather than silently reading it as light', () => {
+    const result = validateThemeFile({ name: 'Typo', mode: 'drak', tokens: { '--bg': '#fff' } });
+    expect(result.errors).toContain('mode: expected one of light, dark, got "drak"');
+  });
+
+  it('accepts an absent mode, defaulting to light', () => {
+    const result = validateThemeFile({ name: 'No mode', tokens: { '--bg': '#fff' } });
+    expect(result.errors).toEqual([]);
+    expect(result.mode).toBe('light');
+  });
+
   it('reports empty tokens', () => {
     const result = validateThemeFile({ name: 'Empty', tokens: {} });
     expect(result.errors).toContain('tokens: expected at least --bg and --fg, got none');

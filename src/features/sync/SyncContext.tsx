@@ -10,18 +10,12 @@ import {
 } from 'react';
 import { useStorage } from '@/services/storage/StorageContext';
 import { useLibrary } from '@/features/library/LibraryContext';
-import { reportAuthExpired, useGistAuth } from '@/services/gist/GistContext';
+import { useGistAuth } from '@/services/gist/GistContext';
+import { reportAuthExpired } from '@/services/gist/authExpired';
 import { contentHash } from '@/services/gist/hash';
-import {
-  FileTooLargeToSyncError,
-  GistApiError,
-  MAX_SYNC_FILE_BYTES,
-  type GistFolderTag,
-  type GistMeta,
-} from '@/services/gist/types';
+import { FileTooLargeToSyncError, GistApiError, type GistFolderTag, type GistMeta } from '@/services/gist/types';
+import { canSync, keepBothName } from './syncRules';
 import type { StoredFileRecord, SyncPatch } from '@/services/storage/types';
-
-const encoder = new TextEncoder();
 
 /** What a record should say once `content` is known to match `meta`. */
 function syncPatchFor(meta: GistMeta, content: string): SyncPatch {
@@ -32,15 +26,6 @@ function syncPatchFor(meta: GistMeta, content: string): SyncPatch {
     remoteUpdatedAt: meta.updatedAt,
     syncedContentHash: contentHash(content),
   };
-}
-
-/** UTF-8 bytes, not `.length` — CJK and emoji undercount by three to four times. */
-export function syncableBytes(content: string): number {
-  return encoder.encode(content).length;
-}
-
-export function canSync(content: string): boolean {
-  return syncableBytes(content) <= MAX_SYNC_FILE_BYTES;
 }
 
 /**
@@ -67,20 +52,6 @@ export type ConflictResolution =
   | 'keep-mine' // push over the remote
   | 'take-remote' // discard local edits, pull
   | 'keep-both'; // pull the remote alongside, as a second file
-
-/**
- * Suffix for the copy kept by `keep-both`, before the extension:
- * `notes.md` → `notes (from GitHub).md`.
- */
-const KEEP_BOTH_SUFFIX = ' (from GitHub)';
-
-export function keepBothName(name: string): string {
-  const dot = name.lastIndexOf('.');
-  // No extension, or a leading dot with nothing before it (`.gitignore`), so
-  // there is no stem to suffix — append and leave the name intact.
-  if (dot <= 0) return `${name}${KEEP_BOTH_SUFFIX}`;
-  return `${name.slice(0, dot)}${KEEP_BOTH_SUFFIX}${name.slice(dot)}`;
-}
 
 export interface RemoteFile {
   gistId: string;

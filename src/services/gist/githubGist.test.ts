@@ -174,6 +174,72 @@ describe('listGists', () => {
   });
 });
 
+describe('listGists filters the account down to documents', () => {
+  // A gist nobody tagged, named like the snippets Gist is actually full of.
+  const foreign = (filename: string, over: Record<string, unknown> = {}) =>
+    gistJson({
+      id: `f-${filename}`,
+      description: 'deploy helper',
+      files: { [filename]: { filename, size: 9, content: 'x', raw_url: 'r' } },
+      ...over,
+    });
+
+  it('drops a foreign gist that is not markdown', async () => {
+    fetchMock.mockResolvedValue(reply([foreign('deploy.sh'), foreign('config.json')]));
+    expect(await service().listGists()).toEqual([]);
+  });
+
+  it('keeps a foreign gist that is markdown', async () => {
+    fetchMock.mockResolvedValue(reply([foreign('README.md'), foreign('deploy.sh')]));
+    const list = await service().listGists();
+    expect(list.map((g) => g.fileName)).toEqual(['README.md']);
+  });
+
+  it.each(['notes.md', 'notes.markdown', 'notes.txt', 'NOTES.MD'])(
+    'accepts %s, matching what the file picker opens',
+    async (filename) => {
+      fetchMock.mockResolvedValue(reply([foreign(filename)]));
+      expect(await service().listGists()).toHaveLength(1);
+    },
+  );
+
+  // The one that cannot be got wrong. The picker applies no extension check to
+  // what the user chooses, so a synced document may be named `README` or
+  // `notes.mdx` — and a gist missing from this listing is read as deleted, not
+  // as hidden: `stateOf` answers `gone` and `enableSync` creates a second gist
+  // for a file that already has one.
+  it.each(['README', 'notes.mdx', 'CHANGELOG'])(
+    'keeps this app\'s own gist named %s, which no extension test would match',
+    async (filename) => {
+      fetchMock.mockResolvedValue(
+        reply([
+          gistJson({
+            description: `[mdreader] ${filename}`,
+            files: { [filename]: { filename, size: 9, content: 'x', raw_url: 'r' } },
+          }),
+        ]),
+      );
+      const list = await service().listGists();
+      expect(list.map((g) => g.fileName)).toEqual([filename]);
+    },
+  );
+
+  // Pagination is driven by what GitHub sent, not by what survived the filter.
+  // A full page of shell snippets contributes nothing to `out`, and a
+  // "collected fewer than PER_PAGE" test would read that as the end of the list
+  // and stop — losing every document on page 2.
+  it('keeps paginating through a full page that the filter empties', async () => {
+    const allForeign = Array.from({ length: 100 }, (_, i) => foreign(`snippet${i}.sh`));
+    fetchMock
+      .mockResolvedValueOnce(reply(allForeign))
+      .mockResolvedValueOnce(reply([gistJson({ id: 'doc-on-page-2' })]));
+
+    const list = await service().listGists();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(list.map((g) => g.id)).toEqual(['doc-on-page-2']);
+  });
+});
+
 describe('the folder tag', () => {
   const tagged = (description: string) => gistJson({ description });
 
