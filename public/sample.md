@@ -1,76 +1,184 @@
-# MDReader sample document
+# 👋 Chào mừng đến với MDReader
 
-A short document exercising every element the renderer supports, for manual QA and
-Playwright screenshots.
+MDReader là trình đọc Markdown chạy **hoàn toàn trong trình duyệt** — không server, không
+upload. File bạn mở, dữ liệu bạn sửa, tất cả ở lại trên máy bạn.
 
-## Text formatting
+> [!TIP]
+> Đây chính là tài liệu bạn nhìn thấy đầu tiên khi mở MDReader lần đầu — nó vừa là hướng
+> dẫn sử dụng, vừa là bản demo sống của mọi tính năng render bên dưới. Cứ để nó mở và thử
+> từng phần trong khi đọc!
 
-Plain text with **bold**, *italic*, ~~strikethrough~~, `inline code`, and a [link](https://example.com).
-Here's a footnote reference[^1].
+## 🚀 Bắt đầu: mở file của bạn
 
-## Headings
+Có ba cách để đưa Markdown vào MDReader:
 
-### H3 heading
-#### H4 heading
-##### H5 heading
-###### H6 heading
+1. **Nút "Open" trên thanh công cụ** — nếu trình duyệt hỗ trợ File System Access API
+   (Chrome, Edge...), file được mở **"live"**: MDReader giữ một tham chiếu tới file thật,
+   đọc lại được để phát hiện thay đổi từ bên ngoài, và nhớ quyền truy cập cho lần sau.
+2. **Kéo-thả file** vào bất kỳ đâu trên cửa sổ — luôn mở dưới dạng **"snapshot"** (ảnh chụp
+   một lần), vì thao tác kéo-thả không bao giờ cấp được handle file thật.
+3. **Trình duyệt không hỗ trợ File System Access API** (Firefox, Safari...)? Nút Open sẽ
+   tự chuyển sang hộp thoại chọn file thông thường — cũng cho ra snapshot.
 
-## Lists
+<blockquote alt="warn">
 
-- Unordered item one
-- Unordered item two
-  - Nested circle item
-    - Nested square item
+**Ghi nhớ:** dù mở live hay snapshot, MDReader **không bao giờ ghi ngược chỉnh sửa ra file
+gốc trên đĩa**. "Live" chỉ nghĩa là đọc lại được (re-readable) — mọi thay đổi bạn gõ vào chỉ
+tồn tại trong bộ nhớ trình duyệt (IndexedDB), trừ khi bạn bật đồng bộ GitHub Gist (xem bên
+dưới) để có thêm một bản sao trên GitHub.
 
-1. Ordered item one
-2. Ordered item two
-   1. Nested lower-alpha item
-      1. Nested lower-roman item
+</blockquote>
 
-- [x] Completed task
-- [ ] Open task
-  - [x] Nested completed task
-  - [ ] Nested open task
+Ở thanh bên (sidebar), mỗi file hiện một huy hiệu trạng thái:
 
-## Blockquote
+| Trạng thái | Ý nghĩa |
+| --- | --- |
+| Live (đã cấp quyền) | Đọc lại được từ đĩa để phát hiện thay đổi bên ngoài |
+| Live (cần xin quyền) | Có nút **Grant access** để cấp lại quyền đọc |
+| Live (bị từ chối) | Chỉ còn bản sao trong bộ nhớ, không đọc lại được từ đĩa |
+| Snapshot | Không thể mở lại từ đĩa, chỉ sống trong trình duyệt |
 
-> A blockquote spanning
-> multiple lines, to check quote background and border styling.
+## 📁 Sắp xếp bằng thư mục
 
-## Callouts
+Quá nhiều file trong danh sách? Tạo **thư mục** ngay trong sidebar (mục "New folder"), rồi:
 
-GitHub marker syntax:
+- Kéo file vào tiêu đề thư mục để xếp vào (trên desktop); trên thiết bị cảm ứng, dùng menu
+  **"Move to…"** thay cho kéo-thả.
+- Chọn một thư mục để file mới mở/tạo tự động rơi vào đó.
+- Thu gọn thư mục khi không cần xem, hoặc **ungroup** để trả file về danh sách phẳng (không
+  mất dữ liệu).
+- Xoá thư mục sẽ xoá luôn mọi file bên trong — MDReader sẽ hỏi xác nhận trước khi làm.
+
+## ☁️ Đồng bộ qua GitHub Gist
+
+Muốn truy cập ghi chú từ nhiều máy? Đăng nhập GitHub (nút tài khoản trong menu **⋯**), rồi
+bật công tắc đồng bộ trên từng file riêng lẻ — đồng bộ là **tuỳ chọn theo từng file**, không
+có gì được đẩy lên nếu bạn không bật.
+
+- File đã đồng bộ được lưu thành một **secret gist** trên tài khoản của bạn.
+- Nhấn **Ctrl/Cmd+S** để lưu — thao tác này vừa ghi xuống bộ nhớ cục bộ, vừa đẩy lên gist
+  nếu file đang bật đồng bộ. MDReader **không tự động đẩy theo thời gian**, vì mỗi lần đẩy
+  tạo một revision mới trên gist.
+- Các gist Markdown có sẵn trên tài khoản nhưng chưa có ở máy này sẽ hiện trong mục
+  **"On GitHub"** — bấm vào để tải về như một file mới.
+- Khi có xung đột (sửa cả hai nơi), MDReader cho bạn chọn: **giữ bản của tôi**, **lấy bản
+  từ xa**, hoặc **giữ cả hai**.
+
+## 🎨 Đổi giao diện
+
+Nhấn **Ctrl/Cmd+K** (hoặc menu **⋯ → Theme**) để mở bảng chọn theme: tìm kiếm, lọc theo
+Sáng/Tối, xem trước màu trực tiếp trước khi chọn.
+
+MDReader đi kèm **13 theme dựng sẵn** — từ GitHub Light quen thuộc, Night Owl cho dân code
+đêm khuya, đến các bộ màu nghệ hơn như Konayuki, Phycat Vampire hay Rose Quartz. Không thích
+theme nào có sẵn? Dùng **Import theme…** để nạp file JSON theme tự thiết kế (xem
+[authoring-themes.md](authoring-themes.md) để biết cách tạo), hoặc **Export current** để
+tải theme đang dùng về máy.
+
+## ✏️ Chỉnh sửa & khôi phục
+
+Nhấn nút Edit (hoặc **Ctrl/Cmd+E**) để mở khung soạn thảo song song với bản xem trước. Mọi
+chỉnh sửa:
+
+- Tự lưu vào bộ nhớ trình duyệt sau ~1 giây ngừng gõ (hoặc ngay lập tức khi bạn rời khỏi
+  tab, ẩn cửa sổ, hoặc nhấn Ctrl/Cmd+S).
+- **Không bao giờ** ghi ngược ra file gốc trên đĩa — kể cả file live. Ctrl/Cmd+S chỉ lưu
+  vào IndexedDB (và đẩy lên gist nếu file đang bật đồng bộ), file thật trên máy bạn không
+  hề bị đụng tới.
+- Có thể huỷ bỏ bất cứ lúc nào bằng nút **Revert**, quay về đúng nội dung đã đọc lần cuối
+  từ đĩa (hoặc từ lần pull gist gần nhất).
+
+## ⌨️ Phím tắt cần nhớ
+
+| Phím | Chức năng |
+| --- | --- |
+| `Ctrl/Cmd + E` | Bật/tắt khung soạn thảo |
+| `Ctrl/Cmd + \` | Ẩn/hiện sidebar |
+| `Ctrl/Cmd + K` | Mở bảng chọn theme |
+| `Ctrl/Cmd + S` | Lưu (và đồng bộ nếu đang bật) |
+
+## 🧭 Mục lục & tiến trình đọc
+
+Bên phải màn hình (desktop) là mục lục tự cuộn theo vị trí đọc — bấm vào một mục để nhảy
+thẳng tới đó. Trên mobile, mục lục thu gọn thành một menu sổ xuống trong thanh phụ. Thanh
+tiến trình mỏng ngay dưới toolbar cho biết bạn đã đọc tới đâu, và MDReader còn nhớ vị trí
+cuộn của từng file cho lần mở sau.
+
+---
+
+# 🧪 Khu vực thử nghiệm hiển thị
+
+Phần dưới đây trình diễn mọi kiểu định dạng Markdown mà MDReader hỗ trợ — vừa để bạn khám
+phá cú pháp, vừa là bộ ảnh QA nội bộ.
+
+## Định dạng chữ
+
+Chữ thường với **đậm**, *nghiêng*, ~~gạch ngang~~, `code nội dòng`, và một
+[liên kết](https://example.com). Đây là chú thích cuối trang[^1].
+
+## Các cấp tiêu đề
+
+### Tiêu đề H3
+#### Tiêu đề H4
+##### Tiêu đề H5
+###### Tiêu đề H6
+
+## Danh sách
+
+- Mục không thứ tự một
+- Mục không thứ tự hai
+  - Mục con hình tròn
+    - Mục cháu hình vuông
+
+1. Mục có thứ tự một
+2. Mục có thứ tự hai
+   1. Mục con chữ thường
+      1. Mục cháu số La Mã
+
+- [x] Việc đã xong
+- [ ] Việc chưa làm
+  - [x] Việc con đã xong
+  - [ ] Việc con chưa làm
+
+## Trích dẫn
+
+> Một đoạn trích dẫn trải dài
+> qua nhiều dòng, để kiểm tra nền và viền của khối quote.
+
+## Callout (hộp ghi chú)
+
+Cú pháp marker kiểu GitHub:
 
 > [!NOTE]
-> Useful information the reader should notice.
+> Thông tin hữu ích mà người đọc nên chú ý.
 
 > [!WARNING]
-> Something that needs care.
+> Điều gì đó cần cẩn thận.
 
-The same cards via an `alt` attribute, for when the marker line is inconvenient:
+Cùng những hộp đó viết bằng thuộc tính `alt`, tiện khi dòng marker không phù hợp:
 
 <blockquote alt="info">
 
-An `info` callout, equivalent to `[!NOTE]`.
+Hộp `info`, tương đương `[!NOTE]`.
 
 </blockquote>
 
 <blockquote alt="success">
 
-A `success` callout, equivalent to `[!TIP]`.
+Hộp `success`, tương đương `[!TIP]`.
 
 </blockquote>
 
 <blockquote alt="danger">
 
-A `danger` callout, equivalent to `[!CAUTION]`.
+Hộp `danger`, tương đương `[!CAUTION]`.
 
 </blockquote>
 
-## Code
+## Mã nguồn
 
-Inline `const x = 1` code, and fenced blocks in several languages — together these
-exercise all twelve `--syn-*` tokens.
+Code nội dòng `const x = 1`, và các khối mã theo nhiều ngôn ngữ — cùng nhau kiểm tra đủ
+mười hai token màu `--syn-*`.
 
 ```js
 // Comment: strings, numbers, template substitution
@@ -143,65 +251,63 @@ done
 }
 ```
 
-An untagged fence stays unhighlighted, since guessing the language does more harm
-than good:
+Khối mã không gắn ngôn ngữ sẽ không tô màu, vì đoán sai ngôn ngữ còn tệ hơn không đoán:
 
 ```
 Just some plain text.
 No language tag, so no coloring.
 ```
 
-## Math
+## Công thức toán
 
-Display formulas use `$$…$$`. KaTeX loads only for documents that contain them.
+Công thức khối dùng `$$…$$`. KaTeX chỉ tải khi tài liệu thật sự chứa công thức.
 
 $$
 \int_0^1 x^2 \, dx = \frac{1}{3}
 $$
 
-Inline-style within a sentence: $$e^{i\pi} + 1 = 0$$ — Euler's identity.
+Chèn giữa câu: $$e^{i\pi} + 1 = 0$$ — hằng đẳng thức Euler.
 
-A wider formula, to check that it scrolls inside its own block rather than
-stretching the article:
+Một công thức rộng, để kiểm tra nó tự cuộn trong khối riêng thay vì kéo giãn cả bài viết:
 
 $$
 \hat{f}(\xi) = \int_{-\infty}^{\infty} f(x)\, e^{-2\pi i x \xi}\, dx \quad\text{where}\quad \xi \in \mathbb{R}
 $$
 
-Single dollar signs are left alone, so prices such as $5 and $10 stay literal text.
+Dấu đô-la đơn thì được giữ nguyên là văn bản, ví dụ giá $5 và $10.
 
-## Inline HTML
+## HTML nội dòng
 
-Press <kbd>Ctrl</kbd> + <kbd>P</kbd> to print, and <mark>highlighted text</mark>
-marks a passage.
+Nhấn <kbd>Ctrl</kbd> + <kbd>P</kbd> để in, và <mark>đánh dấu highlight</mark> cho một
+đoạn văn.
 
 <details>
-<summary>A collapsed section</summary>
+<summary>Một mục có thể thu gọn</summary>
 
-Hidden until expanded — useful for long appendices.
+Ẩn cho đến khi mở ra — hữu ích cho các phụ lục dài.
 
 </details>
 
-## Mermaid diagram
+## Sơ đồ Mermaid
 
 ```mermaid
 graph TD
-  A[Start] --> B{Decision}
-  B -->|Yes| C[Do thing]
-  B -->|No| D[Skip]
+  A[Bắt đầu] --> B{Quyết định}
+  B -->|Có| C[Làm việc]
+  B -->|Không| D[Bỏ qua]
 ```
 
-### Invalid mermaid (error state)
+### Mermaid không hợp lệ (trạng thái lỗi)
 
 ```mermaid
 not a real diagram type
 some nonsense
 ```
 
-## Tables
+## Bảng biểu
 
-A prose table — cells wrap instead of being forced onto one line, and even rows
-carry the zebra tint. Hover a row to see `--table-row-hover`:
+Một bảng văn xuôi — ô tự xuống dòng thay vì bị ép nằm một hàng, các hàng chẵn có màu nền
+xen kẽ. Rê chuột vào một hàng để thấy `--table-row-hover`:
 
 | Tính năng | Mô tả |
 | --- | --- |
@@ -209,12 +315,11 @@ carry the zebra tint. Hover a row to see `--table-row-hover`:
 | Công thức toán | Dựng bằng KaTeX, chỉ tải khi tài liệu thật sự có công thức |
 | Callout | Hai cú pháp, cùng một kiểu hiển thị |
 
-### Numeric columns align themselves
+### Cột số tự căn lề
 
-No alignment row is written below, yet the numeric columns right-align on their
-own and the prose columns do not. Digits line up by place value, so the column
-can be scanned rather than read cell by cell — note how `9` sits under the ones
-digit of `1,204`. The header label follows its own column:
+Không có dòng căn lề nào được viết bên dưới, nhưng cột số vẫn tự căn phải trong khi cột
+văn xuôi thì không. Chữ số thẳng hàng theo hàng đơn vị, nên có thể quét mắt thay vì đọc
+từng ô — để ý `9` nằm dưới hàng đơn vị của `1.204`:
 
 | Gói | Số bản ghi | Dung lượng | Thay đổi | Ghi chú |
 | --- | --- | --- | --- | --- |
@@ -223,9 +328,8 @@ digit of `1,204`. The header label follows its own column:
 | Charlie | 9 | 0.31% | +12.75 | Mới thêm trong tháng này |
 | Delta | 26,530 | 61.7% | −8.2 | Chiếm phần lớn dung lượng |
 
-Currency, parenthesised negatives, and placeholder cells stay in the same column
-without breaking it — a blank or `—` carries no value, so it neither counts as
-prose nor vetoes the alignment:
+Số tiền, số âm trong ngoặc, và ô để trống vẫn nằm đúng cột — ô trống hoặc `—` không mang
+giá trị, nên không tính là văn xuôi cũng không phá vỡ việc căn lề:
 
 | Hạng mục | Chi phí | Chênh lệch |
 | --- | --- | --- |
@@ -234,9 +338,9 @@ prose nor vetoes the alignment:
 | Đào tạo | $12,400 | (1,020) |
 | Dự phòng | | 0 |
 
-A column is only right-aligned when *every* non-blank cell reads as a number.
-One prose cell opts the whole column out, which is why `Số liệu` below stays
-left-aligned even though two of its three cells are numeric:
+Một cột chỉ căn phải khi *mọi* ô không trống đều đọc như một con số. Chỉ cần một ô văn
+xuôi là cả cột bị loại, đó là lý do vì sao `Số liệu` bên dưới vẫn căn trái dù hai trong ba
+ô là số:
 
 | Khu vực | Số liệu |
 | --- | --- |
@@ -244,8 +348,7 @@ left-aligned even though two of its three cells are numeric:
 | Miền Trung | 87 |
 | Miền Nam | chưa có số liệu |
 
-Prose that merely *starts* with a digit is not a number, so this column is left
-alone:
+Văn xuôi chỉ *bắt đầu* bằng chữ số thì không được tính là số, nên cột này không bị căn lại:
 
 | Mục | Trạng thái |
 | --- | --- |
@@ -253,11 +356,10 @@ alone:
 | Bravo | 2024 in review |
 | Charlie | 10 GB nhật ký |
 
-### Explicit alignment always wins
+### Căn lề tường minh luôn thắng
 
-An author who writes the delimiter row has already answered the question, so
-`:---:` here beats the auto-detection — the numbers are centred despite reading
-as a numeric column:
+Người viết đã tự trả lời câu hỏi khi viết dòng phân cách, nên `:---:` ở đây thắng cơ chế tự
+động — các con số được căn giữa dù đọc như một cột số:
 
 | Trái | Giữa | Phải |
 | :--- | :---: | ---: |
@@ -265,20 +367,18 @@ as a numeric column:
 | Bravo | 87 | 87 |
 | Charlie | 9 | 9 |
 
-### Wide table
+### Bảng rộng
 
-Exercises horizontal scroll, the edge-fade gradient, and the rounded frame
-clipping the table's own square corners:
+Kiểm tra cuộn ngang, hiệu ứng mờ dần ở mép, và khung bo góc cắt đúng góc vuông của bảng:
 
 | Column Alpha | Column Bravo | Column Charlie | Column Delta | Column Echo | Column Foxtrot | Column Golf | Column Hotel |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Row one alpha value | Row one bravo value | Row one charlie value | Row one delta value | Row one echo value | Row one foxtrot value | Row one golf value | Row one hotel value |
 | Row two alpha value | Row two bravo value | Row two charlie value | Row two delta value | Row two echo value | Row two foxtrot value | Row two golf value | Row two hotel value |
 
-### Long table
+### Bảng dài
 
-Long enough to scroll inside its own frame, which is what pins the header row —
-scroll the block and the header stays put:
+Đủ dài để tự cuộn trong khung riêng — cuộn khối này và dòng tiêu đề vẫn đứng yên:
 
 | # | Mã | Tên mục | Giá trị |
 | --- | --- | --- | --- |
@@ -303,9 +403,9 @@ scroll the block and the header stays put:
 | 19 | A-019 | Mục mười chín | 987 |
 | 20 | A-020 | Mục hai mươi | 1 |
 
-### Rich cells
+### Ô nội dung phong phú
 
-Inline formatting, code, links, and math all survive inside cells:
+Định dạng nội dòng, mã, liên kết và công thức đều sống sót bên trong ô bảng:
 
 | Kiểu | Ví dụ | Ghi chú |
 | --- | --- | --- |
@@ -314,17 +414,17 @@ Inline formatting, code, links, and math all survive inside cells:
 | Liên kết | [example.com](https://example.com) | Màu `--link` |
 | Công thức | $$a^2 + b^2 = c^2$$ | KaTeX trong ô |
 
-## Images
+## Hình ảnh
 
-A working image:
+Một ảnh hoạt động bình thường:
 
-![A placeholder image](./sample-image.svg)
+![Ảnh minh hoạ](./sample-image.svg)
 
-A broken image (bad URL, exercises the fallback state):
+Một ảnh lỗi (URL sai, kiểm tra trạng thái dự phòng):
 
-![Broken image](https://example.invalid/does-not-exist.png)
+![Ảnh bị lỗi](https://example.invalid/does-not-exist.png)
 
-## Horizontal rule
+## Đường kẻ ngang
 
 ---
 
@@ -335,10 +435,6 @@ A broken image (bad URL, exercises the fallback state):
 mang dấu như **Ổ**, **Ẫ**, **Ợ**. Nếu font thiếu glyph, chúng sẽ tụt dòng hoặc rơi về một
 font dự phòng trông lệch hẳn so với phần chữ xung quanh.
 
-Chiều cao dòng cũng cần đủ rộng: chữ tiếng Việt có dấu nằm cao hơn chữ Latin thông thường,
-nên khi dòng quá sát nhau thì dấu của dòng dưới dễ chạm vào phần chân chữ của dòng trên.
-Hãy thử kéo thanh *line height* trong phần tuỳ chỉnh để thấy khác biệt.
-
 > [!TIP]
 > Tiêu đề tiếng Việt vẫn tạo được liên kết neo đúng — mục lục bên phải trỏ tới
 > `#font-tiếng-việt`, giữ nguyên dấu thay vì lược bỏ thành `font-ting-vit`.
@@ -347,6 +443,6 @@ Một câu dài không có chỗ ngắt hợp lệ, ví dụ đường dẫn
 `https://example.com/tài-liệu/hướng-dẫn-cài-đặt-môi-trường-phát-triển`, sẽ tự xuống dòng
 thay vì đẩy cả bài viết trượt ngang.
 
-## Footnotes
+## Chú thích cuối trang
 
-[^1]: This is the footnote text, with a backlink to the reference above.
+[^1]: Đây là nội dung chú thích, có liên kết quay lại phần tham chiếu phía trên.
