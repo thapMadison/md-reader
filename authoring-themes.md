@@ -274,6 +274,7 @@ Built-in themes ship in the app itself rather than being imported at runtime:
 2. Create `src/themes/builtin/<slug>/manifest.ts` exporting `{ id, name, mode, badge }`.
 3. Add one line to `src/themes/builtin/index.ts`'s `BUILTIN_THEMES` array.
 
-No other code changes are required — the theme picker, dot-preview swatches, and
+No other code changes are required — the theme picker, its preview swatches (drawn from
+`--bg`, `--fg`, `--link` and `--code-bg`, so a new theme previews itself), and
 `mergeThemeTokens` base-palette selection (light themes fall back to the first light
 built-in, dark themes to the first dark built-in) all read from that registry.

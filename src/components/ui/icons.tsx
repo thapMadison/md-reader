@@ -141,6 +141,53 @@ export function NotSavedIcon() {
   );
 }
 
+export function SearchIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" style={{ flex: 'none' }}>
+      <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <path d="M8.5 8.5L12 12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function CheckIcon() {
+  return (
+    <svg width="12" height="10" viewBox="0 0 12 10" style={{ flex: 'none' }}>
+      <path d="M1 5l3.4 3.4L11 1.6" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function SunIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" style={{ flex: 'none' }}>
+      <circle cx="6" cy="6" r="2.4" stroke="currentColor" strokeWidth="1.2" fill="none" />
+      <path
+        d="M6 0.6v1.3M6 10.1v1.3M0.6 6h1.3M10.1 6h1.3M2.2 2.2l.9.9M8.9 8.9l.9.9M9.8 2.2l-.9.9M3.1 8.9l-.9.9"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function MoonIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" style={{ flex: 'none' }}>
+      <path d="M10 7.3A4.8 4.8 0 013.9 1.4a4.9 4.9 0 106.1 5.9z" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function TrashIcon() {
+  return (
+    <svg width="12" height="13" viewBox="0 0 12 13" style={{ flex: 'none' }}>
+      <path d="M1.4 3.2h9.2M4.6 3.2V1.6h2.8v1.6M2.6 3.2l.6 8h5.6l.6-8" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function BrokenImageIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22">

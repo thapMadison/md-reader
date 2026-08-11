@@ -97,7 +97,19 @@ export function CodeBlock({ className, children }: CodeBlockProps) {
         </button>
       </div>
       <pre style={{ margin: 0, padding: '16px 18px', overflowX: 'auto', fontFamily: 'var(--font-mono)', fontSize: '0.78em', lineHeight: 1.65 }}>
-        <code className={className}>{children}</code>
+        {/*
+          `inherit` is load-bearing, not tidying. The UA stylesheet carries its
+          own `code { font-family: monospace }`, and a UA declaration on the
+          element beats an author declaration inherited from the parent — so
+          without this the --font-mono set on the <pre> above reached everything
+          in the block except the code itself, which rendered in the browser's
+          default monospace. Every theme's mono stack was silently dropped here;
+          rose-quartz is only where it became visible, since Fira Code's
+          ligatures are the whole point of naming it.
+        */}
+        <code className={className} style={{ fontFamily: 'inherit' }}>
+          {children}
+        </code>
       </pre>
     </div>
   );

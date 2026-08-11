@@ -7,8 +7,22 @@
     <title>MDReader</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      The only web faces the app loads; every other theme's stack is system-only.
+      Merriweather + Oswald are sepia-book's text and display pair, Space Grotesk
+      is azure-corporate's, and Inter + Fira Code are rose-quartz's.
+
+      Weight ranges are cut to what the themes actually ask for rather than each
+      family's full axis: nothing here sets a heading above 700 or body text
+      below 300, and requesting Inter's full 100..900 would ship two ends no
+      theme renders. Fira Code needs its 300 because rose's source stylesheet
+      sets inline code at that weight.
+
+      Every stack that names one of these keeps its system fallbacks behind it,
+      so a blocked or offline CDN costs the intended face and nothing else.
+    -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Merriweather:ital,opsz,wdth,wght@0,18..144,87..112,300..700;1,18..144,87..112,300..700&family=Oswald:wght@200..700&family=Space+Grotesk:wght@300..700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Merriweather:ital,opsz,wdth,wght@0,18..144,87..112,300..700;1,18..144,87..112,300..700&family=Oswald:wght@200..700&family=Space+Grotesk:wght@300..700&family=Inter:ital,wght@0,300..700;1,300..700&family=Fira+Code:wght@300..700&display=swap"
       rel="stylesheet"
     />
   </head>

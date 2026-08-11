@@ -94,6 +94,16 @@ body {
   background: var(--hl, rgba(9, 105, 218, 0.08)) !important;
 }
 
+/* The theme list's delete affordance, which rests at half opacity so it does not
+   compete with the theme names, and only becomes a red button once the pointer
+   is on it. Destructive controls should read as destructive at the moment they
+   can be pressed, and stay quiet the rest of the time. */
+[data-row-delete]:hover {
+  opacity: 1 !important;
+  color: var(--danger, #cf222e) !important;
+  background: var(--danger-bg, rgba(207, 34, 46, 0.06)) !important;
+}
+
 /* Decoration that moves is opt-out for anyone who has asked the OS for less of
    it. The states above stay legible without motion: each one is a different
    label, glyph and color, and the pulse is only ever a second channel. */
