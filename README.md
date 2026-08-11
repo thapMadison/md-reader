@@ -20,8 +20,14 @@ Live at **https://thapmadison.github.io/md-reader/**.
   for CSS into the page.
 - Callouts in two syntaxes: GitHub's `> [!NOTE]` markers and `<blockquote alt="info">`
   (`info` / `success` / `warn` / `danger`), which render identically.
-- Four built-in themes (GitHub Light, Night Owl, Sepia Book, Azure Corporate) plus a JSON
-  import/export pipeline for custom themes — see [authoring-themes.md](authoring-themes.md).
+- Seventeen built-in themes across light and dark, in three groups: six standalone ports
+  (GitHub Light, Night Owl, Sepia Book, Azure Corporate, Midnight Cobalt, Rose Quartz); two
+  ported families kept whole because that is how they ship upstream — Konayuki's light/dark
+  pair and Phycat's five palette variants; and four motif-first designs (Punch Card,
+  Blueprint, Swiss Poster, Signal Loss) that start from a structural `--chrome-pattern`
+  value instead of from an existing editor theme.
+- A JSON import/export pipeline for custom themes — see
+  [authoring-themes.md](authoring-themes.md).
 - Open files live via the File System Access API (re-readable, permission-gated) or as
   one-off snapshots via `<input type=file>` / drag-drop, with a full
   live/snapshot/prompt/denied state matrix.

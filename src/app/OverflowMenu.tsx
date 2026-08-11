@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDownIcon } from '@/components/ui/icons';
 import { useAnchoredPosition } from '@/components/ui/useAnchoredPosition';
 import { AccountButton, GitHubIcon } from '@/features/sync/AccountButton';
@@ -46,7 +47,12 @@ interface OverflowMenuProps {
  * its own tests. A second copy of that logic for the menu would be a second
  * thing to keep true.
  */
-export function OverflowMenu({ themeName, themeDots, onOpenThemes, showLabel = true }: OverflowMenuProps) {
+export function OverflowMenu({
+  themeName,
+  themeDots,
+  onOpenThemes,
+  showLabel = true,
+}: OverflowMenuProps) {
   const [open, setOpen] = useState(false);
   // State rather than a ref: the measured position depends on this element, so
   // arriving at it has to cause a render. A ref would be populated after the
@@ -152,106 +158,127 @@ export function OverflowMenu({ themeName, themeDots, onOpenThemes, showLabel = t
         )}
         <ChevronDownIcon />
       </button>
-      {open && pos && (
-        <>
-          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 39 }} />
-          <div
-            // Not `menu`: this holds a card, a control and a static reference
-            // table, and a menu role would promise arrow-key item navigation
-            // over content that is not a list of commands.
-            role="dialog"
-            aria-label="Account and appearance"
-            style={{
-              position: 'fixed',
-              top: pos.top,
-              right: pos.right,
-              zIndex: 40,
-              // Wide enough for the account card's second line to finish its
-              // sentence beside the Sign out button, then clamped so a phone
-              // does not get a panel wider than its screen.
-              width: 'min(300px, calc(100vw - 16px))',
-              maxHeight: pos.maxHeight,
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-              padding: 8,
-              background: 'var(--bg)',
-              color: 'var(--fg)',
-              border: '1px solid var(--border)',
-              borderRadius: 12,
-              boxShadow: '0 12px 32px rgba(31,35,40,0.16)',
-              animation: 'popIn .14s ease-out',
-            }}
-          >
-            {/* Renders nothing when the build cannot sign anyone in, which is
-                why the section label below is its sibling rather than its
-                wrapper. */}
-            <AccountButton menuItem onAfterAction={() => setOpen(false)} />
-
-            <div style={SECTION}>Appearance</div>
-            <button
-              data-menu-row=""
-              onClick={() => {
-                setOpen(false);
-                if (trigger) onOpenThemes(trigger);
-              }}
-              title={`Theme — ${themeName}`}
+      {/* Portaled to the body, not left where it is written.
+       *
+       * This panel is `position: fixed` at coordinates useAnchoredPosition measures
+       * off the trigger, so it never needed the toolbar as an offset parent — but
+       * being *inside* the toolbar was not free. `clip-path` clips an element's whole
+       * subtree, fixed descendants included, and it is not escapable from within: a
+       * chrome pattern that cuts the bar's silhouette (`notched`) therefore erased
+       * this panel entirely — laid out at the right place, painted nowhere, and not
+       * hit-testable. The toolbar's own overflow:hidden never did that, which is why
+       * this stood up for as long as the silhouette was flat.
+       *
+       * Moving it out is the fix that keeps holding: any later effect on the bar that
+       * establishes a clip or a containing block — transform, filter, contain — would
+       * have trapped it the same way. */}
+      {open &&
+        pos &&
+        createPortal(
+          <>
+            <div
+              onClick={() => setOpen(false)}
+              style={{ position: 'fixed', inset: 0, zIndex: 39 }}
+            />
+            <div
+              // Not `menu`: this holds a card, a control and a static reference
+              // table, and a menu role would promise arrow-key item navigation
+              // over content that is not a list of commands.
+              role="dialog"
+              aria-label="Account and appearance"
               style={{
+                position: 'fixed',
+                top: pos.top,
+                right: pos.right,
+                zIndex: 40,
+                // Wide enough for the account card's second line to finish its
+                // sentence beside the Sign out button, then clamped so a phone
+                // does not get a panel wider than its screen.
+                width: 'min(300px, calc(100vw - 16px))',
+                maxHeight: pos.maxHeight,
+                overflowY: 'auto',
                 display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                width: '100%',
-                padding: '8px 9px',
-                border: 'none',
-                borderRadius: 8,
-                background: 'transparent',
+                flexDirection: 'column',
+                gap: 4,
+                padding: 8,
+                background: 'var(--bg)',
                 color: 'var(--fg)',
-                fontFamily: 'var(--font-ui)',
-                cursor: 'pointer',
-                textAlign: 'left',
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                boxShadow: '0 12px 32px rgba(31,35,40,0.16)',
+                animation: 'popIn .14s ease-out',
               }}
             >
-              {/* The palette itself, not a word for it. Four swatches is the
+              {/* Renders nothing when the build cannot sign anyone in, which is
+                why the section label below is its sibling rather than its
+                wrapper. */}
+              <AccountButton menuItem onAfterAction={() => setOpen(false)} />
+
+              <div style={SECTION}>Appearance</div>
+              <button
+                data-menu-row=""
+                onClick={() => {
+                  setOpen(false);
+                  if (trigger) onOpenThemes(trigger);
+                }}
+                title={`Theme — ${themeName}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  width: '100%',
+                  padding: '8px 9px',
+                  border: 'none',
+                  borderRadius: 8,
+                  background: 'transparent',
+                  color: 'var(--fg)',
+                  fontFamily: 'var(--font-ui)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                {/* The palette itself, not a word for it. Four swatches is the
                   same shorthand the theme picker uses, so the row and the list
                   it opens describe a theme the same way. */}
-              <span style={{ flex: 'none', display: 'flex', gap: 2.5 }}>
-                {themeDots.map((c, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      width: 11,
-                      height: 11,
-                      borderRadius: '50%',
-                      background: c,
-                      border: '1px solid var(--border)',
-                      display: 'inline-block',
-                    }}
-                  />
-                ))}
-              </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: 13, fontWeight: 600 }}>Theme</span>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11.5,
-                    fontWeight: 500,
-                    color: 'var(--muted)',
-                    marginTop: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {themeName}
+                <span style={{ flex: 'none', display: 'flex', gap: 2.5 }}>
+                  {themeDots.map((c, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        width: 11,
+                        height: 11,
+                        borderRadius: '50%',
+                        background: c,
+                        border: '1px solid var(--border)',
+                        display: 'inline-block',
+                      }}
+                    />
+                  ))}
                 </span>
-              </span>
-              <span style={{ flex: 'none', color: 'var(--muted)', fontSize: 13, lineHeight: 1 }}>›</span>
-            </button>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 13, fontWeight: 600 }}>Theme</span>
+                  <span
+                    style={{
+                      display: 'block',
+                      fontSize: 11.5,
+                      fontWeight: 500,
+                      color: 'var(--muted)',
+                      marginTop: 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {themeName}
+                  </span>
+                </span>
+                <span style={{ flex: 'none', color: 'var(--muted)', fontSize: 13, lineHeight: 1 }}>
+                  ›
+                </span>
+              </button>
 
-            <div style={SECTION}>Shortcuts</div>
-            {/* Four bindings that have always worked and were written down
+              <div style={SECTION}>Shortcuts</div>
+              {/* Four bindings that have always worked and were written down
                 nowhere a reader would look — layoutState registers them on
                 window, and only two ever appeared in a tooltip.
 
@@ -259,23 +286,31 @@ export function OverflowMenu({ themeName, themeDots, onOpenThemes, showLabel = t
                 gist to push to and the binding only flushes edits to local
                 storage, so calling it "Sync this file" would promise a backup
                 that is not happening. */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, padding: '0 9px 4px' }}>
-              {shortcuts.map(([what, key]) => (
-                <div key={what} style={{ display: 'flex', alignItems: 'center', gap: 8, height: 24 }}>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: 'var(--muted)' }}>{what}</span>
-                  <span style={{ flex: 'none', display: 'flex', gap: 3 }}>
-                    {[MOD, key].map((k) => (
-                      <kbd key={k} style={KBD}>
-                        {k}
-                      </kbd>
-                    ))}
-                  </span>
-                </div>
-              ))}
+              <div
+                style={{ display: 'flex', flexDirection: 'column', gap: 1, padding: '0 9px 4px' }}
+              >
+                {shortcuts.map(([what, key]) => (
+                  <div
+                    key={what}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, height: 24 }}
+                  >
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: 'var(--muted)' }}>
+                      {what}
+                    </span>
+                    <span style={{ flex: 'none', display: 'flex', gap: 3 }}>
+                      {[MOD, key].map((k) => (
+                        <kbd key={k} style={KBD}>
+                          {k}
+                        </kbd>
+                      ))}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </>,
+          document.body,
+        )}
     </>
   );
 }
@@ -313,6 +348,7 @@ const KBD = {
  * to be telling you exactly which keys to press.
  */
 const MOD =
-  typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent)
+  typeof navigator !== 'undefined' &&
+  /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent)
     ? '⌘'
     : 'Ctrl';

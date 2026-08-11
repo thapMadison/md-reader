@@ -1,94 +1,161 @@
 # 👋 Chào mừng đến với MDReader
 
-MDReader là trình đọc Markdown chạy **hoàn toàn trong trình duyệt** — không server, không
-upload. File bạn mở, dữ liệu bạn sửa, tất cả ở lại trên máy bạn.
+MDReader là trình đọc & soạn Markdown chạy **hoàn toàn trong trình duyệt**. Không có server,
+không có upload ngầm: file bạn mở, chữ bạn gõ, tất cả ở lại trên máy bạn — trừ khi chính bạn
+bật đồng bộ GitHub.
 
 > [!TIP]
-> Đây chính là tài liệu bạn nhìn thấy đầu tiên khi mở MDReader lần đầu — nó vừa là hướng
-> dẫn sử dụng, vừa là bản demo sống của mọi tính năng render bên dưới. Cứ để nó mở và thử
-> từng phần trong khi đọc!
+> Đây chính là tài liệu bạn thấy đầu tiên khi mở MDReader — vừa là hướng dẫn sử dụng, vừa là
+> bản demo sống của mọi kiểu định dạng bên dưới. Cứ để nó mở và thử từng thao tác trong khi
+> đọc. Muốn dọn đi? Mở menu **⋯** trên hàng của nó rồi chọn *Close file*.
 
-## 🚀 Bắt đầu: mở file của bạn
+## 🚀 Đưa tài liệu vào MDReader
 
-Có ba cách để đưa Markdown vào MDReader:
+Có **bốn** cách:
 
-1. **Nút "Open" trên thanh công cụ** — nếu trình duyệt hỗ trợ File System Access API
-   (Chrome, Edge...), file được mở **"live"**: MDReader giữ một tham chiếu tới file thật,
-   đọc lại được để phát hiện thay đổi từ bên ngoài, và nhớ quyền truy cập cho lần sau.
-2. **Kéo-thả file** vào bất kỳ đâu trên cửa sổ — luôn mở dưới dạng **"snapshot"** (ảnh chụp
-   một lần), vì thao tác kéo-thả không bao giờ cấp được handle file thật.
-3. **Trình duyệt không hỗ trợ File System Access API** (Firefox, Safari...)? Nút Open sẽ
-   tự chuyển sang hộp thoại chọn file thông thường — cũng cho ra snapshot.
+1. **Nút "Open"** trên thanh công cụ — nếu trình duyệt hỗ trợ File System Access API
+   (Chrome, Edge...), file mở dạng **live**: MDReader giữ tham chiếu tới file thật và đọc
+   lại được để bắt thay đổi từ bên ngoài. Trình duyệt khác (Firefox, Safari...) tự chuyển
+   sang hộp thoại chọn file thường.
+2. **Kéo-thả** file vào bất kỳ đâu trên cửa sổ — màn hình sẽ hiện lớp phủ *"Drop to open"*.
+   Luôn ra dạng **snapshot**, vì thao tác kéo-thả không cấp được handle file thật.
+3. **Tạo mới ngay trong app** — bấm nút **➕** ở đầu sidebar → **New file**, gõ tên, Enter.
+   Bạn có một tài liệu trắng để viết ngay, không cần file sẵn trên máy.
+4. **Tải về từ GitHub** — xem mục đồng bộ bên dưới.
 
 <blockquote alt="warn">
 
-**Ghi nhớ:** dù mở live hay snapshot, MDReader **không bao giờ ghi ngược chỉnh sửa ra file
-gốc trên đĩa**. "Live" chỉ nghĩa là đọc lại được (re-readable) — mọi thay đổi bạn gõ vào chỉ
-tồn tại trong bộ nhớ trình duyệt (IndexedDB), trừ khi bạn bật đồng bộ GitHub Gist (xem bên
-dưới) để có thêm một bản sao trên GitHub.
+**Điều quan trọng nhất cần nhớ:** dù mở live hay snapshot, MDReader **không bao giờ ghi
+ngược chỉnh sửa ra file gốc trên đĩa**. "Live" chỉ nghĩa là *đọc lại được*. Mọi thay đổi bạn
+gõ vào chỉ nằm trong bộ nhớ trình duyệt (IndexedDB) — muốn có bản sao ngoài máy, hãy bật
+đồng bộ GitHub Gist.
 
 </blockquote>
 
-Ở thanh bên (sidebar), mỗi file hiện một huy hiệu trạng thái:
+Mỗi hàng file trong sidebar mang một huy hiệu trạng thái:
 
 | Trạng thái | Ý nghĩa |
 | --- | --- |
 | Live (đã cấp quyền) | Đọc lại được từ đĩa để phát hiện thay đổi bên ngoài |
-| Live (cần xin quyền) | Có nút **Grant access** để cấp lại quyền đọc |
+| Live (cần xin quyền) | Trình duyệt đã quên quyền — dùng **Grant access** để cấp lại |
 | Live (bị từ chối) | Chỉ còn bản sao trong bộ nhớ, không đọc lại được từ đĩa |
 | Snapshot | Không thể mở lại từ đĩa, chỉ sống trong trình duyệt |
 
-## 📁 Sắp xếp bằng thư mục
+Khi một file cần cấp lại quyền, một dải thông báo hiện ngay trên nội dung với nút
+**Grant access** — hoặc bấm **×** để tạm ẩn nếu bạn chỉ muốn đọc bản đã lưu.
 
-Quá nhiều file trong danh sách? Tạo **thư mục** ngay trong sidebar (mục "New folder"), rồi:
+## 📁 Quản lý thư viện
 
-- Kéo file vào tiêu đề thư mục để xếp vào (trên desktop); trên thiết bị cảm ứng, dùng menu
-  **"Move to…"** thay cho kéo-thả.
+### Thư mục
+
+Bấm **➕ → New folder** để tạo, rồi:
+
+- **Kéo file** vào tiêu đề thư mục (desktop), hoặc dùng menu **⋯ → Move to** trên hàng file
+  (cách duy nhất trên thiết bị cảm ứng, vì màn cảm ứng không sinh sự kiện kéo).
 - Chọn một thư mục để file mới mở/tạo tự động rơi vào đó.
-- Thu gọn thư mục khi không cần xem, hoặc **ungroup** để trả file về danh sách phẳng (không
-  mất dữ liệu).
-- Xoá thư mục sẽ xoá luôn mọi file bên trong — MDReader sẽ hỏi xác nhận trước khi làm.
+- **⋯ → Rename** để đổi tên, bấm mũi tên để thu gọn.
+- **Remove folder, keep files** — xoá thư mục, file trở về danh sách phẳng (an toàn).
+- **Delete folder and files** — xoá cả file bên trong (có hỏi xác nhận).
+
+### Menu ⋯ trên từng file
+
+| Mục | Tác dụng |
+| --- | --- |
+| Grant access | Xin lại quyền đọc file live |
+| Sync to GitHub / Sync now / Pull... | Các thao tác đồng bộ, tuỳ trạng thái |
+| Move to → *tên thư mục* | Xếp file vào thư mục |
+| Remove from folder | Đưa file ra khỏi thư mục |
+| Close file | Đóng file khỏi thư viện |
+
+### Dung lượng lưu trữ
+
+Cuối sidebar là thanh đo dung lượng đã dùng trên tổng hạn mức trình duyệt cấp. Khi gần đầy,
+MDReader cảnh báo **"Storage almost full — close a few snapshots."**; khi vượt hạn mức, file
+mới vẫn mở được nhưng **không lưu lại cho lần sau**, và hàng file đó mang dấu *"Not saved —
+storage is full"*. Nút **Clear all** dọn sạch thư viện.
 
 ## ☁️ Đồng bộ qua GitHub Gist
 
-Muốn truy cập ghi chú từ nhiều máy? Đăng nhập GitHub (nút tài khoản trong menu **⋯**), rồi
-bật công tắc đồng bộ trên từng file riêng lẻ — đồng bộ là **tuỳ chọn theo từng file**, không
-có gì được đẩy lên nếu bạn không bật.
+Muốn đọc ghi chú trên nhiều máy? Bấm nút tài khoản (góc phải thanh công cụ, hiện logo GitHub
+khi chưa đăng nhập, hiện avatar khi đã đăng nhập) → đăng nhập GitHub. Sau đó bật đồng bộ
+**cho từng file** qua menu **⋯ → Sync to GitHub**.
 
-- File đã đồng bộ được lưu thành một **secret gist** trên tài khoản của bạn.
-- Nhấn **Ctrl/Cmd+S** để lưu — thao tác này vừa ghi xuống bộ nhớ cục bộ, vừa đẩy lên gist
-  nếu file đang bật đồng bộ. MDReader **không tự động đẩy theo thời gian**, vì mỗi lần đẩy
-  tạo một revision mới trên gist.
-- Các gist Markdown có sẵn trên tài khoản nhưng chưa có ở máy này sẽ hiện trong mục
-  **"On GitHub"** — bấm vào để tải về như một file mới.
-- Khi có xung đột (sửa cả hai nơi), MDReader cho bạn chọn: **giữ bản của tôi**, **lấy bản
-  từ xa**, hoặc **giữ cả hai**.
+<blockquote alt="danger">
 
-## 🎨 Đổi giao diện
+**Đọc kỹ trước khi bật:** file được đưa lên dưới dạng **secret gist** — đây là *unlisted*,
+**không phải private**. Bất kỳ ai có đường link đều đọc được, và bạn không thể thu hồi quyền
+của riêng một người; cách duy nhất là xoá gist. Đừng đồng bộ tài liệu nhạy cảm.
 
-Nhấn **Ctrl/Cmd+K** (hoặc menu **⋯ → Theme**) để mở bảng chọn theme: tìm kiếm, lọc theo
-Sáng/Tối, xem trước màu trực tiếp trước khi chọn.
+</blockquote>
 
-MDReader đi kèm **13 theme dựng sẵn** — từ GitHub Light quen thuộc, Night Owl cho dân code
-đêm khuya, đến các bộ màu nghệ hơn như Konayuki, Phycat Vampire hay Rose Quartz. Không thích
-theme nào có sẵn? Dùng **Import theme…** để nạp file JSON theme tự thiết kế (xem
-[authoring-themes.md](authoring-themes.md) để biết cách tạo), hoặc **Export current** để
-tải theme đang dùng về máy.
+Vài điều cần biết:
 
-## ✏️ Chỉnh sửa & khôi phục
+- **Giới hạn 1MB** mỗi file. File lớn hơn vẫn mở và đọc bình thường, chỉ là không đồng bộ được.
+- **Ctrl/Cmd+S** vừa lưu xuống bộ nhớ cục bộ, vừa đẩy lên gist nếu file đang bật đồng bộ.
+  MDReader **cố tình không tự đẩy theo thời gian** — mỗi lần đẩy tạo một revision mới trên gist.
+- Gist Markdown có sẵn trên tài khoản mà máy này chưa có sẽ hiện ở mục **"On GitHub"** cuối
+  sidebar (viền đứt nét). Bấm vào để tải nội dung về — trước đó app chưa tải một byte nào.
+- Tắt đồng bộ chỉ gỡ liên kết ở máy này; bản trên GitHub vẫn còn cho tới khi bạn chọn
+  **Delete copy from GitHub**.
 
-Nhấn nút Edit (hoặc **Ctrl/Cmd+E**) để mở khung soạn thảo song song với bản xem trước. Mọi
-chỉnh sửa:
+### Biểu tượng trạng thái đồng bộ
 
-- Tự lưu vào bộ nhớ trình duyệt sau ~1 giây ngừng gõ (hoặc ngay lập tức khi bạn rời khỏi
-  tab, ẩn cửa sổ, hoặc nhấn Ctrl/Cmd+S).
-- **Không bao giờ** ghi ngược ra file gốc trên đĩa — kể cả file live. Ctrl/Cmd+S chỉ lưu
-  vào IndexedDB (và đẩy lên gist nếu file đang bật đồng bộ), file thật trên máy bạn không
-  hề bị đụng tới.
-- Có thể huỷ bỏ bất cứ lúc nào bằng nút **Revert**, quay về đúng nội dung đã đọc lần cuối
-  từ đĩa (hoặc từ lần pull gist gần nhất).
+| Trạng thái | Ý nghĩa | Việc cần làm |
+| --- | --- | --- |
+| ✓ Khớp | Bản ở đây trùng bản trên GitHub | Không cần gì |
+| ↑ Có sửa mới | Đã sửa từ lần đồng bộ trước | **Sync now** hoặc Ctrl/Cmd+S |
+| ↓ Bản mới trên GitHub | Máy khác vừa đẩy lên | **Pull** — không mất gì vì bạn chưa sửa |
+| ⚠ Xung đột | Sửa ở cả hai nơi | Chọn cách xử lý ở dải cảnh báo trên tài liệu |
+| ⚠ Gist đã bị xoá | Bản trên GitHub bị xoá từ máy khác | **Upload to GitHub again** |
+| ⚠ Lỗi | Đồng bộ thất bại | **Retry sync** trong menu ⋯ |
+| ⚠ Quá lớn | Vượt mốc 1MB | Không đồng bộ được |
 
-## ⌨️ Phím tắt cần nhớ
+### Khi xảy ra xung đột
+
+MDReader **không bao giờ tự động giải quyết** — cả hai bản đều là công sức của bạn. Một dải
+đỏ hiện trên tài liệu với ba lựa chọn:
+
+- **Keep both** *(khuyến nghị)* — kéo bản GitHub về thành một file riêng, bản hiện tại giữ
+  nguyên. Không mất gì cả.
+- **Keep mine** — đẩy bản này đè lên GitHub (bản cũ vẫn nằm trong lịch sử gist).
+- **Take GitHub's** — thay bản này bằng bản từ GitHub, **chỉnh sửa cục bộ bị bỏ**.
+
+## ✏️ Soạn thảo
+
+Bấm nút **Edit** (hoặc **Ctrl/Cmd+E**) để mở khung soạn thảo song song với bản xem trước.
+
+- **Tự lưu** vào bộ nhớ trình duyệt sau ~1 giây ngừng gõ, và ngay lập tức khi bạn chuyển tab,
+  ẩn cửa sổ hoặc nhấn Ctrl/Cmd+S. Huy hiệu **"edited"** cạnh tên file cho biết còn thay đổi
+  chưa lưu.
+- Phím **Tab** chèn 2 dấu cách thay vì nhảy khỏi ô.
+- **Kéo đường phân cách** giữa hai khung để chỉnh độ rộng (220–760px).
+- Nút **Revert** huỷ mọi chỉnh sửa, quay về nội dung đọc lần cuối từ đĩa (hoặc lần pull gist
+  gần nhất).
+- Trên mobile, khung soạn thảo và bản xem trước chuyển thành hai tab **Source / Preview**.
+- Ctrl/Cmd+S **không** ghi ra file gốc trên đĩa — chỉ lưu cục bộ và đẩy gist (nếu bật).
+
+## 🎨 Giao diện
+
+Nhấn **Ctrl/Cmd+K** (hoặc nút Settings → **Theme**) để mở bảng chọn theme:
+
+- Ô tìm kiếm, bộ lọc **All / Light / Dark**, xem trước bốn màu chủ đạo ngay trên từng dòng.
+- Di chuyển bằng phím **↑ ↓** rồi **Enter**, **Esc** để đóng.
+- **Import theme…** nạp file JSON theme tự thiết kế; **Export current** tải theme đang dùng về.
+
+**17 theme dựng sẵn**: GitHub Light, Night Owl, Sepia Book, Azure Corporate, Midnight Cobalt,
+Rose Quartz, Konayuki Light, Konayuki Dark, Phycat Vampire, Phycat Radiation, Phycat Abyss,
+Phycat Caramel, Phycat Mauve, Punch Card, Blueprint, Swiss Poster, Signal Loss.
+
+Bốn cái cuối đi theo hướng ngược lại với phần còn lại: thay vì port một theme editor có sẵn,
+mỗi cái dựng quanh một kiểu hoa văn có khả năng **đổi hình khối** của giao diện — thẻ đục lỗ
+bị cắt góc, bản vẽ kỹ thuật với nét đứt và chú thích kích thước, poster Thuỵ Sĩ đảo nền/hình,
+và băng từ đọc qua đầu từ hỏng.
+
+Theme ở MDReader không chỉ là bảng màu — nó còn quyết định **hoa văn trang trí** trên thanh
+công cụ và sidebar, **ký hiệu đầu đề** (chevron / wedge / ẩn hẳn), cỡ chữ từng cấp tiêu đề,
+độ rộng cột chữ và font chữ. Muốn tuỳ chỉnh sâu, xem [authoring-themes.md](authoring-themes.md).
+
+## ⌨️ Phím tắt
 
 | Phím | Chức năng |
 | --- | --- |
@@ -97,12 +164,43 @@ chỉnh sửa:
 | `Ctrl/Cmd + K` | Mở bảng chọn theme |
 | `Ctrl/Cmd + S` | Lưu (và đồng bộ nếu đang bật) |
 
-## 🧭 Mục lục & tiến trình đọc
+> [!NOTE]
+> Bảng phím tắt này cũng nằm sẵn trong panel **Settings** — bấm nút tài khoản ở góc phải
+> thanh công cụ, các phím hiển thị đúng theo hệ điều hành bạn đang dùng (⌘ trên macOS,
+> Ctrl trên Windows/Linux).
 
-Bên phải màn hình (desktop) là mục lục tự cuộn theo vị trí đọc — bấm vào một mục để nhảy
-thẳng tới đó. Trên mobile, mục lục thu gọn thành một menu sổ xuống trong thanh phụ. Thanh
-tiến trình mỏng ngay dưới toolbar cho biết bạn đã đọc tới đâu, và MDReader còn nhớ vị trí
-cuộn của từng file cho lần mở sau.
+## 🧭 Đọc và điều hướng
+
+- **Mục lục** bên phải (desktop) tự bám theo vị trí đọc; bấm để nhảy tới mục. Trên mobile nó
+  thu thành menu **"On this page"** trong thanh phụ.
+- **Thanh tiến trình** mỏng dưới toolbar cho biết đã đọc tới đâu.
+- **Vị trí cuộn của từng file** được nhớ cho lần mở sau.
+- Tài liệu lớn hiện khung xương chờ (kèm dung lượng) trong lúc dựng nội dung.
+- Bấm **Ctrl/Cmd+\** hoặc nút góc phải để ẩn sidebar, lấy trọn màn hình cho việc đọc.
+
+## 📝 Markdown được hỗ trợ
+
+MDReader dựng theo chuẩn **GitHub Flavored Markdown**, cộng thêm:
+
+- **Code block** có nhãn ngôn ngữ và nút **Copy** (hiện khi rê chuột) — tô màu theo 12 token
+  màu riêng cho từng theme.
+- **Sơ đồ Mermaid** và **công thức KaTeX** (`$$…$$`) — chỉ tải thư viện khi tài liệu thật sự
+  cần, nên tài liệu thường không phải tải thêm gì.
+- **Callout** năm loại, viết theo hai cú pháp.
+- **HTML an toàn**: `<kbd>`, `<mark>`, `<details>` hoạt động; script và style bị loại bỏ.
+- **Bảng thông minh**: cột số tự căn phải, tiêu đề bảng dài tự dính, bảng rộng cuộn riêng.
+
+### Năm loại callout
+
+Viết theo cú pháp marker của GitHub, hoặc bằng thuộc tính `alt` khi dòng marker bất tiện:
+
+| Marker | `alt=` tương đương | Dùng khi |
+| --- | --- | --- |
+| `[!NOTE]` | `info`, `note` | Thông tin cần chú ý |
+| `[!TIP]` | `success`, `tip` | Mẹo, điều nên làm |
+| `[!IMPORTANT]` | `important` | Điều không được bỏ qua |
+| `[!WARNING]` | `warn`, `warning` | Cần cẩn thận |
+| `[!CAUTION]` | `danger`, `caution` | Nguy hiểm, có thể mất dữ liệu |
 
 ---
 
@@ -152,6 +250,9 @@ Cú pháp marker kiểu GitHub:
 > [!NOTE]
 > Thông tin hữu ích mà người đọc nên chú ý.
 
+> [!IMPORTANT]
+> Điều không được bỏ qua.
+
 > [!WARNING]
 > Điều gì đó cần cẩn thận.
 
@@ -166,6 +267,12 @@ Hộp `info`, tương đương `[!NOTE]`.
 <blockquote alt="success">
 
 Hộp `success`, tương đương `[!TIP]`.
+
+</blockquote>
+
+<blockquote alt="important">
+
+Hộp `important`, tương đương `[!IMPORTANT]`.
 
 </blockquote>
 

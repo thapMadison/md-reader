@@ -25,6 +25,14 @@ import { manifest as phycatCaramelManifest } from './phycat-caramel/manifest';
 import { tokens as phycatCaramelTokens } from './phycat-caramel/tokens';
 import { manifest as phycatMauveManifest } from './phycat-mauve/manifest';
 import { tokens as phycatMauveTokens } from './phycat-mauve/tokens';
+import { manifest as punchCardManifest } from './punch-card/manifest';
+import { tokens as punchCardTokens } from './punch-card/tokens';
+import { manifest as blueprintManifest } from './blueprint/manifest';
+import { tokens as blueprintTokens } from './blueprint/tokens';
+import { manifest as swissPosterManifest } from './swiss-poster/manifest';
+import { tokens as swissPosterTokens } from './swiss-poster/tokens';
+import { manifest as signalLossManifest } from './signal-loss/manifest';
+import { tokens as signalLossTokens } from './signal-loss/tokens';
 
 // Registry of built-in themes. To add one: create a folder with tokens.ts +
 // manifest.ts, then add one line here.
@@ -50,6 +58,21 @@ export const BUILTIN_THEMES: readonly Theme[] = [
   { ...phycatAbyssManifest, tokens: phycatAbyssTokens },
   { ...phycatCaramelManifest, tokens: phycatCaramelTokens },
   { ...phycatMauveManifest, tokens: phycatMauveTokens },
+  // The four motif-first themes, kept together at the end because that is what
+  // they have in common: every theme above ports an existing editor theme and
+  // picks the chrome pattern that reproduces its source's own decoration, while
+  // each of these starts from one of --chrome-pattern's structural values and
+  // asks what object that geometry belongs to. Notched is a tab-cut filing card,
+  // unprinted a drafting sheet, figureground a Swiss poster, databend a tape
+  // read back through a failing head.
+  //
+  // Grouped rather than interleaved by mode for the same reason Konayuki and
+  // Phycat are: the grouping is the design statement, and splitting them into
+  // the light and dark runs above would hide it.
+  { ...punchCardManifest, tokens: punchCardTokens },
+  { ...blueprintManifest, tokens: blueprintTokens },
+  { ...swissPosterManifest, tokens: swissPosterTokens },
+  { ...signalLossManifest, tokens: signalLossTokens },
 ];
 
 export const DEFAULT_THEME_ID = githubLightManifest.id;
