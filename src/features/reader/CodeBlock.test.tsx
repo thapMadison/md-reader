@@ -68,6 +68,36 @@ describe('CodeBlock with syntax highlighting', () => {
     expect(container.textContent).toContain('some code');
   });
 
+  // An untagged fence carries no `language-*` class, so a className test cannot
+  // tell it from inline code. It used to lose that coin flip: the block rendered
+  // as one wrapped chip with every newline and indent collapsed, which is
+  // precisely the content untagged fences exist to hold.
+  it('routes an untagged fence to CodeBlock with its whitespace intact', () => {
+    const diagram = 'Wave 0  (3 tuần)   Nền tảng\n        └─ Bắt buộc trước mọi thứ.';
+    const { container } = renderMd('```\n' + diagram + '\n```');
+
+    const block = container.querySelector('[data-codeblock]');
+    expect(block).toBeTruthy();
+    expect(block?.querySelector('pre')?.textContent).toContain(diagram);
+  });
+
+  it('routes a four-space indented block to CodeBlock', () => {
+    const { container } = renderMd('Sơ đồ:\n\n    ├─ #8  Inquire\n    └─ #10 Abandoned cart\n');
+
+    const block = container.querySelector('[data-codeblock]');
+    expect(block).toBeTruthy();
+    expect(block?.querySelector('pre')?.textContent).toContain('├─ #8  Inquire\n└─ #10 Abandoned cart');
+  });
+
+  it('copies an untagged fence verbatim', () => {
+    renderMd('```\nline one\n  line two\n```');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toContain('line one\n  line two');
+  });
+
   it('leaves inline code as a plain <code>, not a code block', () => {
     const { container } = renderMd('Some `inline` code.');
     expect(container.querySelector('[data-codeblock]')).toBeNull();

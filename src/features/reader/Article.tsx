@@ -553,6 +553,26 @@ function makeHeadingFactory(headingIds: Map<number, string>, markerStyle: string
   return { heading };
 }
 
+// Props of the <code> element inside a <pre>, or null when there isn't one.
+//
+// The child is identified by the hast node react-markdown hands every component
+// rather than by its React type: the type here is the `code` entry of the very
+// components map being built, so comparing against it would mean referencing the
+// object mid-construction. `tagName` says the same thing without the knot.
+interface CodeElementProps {
+  className?: string;
+  children?: ReactNode;
+  node?: HastElement;
+}
+
+function codeChildProps(children: ReactNode): CodeElementProps | null {
+  for (const child of Children.toArray(children)) {
+    if (!isValidElement<CodeElementProps>(child)) continue;
+    if (child.props.node?.tagName === 'code') return child.props;
+  }
+  return null;
+}
+
 function buildComponents(headingIds: Map<number, string>, markerStyle: string): Components {
   const { heading } = makeHeadingFactory(headingIds, markerStyle);
   const components: Components = {
@@ -735,13 +755,10 @@ function buildComponents(headingIds: Map<number, string>, markerStyle: string): 
         {checked ? '✓' : ''}
       </span>
     ),
-    code: ({ className, children }) => {
-      // `includes`, not `startsWith`: rehype-highlight prepends its own `hljs`
-      // class, so a fenced block arrives as "hljs language-js" and a
-      // startsWith check would misroute it to the inline-code branch below.
-      if (className?.includes('language-')) {
-        return <CodeBlock className={className}>{children}</CodeBlock>;
-      }
+    // Inline code only. Whether a <code> is a block is a fact about its parent,
+    // not about its class, so the block case is routed from `pre` below rather
+    // than tested for here.
+    code: ({ children }) => {
       return (
         <code
           style={{
@@ -758,7 +775,28 @@ function buildComponents(headingIds: Map<number, string>, markerStyle: string): 
         </code>
       );
     },
-    pre: ({ children }) => <>{children}</>,
+    // Every block-level code container is routed to CodeBlock from here, and it
+    // has to be from here: `<pre>` is the only thing that distinguishes a block
+    // from inline code, and a hast node carries no parent pointer, so the child
+    // cannot ask the question itself.
+    //
+    // Classifying by className instead — which is what this used to do, over in
+    // the `code` component — silently missed the two fences that carry no class
+    // at all: an untagged ``` fence and a four-space indented block. Both fell
+    // through to the inline branch and rendered as one long chip with every
+    // newline and run of spaces collapsed, which destroys exactly the content
+    // people reach for an untagged fence to write: ASCII diagrams, trees, log
+    // excerpts, aligned output.
+    //
+    // The <code> child has not rendered yet — it is still a React element whose
+    // type is the component above — so reading its props here diverts the block
+    // before that component ever runs. A <pre> with no <code> inside (only
+    // reachable through raw HTML) keeps its children verbatim and is styled as a
+    // code block anyway; the whole point of the tag is preserved whitespace.
+    pre: ({ children }) => {
+      const code = codeChildProps(children);
+      return <CodeBlock className={code?.className}>{code ? code.children : children}</CodeBlock>;
+    },
     // Wrapper and caption are spans set to display:block, not a div and a p.
     // Markdown always parses an image into a paragraph, so a block-level element
     // here produces `<p><div>…</div></p>`, which is invalid: the browser closes
