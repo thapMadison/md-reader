@@ -142,14 +142,15 @@ Nhấn **Ctrl/Cmd+K** (hoặc nút Settings → **Theme**) để mở bảng ch�
 - Di chuyển bằng phím **↑ ↓** rồi **Enter**, **Esc** để đóng.
 - **Import theme…** nạp file JSON theme tự thiết kế; **Export current** tải theme đang dùng về.
 
-**17 theme dựng sẵn**: GitHub Light, Night Owl, Sepia Book, Azure Corporate, Midnight Cobalt,
-Rose Quartz, Konayuki Light, Konayuki Dark, Phycat Vampire, Phycat Radiation, Phycat Abyss,
-Phycat Caramel, Phycat Mauve, Punch Card, Blueprint, Swiss Poster, Signal Loss.
+**24 theme dựng sẵn**: GitHub Light, Night Owl, Sepia Book, Azure Corporate, Midnight Cobalt,
+Rose Quartz, Konayuki Light, Konayuki Dark, Garnet Veil, Verdant Pulse, Indigo Trench, Amber
+Parchment, Orchid Vellum, Punch Card, Blueprint, Swiss Poster, Signal Loss, Terracotta Folio,
+Emerald Terminal, Cerulean Ascent, Violet Halftone, Feint Rule, Magenta Facet, Jade Script.
 
-Bốn cái cuối đi theo hướng ngược lại với phần còn lại: thay vì port một theme editor có sẵn,
-mỗi cái dựng quanh một kiểu hoa văn có khả năng **đổi hình khối** của giao diện — thẻ đục lỗ
-bị cắt góc, bản vẽ kỹ thuật với nét đứt và chú thích kích thước, poster Thuỵ Sĩ đảo nền/hình,
-và băng từ đọc qua đầu từ hỏng.
+Punch Card, Blueprint, Swiss Poster và Signal Loss đi theo hướng ngược lại với phần còn lại:
+thay vì port một theme editor có sẵn, mỗi cái dựng quanh một kiểu hoa văn có khả năng **đổi
+hình khối** của giao diện — thẻ đục lỗ bị cắt góc, bản vẽ kỹ thuật với nét đứt và chú thích
+kích thước, poster Thuỵ Sĩ đảo nền/hình, và băng từ đọc qua đầu từ hỏng.
 
 Theme ở MDReader không chỉ là bảng màu — nó còn quyết định **hoa văn trang trí** trên thanh
 công cụ và sidebar, **ký hiệu đầu đề** (chevron / wedge / ẩn hẳn), cỡ chữ từng cấp tiêu đề,

@@ -10,19 +10,66 @@
     <!--
       The only web faces the app loads; every other theme's stack is system-only.
       Merriweather + Oswald are sepia-book's text and display pair, Space Grotesk
-      is azure-corporate's, and Inter + Fira Code are rose-quartz's.
+      is azure-corporate's, and Inter + Fira Code are rose-quartz's. Mali is
+      jade-script's face, carrying that theme's headings and its body text
+      alike — VLOOK's zen font group sets both in a Kai calligraphy face, and
+      Mali is the closest Latin equivalent that stays readable at paragraph
+      length: pen-drawn rather than marker-drawn, with a true 700 for headings
+      and a true italic for emphasis. Caveat sat here first, being the face
+      VLOOK's own font.less names as its Kaiti fallback, and it is gone for the
+      subset reason spelled out below.
+
+      IBM Plex Mono is the code face for the four themes adapted from VLOOK
+      whose font style asks for a non-system mono (terracotta-folio/serif,
+      magenta-facet/book, jade-script/zen, violet-halftone/yuan all resolve
+      to font.less's `--b-fm-serif-mono: Courier, "Courier New"`). Courier
+      Prime was the first pick here, being Courier
+      redrawn for screens, and it was wrong for one disqualifying reason:
+      Google Fonts ships it with latin and latin-ext only, no vietnamese
+      subset, so every Vietnamese diacritic in a code block fell back
+      mid-word to a different face. Plex Mono carries vietnamese, keeps the
+      humanist warmth that pairs with these themes' serif body text, and
+      Courier New stays behind it for the typewriter reference.
+
+      JetBrains Mono is signal-loss's face, leading that theme's stack rather
+      than replacing it. signal-loss sets --font-ui/body/heading/mono to the
+      same face on the premise that a terminal display has one face at one
+      pitch — but until now that face was whatever mono the reader's own OS
+      happened to ship (Cascadia Mono, SF Mono, Consolas), so the same theme
+      looked different on every machine. JetBrains Mono carries vietnamese, a
+      real 300..700 weight range with italic, and ligatures that fit the
+      "on-screen display" premise the theme is built around; the system stack
+      stays behind it exactly as it did before.
+
+      CHECK THE VIETNAMESE SUBSET BEFORE ADDING ANY FACE HERE. Vietnamese
+      stacks diacritics two deep (ồ, ế, ữ), and a font missing U+1EA0-1EF9
+      does not fail visibly in Latin text — it fails only once someone writes
+      Vietnamese, and then it fails badly: the base letter renders in the web
+      face, the diacritic falls back to another font, and the two land in
+      different places. Caveat and Courier Prime were both added and both
+      removed for exactly this. Of the faces on this line all carry vietnamese
+      except Fira Code, which predates this rule and is used only by
+      rose-quartz and emerald-terminal, where its ligatures are the point and
+      code is overwhelmingly ASCII.
 
       Weight ranges are cut to what the themes actually ask for rather than each
       family's full axis: nothing here sets a heading above 700 or body text
       below 300, and requesting Inter's full 100..900 would ship two ends no
       theme renders. Fira Code needs its 300 because rose's source stylesheet
-      sets inline code at that weight.
+      sets inline code at that weight. Mali is requested at 400/600/700 plus
+      400-italic rather than as a range, since it ships as static weights;
+      600 covers the theme's --heading-weight and 700 its --h1-weight. IBM
+      Plex Mono ships 400, 700, and 400-italic — highlight.js sets comments
+      italic and .hljs-strong bold, but never both at once, so bold-italic is
+      left to synthesis. JetBrains Mono is requested across its full
+      300..700/italic range because signal-loss reuses the one face for every
+      role — UI, body, heading, and code — each with its own weight.
 
       Every stack that names one of these keeps its system fallbacks behind it,
       so a blocked or offline CDN costs the intended face and nothing else.
     -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Merriweather:ital,opsz,wdth,wght@0,18..144,87..112,300..700;1,18..144,87..112,300..700&family=Oswald:wght@200..700&family=Space+Grotesk:wght@300..700&family=Inter:ital,wght@0,300..700;1,300..700&family=Fira+Code:wght@300..700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Merriweather:ital,opsz,wdth,wght@0,18..144,87..112,300..700;1,18..144,87..112,300..700&family=Oswald:wght@200..700&family=Space+Grotesk:wght@300..700&family=Inter:ital,wght@0,300..700;1,300..700&family=Fira+Code:wght@300..700&family=Mali:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:ital,wght@0,300..700;1,300..700&display=swap"
       rel="stylesheet"
     />
   </head>

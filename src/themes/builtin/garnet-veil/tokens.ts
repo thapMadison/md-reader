@@ -1,18 +1,22 @@
 import type { ThemeTokens } from '../../contract';
 
-// Ported from `phycat.dark.css` + `phycat.vampire.css` in the Phycat Typora
-// theme — an upstream stylesheet, not a file in this repo, so the comments below
-// quote the declarations they came from rather than pointing at a path that
-// isn't here.
+// Garnet Veil: a near-black theme with a rose-red link/heading accent and a
+// violet secondary tone — the Dracula palette, essentially unmodified. Adapted
+// from Phycat's dark base plus its own "vampire" variant (`phycat.dark.css` +
+// `phycat.vampire.css` in the Phycat Typora theme, upstream stylesheets not
+// present in this repo) — kept here as a lineage note rather than this theme's
+// identity, so the comments below still quote the declarations they came from
+// rather than pointing at a path that isn't here.
 //
 // Phycat ships as a family, not a theme: one dark base stylesheet plus a set of
-// thin variant files that override nothing but `:root`. Vampire is the Dracula
-// variant, and the only one of the three ported here whose palette the base was
-// actually written against — several of the base's hardcoded values (the fence
-// gray, the sidebar fill, the language-strip gray) are Dracula's own. Radiation
-// and Abyss inherit those same hardcoded values upstream and look wrong for it;
-// see the notes in their files for what had to be derived instead. Here they are
-// simply correct, so this file is the closest of the three to the source.
+// thin variant files that override nothing but `:root`. Phycat's own "vampire"
+// variant is the Dracula one, and the only one of the three ported here whose
+// palette the base was actually written against — several of the base's
+// hardcoded values (the fence gray, the sidebar fill, the language-strip gray)
+// are Dracula's own. Verdant Pulse and Indigo Trench inherit those same
+// hardcoded values upstream and look wrong for it; see the notes in their files
+// for what had to be derived instead. Here they are simply correct, so this
+// file is the closest of the three to the source.
 //
 // The base's defining move is that headings take --text-color while body copy
 // takes --text-color-secondary: paragraphs sit deliberately dimmer than the

@@ -1,20 +1,19 @@
 import type { ThemeTokens } from '../../contract';
 
-// Ported from `phycat.dark.css` + `phycat.radiation.css` in the Phycat Typora
-// theme — an upstream stylesheet, not a file in this repo, so the comments below
-// quote the declarations they came from rather than pointing at a path that
-// isn't here.
-//
-// Phycat's dark base is one stylesheet with a family of thin variant files over
-// it; Radiation is its green one — a near-black ground with a faint green cast,
-// a signal green primary and an amber the variant itself labels a warning tone.
-// Its syntax set is Material Ocean rather than the base's Dracula.
+// Verdant Pulse: a near-black theme with a faint green cast, a signal-green
+// link/heading accent, and an amber warning tone. Adapted from Phycat's dark
+// base plus its own "radiation" variant (`phycat.dark.css` +
+// `phycat.radiation.css` in the Phycat Typora theme, upstream stylesheets not
+// present in this repo) — kept here as a lineage note rather than this theme's
+// identity, so the comments below still quote the declarations they came from
+// rather than pointing at a path that isn't here. Its syntax set is Material
+// Ocean rather than the base's Dracula.
 //
 // Two of the base's values are hardcoded Dracula and wrong for this palette: the
 // fence background and the sidebar fill. Both are derived here instead, in this
 // variant's own hue — see --code-bg and --chrome. The structural notes are the
-// same ones recorded in phycat-vampire, repeated because this file has to stand
-// on its own.
+// same ones recorded in garnet-veil, repeated because this file has to stand on
+// its own.
 export const tokens: ThemeTokens = {
   // --bg-color.
   '--bg': '#1b1d1b',
@@ -33,7 +32,7 @@ export const tokens: ThemeTokens = {
   '--link': '#4cd964',
   // `#write p { color: var(--text-color-secondary) }`. Keeping paragraphs on the
   // secondary tone is the whole reason the base's headings read as headings; it
-  // is not a detail to normalise away. Unlike the Vampire port this one needed
+  // is not a detail to normalise away. Unlike garnet-veil's port this one needed
   // no repair — the green-gray clears AA as authored.
   '--body-fg': '#99a699',
   // Every level takes --text-color. Rank comes from size and from the ::before

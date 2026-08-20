@@ -62,8 +62,8 @@ function SectionLabel({ children, count }: { children: React.ReactNode; count: n
     <div
       style={{
         // Sticky so the group a row belongs to stays named while the list
-        // scrolls — with five Phycat siblings in a row, "which section am I in"
-        // stops being obvious from the names alone.
+        // scrolls — with dozens of built-in rows to page through, "which
+        // section am I in" stops being obvious from the names alone.
         //
         // Full-bleed, and the list gives up its top padding to make that work.
         // A scroll container's scrollport is its *padding* box, so `top: 0`

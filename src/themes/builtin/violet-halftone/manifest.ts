@@ -1,8 +1,8 @@
 import type { ThemeManifest } from '../../types';
 
 export const manifest: ThemeManifest = {
-  id: 'phycat-vampire',
-  name: 'Phycat Vampire',
-  mode: 'dark',
-  badge: 'Dark',
+  id: 'violet-halftone',
+  name: 'Violet Halftone',
+  mode: 'light',
+  badge: 'Light',
 };

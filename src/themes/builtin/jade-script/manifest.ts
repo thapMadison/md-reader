@@ -1,8 +1,8 @@
 import type { ThemeManifest } from '../../types';
 
 export const manifest: ThemeManifest = {
-  id: 'phycat-mauve',
-  name: 'Phycat Mauve',
+  id: 'jade-script',
+  name: 'Jade Script',
   mode: 'light',
   badge: 'Light',
 };

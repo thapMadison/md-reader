@@ -1,8 +1,8 @@
 import type { ThemeManifest } from '../../types';
 
 export const manifest: ThemeManifest = {
-  id: 'phycat-radiation',
-  name: 'Phycat Radiation',
+  id: 'emerald-terminal',
+  name: 'Emerald Terminal',
   mode: 'dark',
   badge: 'Dark',
 };

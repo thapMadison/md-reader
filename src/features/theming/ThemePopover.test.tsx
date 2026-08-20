@@ -44,8 +44,8 @@ describe('theme picker', () => {
     const { user } = open();
     expect(rowNames().length).toBe(BUILTIN_THEMES.length);
 
-    await user.type(screen.getByLabelText('Search themes'), 'phycat');
-    expect(rowNames()).toEqual(BUILTIN_THEMES.filter((t) => t.name.startsWith('Phycat')).map((t) => t.name));
+    await user.type(screen.getByLabelText('Search themes'), 'konayuki');
+    expect(rowNames()).toEqual(BUILTIN_THEMES.filter((t) => t.name.startsWith('Konayuki')).map((t) => t.name));
   });
 
   it('filters the list by mode', async () => {
@@ -79,10 +79,10 @@ describe('theme picker', () => {
 
   it('narrows what the arrows can reach to the visible rows', async () => {
     const { user } = open();
-    await user.type(screen.getByLabelText('Search themes'), 'phycat abyss');
+    await user.type(screen.getByLabelText('Search themes'), 'konayuki dark');
     await user.keyboard('{ArrowDown}{Enter}');
 
-    await waitFor(() => expect(appliedName()).toBe('Phycat Abyss'));
+    await waitFor(() => expect(appliedName()).toBe('Konayuki Dark'));
   });
 
   it('closes on Escape', async () => {

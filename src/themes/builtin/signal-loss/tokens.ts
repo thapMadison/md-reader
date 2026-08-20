@@ -157,8 +157,12 @@ export const tokens: ThemeTokens = {
   // in a proportional face would make the reading column the one region of this
   // theme that was never on the tape. The metric scales above are what pay for
   // it.
-  '--font-ui': "'Cascadia Mono',Consolas,ui-monospace,'SF Mono',Menlo,monospace",
-  '--font-body': "'Cascadia Mono',Consolas,ui-monospace,'SF Mono',Menlo,monospace",
-  '--font-heading': "'Cascadia Mono',Consolas,ui-monospace,'SF Mono',Menlo,monospace",
-  '--font-mono': "'Cascadia Mono',Consolas,ui-monospace,'SF Mono',Menlo,monospace",
+  // JetBrains Mono leads the stack — loaded in index.html — so the one face
+  // this theme depends on is the same face on every reader rather than
+  // whichever system mono a given OS happens to ship. The system stack still
+  // sits behind it unchanged, for a blocked or offline font CDN.
+  '--font-ui': "'JetBrains Mono','Cascadia Mono',Consolas,ui-monospace,'SF Mono',Menlo,monospace",
+  '--font-body': "'JetBrains Mono','Cascadia Mono',Consolas,ui-monospace,'SF Mono',Menlo,monospace",
+  '--font-heading': "'JetBrains Mono','Cascadia Mono',Consolas,ui-monospace,'SF Mono',Menlo,monospace",
+  '--font-mono': "'JetBrains Mono','Cascadia Mono',Consolas,ui-monospace,'SF Mono',Menlo,monospace",
 };

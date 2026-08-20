@@ -20,12 +20,15 @@ Live at **https://thapmadison.github.io/md-reader/**.
   for CSS into the page.
 - Callouts in two syntaxes: GitHub's `> [!NOTE]` markers and `<blockquote alt="info">`
   (`info` / `success` / `warn` / `danger`), which render identically.
-- Seventeen built-in themes across light and dark, in three groups: six standalone ports
+- Twenty-four built-in themes across light and dark, in four groups: six standalone ports
   (GitHub Light, Night Owl, Sepia Book, Azure Corporate, Midnight Cobalt, Rose Quartz); two
   ported families kept whole because that is how they ship upstream — Konayuki's light/dark
-  pair and Phycat's five palette variants; and four motif-first designs (Punch Card,
-  Blueprint, Swiss Poster, Signal Loss) that start from a structural `--chrome-pattern`
-  value instead of from an existing editor theme.
+  pair and five palette variants adapted from Phycat (Garnet Veil, Verdant Pulse, Indigo
+  Trench, Amber Parchment, Orchid Vellum); four motif-first designs (Punch Card, Blueprint,
+  Swiss Poster, Signal Loss) that start from a structural `--chrome-pattern` value instead of
+  from an existing editor theme; and seven more adapted one-for-one from VLOOK's own theme
+  family (Terracotta Folio, Emerald Terminal, Cerulean Ascent, Violet Halftone, Feint Rule,
+  Magenta Facet, Jade Script).
 - A JSON import/export pipeline for custom themes — see
   [authoring-themes.md](authoring-themes.md).
 - Open files live via the File System Access API (re-readable, permission-gated) or as
