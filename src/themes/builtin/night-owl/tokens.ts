@@ -54,7 +54,7 @@ export const tokens: ThemeTokens = {
   '--heading-weight': '650',
   '--heading-line-height': '1.25',
   // Unscaled: this theme reads at the base metric.
-  '--body-size-scale': '1',
+  '--body-size-scale': '0.9',
   '--body-line-height-scale': '1',
   '--badge-bg': '#0b2942',
   // Row rules only: on a dark canvas a full lattice of light rules reads as a
@@ -114,10 +114,14 @@ export const tokens: ThemeTokens = {
   '--syn-tag': '#7fdbca',
   '--syn-meta': '#c792ea',
   '--syn-lit': '#ff5874',
-  '--font-ui': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
-  '--font-body': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
-  // Matches --font-body: an editor theme, where headings are structure rather
-  // than typography and a display face would be out of register.
-  '--font-heading': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
-  '--font-mono': "ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace",
+  // Mono everywhere, on the same premise signal-loss applies to its own
+  // terminal artifact and midnight-cobalt now applies to its own editor
+  // port: this theme's source is a code editor too, so the face that editor
+  // would actually be set in carries the whole reading surface rather than
+  // splitting it between a system grotesque for chrome/prose and JetBrains
+  // Mono for code alone, the way this theme split it before.
+  '--font-ui': "'JetBrains Mono',ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace",
+  '--font-body': "'JetBrains Mono',ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace",
+  '--font-heading': "'JetBrains Mono',ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace",
+  '--font-mono': "'JetBrains Mono',ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace",
 };

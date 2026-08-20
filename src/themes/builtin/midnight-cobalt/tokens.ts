@@ -72,7 +72,7 @@ export const tokens: ThemeTokens = {
   '--heading-weight': '650',
   '--heading-line-height': '1.25',
   // Unscaled: this theme reads at the base metric.
-  '--body-size-scale': '1',
+  '--body-size-scale': '0.9',
   '--body-line-height-scale': '1',
   // Yellow-on-black inline code, the source's --code-bg/--code-text pair.
   '--badge-bg': '#000000',
@@ -132,10 +132,13 @@ export const tokens: ThemeTokens = {
   '--syn-tag': '#569cd6',
   '--syn-meta': '#f1b77c',
   '--syn-lit': '#bd9aff',
-  '--font-ui': "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
-  '--font-body': "Arial,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
-  // Matches --font-body: this theme's grotesque already reads as its own face
-  // against the dark ground, and needs no second one at the headings.
-  '--font-heading': "Arial,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif",
-  '--font-mono': "Consolas,'Cascadia Mono',ui-monospace,'SF Mono',Menlo,monospace",
+  // Mono everywhere, on the same premise signal-loss applies to its own
+  // terminal artifact: this theme's source is a code editor, so the face that
+  // editor would actually be set in carries the whole reading surface rather
+  // than splitting it between a system grotesque for chrome/prose and
+  // JetBrains Mono for code alone, the way this theme split it before.
+  '--font-ui': "'JetBrains Mono','Cascadia Mono',Consolas,ui-monospace,'SF Mono',Menlo,monospace",
+  '--font-body': "'JetBrains Mono','Cascadia Mono',Consolas,ui-monospace,'SF Mono',Menlo,monospace",
+  '--font-heading': "'JetBrains Mono','Cascadia Mono',Consolas,ui-monospace,'SF Mono',Menlo,monospace",
+  '--font-mono': "'JetBrains Mono','Cascadia Mono',Consolas,ui-monospace,'SF Mono',Menlo,monospace",
 };

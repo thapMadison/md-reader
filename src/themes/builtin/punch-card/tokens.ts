@@ -142,26 +142,16 @@ export const tokens: ThemeTokens = {
   '--syn-tag': '#47661f',
   '--syn-meta': '#6b5e46',
   '--syn-lit': '#6b3f8a',
-  // A tight grotesque for the chrome, which is where a card's small printed
-  // legends were set. Tahoma rather than the Arial Narrow this asked for first:
-  // Arial Narrow's character set stops at Latin-1, so every Vietnamese vowel
-  // carrying both a shape mark and a tone mark — ầ ế ữ ộ — fell out of it and
-  // was rendered by Arial instead, at a different width, mid-word. Tahoma is the
-  // narrowest face on the shortlist that draws them itself.
-  '--font-ui': "Tahoma,'Segoe UI',Arial,sans-serif",
-  // A serif for prose. The card is the filing system, not the reading matter —
-  // running long-form text in the card's own typewriter face would make the
-  // article an artifact of the chrome rather than the thing it holds.
-  //
-  // Cambria for the same reason Tahoma is above, and it is the more expensive
-  // loss of the two: Georgia lacks the same vowels, so a Vietnamese paragraph
-  // came out as Georgia with roughly one glyph in ten dropping into Palatino —
-  // two serifs alternating inside single words. Cambria and Constantia both
-  // carry the full set; Georgia is now absent from the stack rather than demoted
-  // down it, since a later position would only postpone the same mixing.
-  '--font-body': "Cambria,Constantia,'Palatino Linotype',Palatino,serif",
-  // The interpreted line printed along a card's top edge, in the fixed pitch it
-  // was punched at — which is why the headings, not the body, take the mono.
+  // Mono everywhere now, on the same premise signal-loss applies to its own
+  // terminal artifact: one face at one pitch for the whole reading surface,
+  // rather than confining the fixed pitch to the header line and code the way
+  // this theme split it before (Tahoma for chrome, Cambria for prose). Consolas
+  // was already carrying --font-heading and --font-mono and already clears
+  // this theme's Vietnamese diacritics in full — ầ ế ữ ộ included — so nothing
+  // new to load and no coverage question to re-litigate for the other two
+  // roles.
+  '--font-ui': "Consolas,'Cascadia Mono',ui-monospace,'SF Mono',Menlo,monospace",
+  '--font-body': "Consolas,'Cascadia Mono',ui-monospace,'SF Mono',Menlo,monospace",
   '--font-heading': "Consolas,'Cascadia Mono',ui-monospace,'SF Mono',Menlo,monospace",
   '--font-mono': "Consolas,'Cascadia Mono',ui-monospace,'SF Mono',Menlo,monospace",
 };

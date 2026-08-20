@@ -31,15 +31,17 @@
       humanist warmth that pairs with these themes' serif body text, and
       Courier New stays behind it for the typewriter reference.
 
-      JetBrains Mono is signal-loss's face, leading that theme's stack rather
-      than replacing it. signal-loss sets --font-ui/body/heading/mono to the
-      same face on the premise that a terminal display has one face at one
-      pitch — but until now that face was whatever mono the reader's own OS
-      happened to ship (Cascadia Mono, SF Mono, Consolas), so the same theme
-      looked different on every machine. JetBrains Mono carries vietnamese, a
-      real 300..700 weight range with italic, and ligatures that fit the
-      "on-screen display" premise the theme is built around; the system stack
-      stays behind it exactly as it did before.
+      JetBrains Mono leads --font-ui/body/heading/mono alike in three themes:
+      signal-loss, on the premise that a terminal display has one face at one
+      pitch, and night-owl and midnight-cobalt, both ports of real code
+      editors that read truest set in the face those editors would actually
+      run rather than split between a system sans for chrome/prose and a mono
+      for code alone. In every case a face actually built for on-screen code
+      reading replaces whatever mono the reader's OS happened to ship
+      (Cascadia Mono, SF Mono, Consolas). JetBrains Mono carries vietnamese, a
+      real 300..700 weight range with italic, and ligatures that suit all of
+      these uses; the system stack stays behind it unchanged in every theme
+      that names it, exactly as it did before.
 
       CHECK THE VIETNAMESE SUBSET BEFORE ADDING ANY FACE HERE. Vietnamese
       stacks diacritics two deep (ồ, ế, ữ), and a font missing U+1EA0-1EF9
@@ -62,8 +64,9 @@
       Plex Mono ships 400, 700, and 400-italic — highlight.js sets comments
       italic and .hljs-strong bold, but never both at once, so bold-italic is
       left to synthesis. JetBrains Mono is requested across its full
-      300..700/italic range because signal-loss reuses the one face for every
-      role — UI, body, heading, and code — each with its own weight.
+      300..700/italic range because signal-loss, night-owl, and
+      midnight-cobalt each reuse the one face for every role — UI, body,
+      heading, and code — each with its own weight.
 
       Every stack that names one of these keeps its system fallbacks behind it,
       so a blocked or offline CDN costs the intended face and nothing else.
